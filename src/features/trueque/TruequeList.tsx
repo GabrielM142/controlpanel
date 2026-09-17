@@ -30,7 +30,7 @@ export default function TruequeList(){
  useEffect(()=>{load();},[load]);
 
  return <>
-  <h2 className="section-label"><span>Mis solicitudes a SIDE</span><i/></h2>
+  <h2 className="section-label"><span>Mis solicitudes a Trueque Labs</span><i/></h2>
   <section className="panel">
    <header className="panel-heading" style={{gap:12}}>
     <h2><PackageCheck size={13} style={{verticalAlign:'-2px',marginRight:6}}/>Historial ({items.length})</h2>
@@ -43,7 +43,7 @@ export default function TruequeList(){
     {error&&<div className="legend-note" style={{margin:16}}><AlertCircle size={12} style={{verticalAlign:'-2px',marginRight:6}}/>{error}</div>}
     {items.length===0&&!loading
      ?<div style={{padding:'40px 20px',textAlign:'center',color:'var(--muted)'}}>
-       <p>Todavía no enviaste solicitudes. Andá a <b>Trueque Factory · Nueva solicitud</b> para empezar.</p>
+       <p>Todavía no enviaste solicitudes. Andá a <b>Trueque Labs · Nueva solicitud</b> para empezar.</p>
       </div>
      :<div className="table-scroll"><table>
       <thead><tr><th>Fecha</th><th>Módulo</th><th>Empresa</th><th>Plan</th><th>Prioridad</th><th>Estado</th><th className="num">Tokens</th><th></th></tr></thead>

@@ -527,3 +527,72 @@ td .sla-mini+em{font-style:normal;font-size:10px;color:#5b6d85;font-weight:600}
 :root[data-theme=dark] .chat-skip{color:#8697b0;border-color:#22304a}
 
 @media print{.ai-drawer,.alerts-drawer,.palette-backdrop,.drawer-scrim,.tokens-wrap,.ai-button,.odoo-chip,.bell,.nav-trueque{display:none!important}}
+
+/* === Iteration 4: floating AI bubble, Trueque Labs T&C === */
+
+/* Floating AI copilot bubble at bottom-left. */
+.ai-bubble{position:fixed;bottom:22px;left:22px;z-index:130;display:inline-flex;align-items:center;gap:10px;padding:12px 18px 12px 14px;border:0;border-radius:34px;background:linear-gradient(135deg,#c8a865,#a5811f);color:#fff;font-weight:650;font-size:12px;letter-spacing:.02em;box-shadow:0 10px 26px #a5811f38,0 3px 8px #14274018;cursor:pointer;transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s;overflow:visible}
+.ai-bubble:before{content:'';position:absolute;inset:0;border-radius:34px;box-shadow:inset 0 1px 0 #ffffff40;pointer-events:none}
+.ai-bubble:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 14px 34px #a5811f50,0 4px 10px #14274022}
+.ai-bubble:active{transform:translateY(0) scale(.98)}
+.ai-bubble>svg{color:#fff;filter:drop-shadow(0 1px 2px #7a5a1a55)}
+.ai-bubble-label{font-family:'Manrope Variable',sans-serif;font-weight:700;letter-spacing:.04em}
+.ai-bubble-glow{position:absolute;inset:-4px;border-radius:38px;background:radial-gradient(ellipse at center,#c8a86540,transparent 70%);z-index:-1;animation:bubble-pulse 3s ease-in-out infinite}
+@keyframes bubble-pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.9;transform:scale(1.1)}}
+
+/* Adjust ruler position so it does not clip the bubble on mobile. */
+@media(max-width:760px){
+ .ai-bubble{bottom:14px;left:14px;padding:11px 14px;font-size:11px}
+ .ai-bubble-label{display:none}
+ .ai-bubble{padding:12px}
+}
+
+/* T&C acceptance block inside Trueque chat composer. */
+.trueque-terms{display:flex;flex-direction:column;gap:10px;width:100%}
+.trueque-terms-check{display:flex;gap:9px;align-items:flex-start;font-size:11px;line-height:1.55;color:#4b5d76;cursor:pointer;padding:9px 11px;background:#faf7ee;border:1px solid #f0e9d5;border-radius:8px}
+.trueque-terms-check input[type=checkbox]{margin-top:2px;width:15px;height:15px;accent-color:#a5811f;flex-shrink:0}
+.trueque-terms-check b{color:#25334a}
+.terms-link{background:none;border:0;padding:0;color:#a5811f;text-decoration:underline;font-weight:600;cursor:pointer;font-size:inherit;font-family:inherit}
+.terms-link:hover{color:#7a5a1a}
+
+/* T&C modal. */
+.terms-backdrop{position:fixed;inset:0;z-index:210;background:#0f1a2c70;backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px}
+.terms-modal{width:min(620px,100%);max-height:90vh;background:#fff;border-radius:12px;box-shadow:0 24px 60px #14274035;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e1e7ef}
+.terms-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #eef1f6;background:linear-gradient(120deg,#f6ecd0,#faf5e6)}
+.terms-head strong{font-family:'Manrope Variable',sans-serif;font-size:14px;color:#3a2d0c;margin-left:8px}
+.terms-head small{font-size:10px;color:#7a6a3f;margin-left:6px}
+.terms-head>div{display:flex;align-items:center;color:#a5811f}
+.terms-head>button{background:none;border:0;color:#7a6a3f;padding:4px}
+.terms-body{flex:1;overflow-y:auto;padding:18px 22px;font-size:12px;line-height:1.75;color:#4b5d76;background:#fbfaf6}
+.terms-body p{margin:0 0 12px}
+.terms-body ol{margin:0 0 12px;padding-left:22px}
+.terms-body ol li{margin-bottom:10px;line-height:1.75}
+.terms-body b{color:#25334a}
+.terms-body em{font-style:normal;color:#a5811f}
+.terms-note{margin-top:8px;font-size:10px;color:#8b95a5;padding-top:10px;border-top:1px dashed #e5dcc0}
+.terms-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid #eef1f6;background:#fff}
+
+/* Utility bar: less crowded once the AI button was moved to the floating bubble. */
+@media(max-width:1080px){.ai-bubble{padding:11px 15px}}
+
+/* Dark mode overrides for the new elements. */
+:root[data-theme=dark] .ai-bubble{background:linear-gradient(135deg,#c8a865,#a5811f);color:#1a1408;box-shadow:0 10px 30px #00000055,0 3px 10px #00000030}
+:root[data-theme=dark] .ai-bubble:hover{box-shadow:0 14px 40px #00000070}
+:root[data-theme=dark] .ai-bubble>svg{color:#1a1408;filter:none}
+:root[data-theme=dark] .ai-bubble-glow{background:radial-gradient(ellipse at center,#dcb26055,transparent 70%)}
+:root[data-theme=dark] .trueque-terms-check{background:#141d2b;border-color:#22304a;color:#b1c0d5}
+:root[data-theme=dark] .trueque-terms-check b{color:#f0f3fa}
+:root[data-theme=dark] .terms-link{color:#dcb260}
+:root[data-theme=dark] .terms-link:hover{color:#f0e2c4}
+:root[data-theme=dark] .terms-modal{background:#161f2c;border-color:#22304a}
+:root[data-theme=dark] .terms-head{background:linear-gradient(120deg,#28210f,#3d2f14);border-bottom-color:#22304a}
+:root[data-theme=dark] .terms-head strong{color:#f0e2c4}
+:root[data-theme=dark] .terms-head small,:root[data-theme=dark] .terms-head>button{color:#c8a865}
+:root[data-theme=dark] .terms-head>div{color:#dcb260}
+:root[data-theme=dark] .terms-body{background:#0e1620;color:#b1c0d5}
+:root[data-theme=dark] .terms-body b{color:#f0f3fa}
+:root[data-theme=dark] .terms-body em{color:#dcb260}
+:root[data-theme=dark] .terms-note{color:#8697b0;border-top-color:#22304a}
+:root[data-theme=dark] .terms-foot{background:#161f2c;border-top-color:#22304a}
+
+@media print{.ai-bubble,.terms-backdrop{display:none!important}}

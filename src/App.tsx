@@ -76,7 +76,7 @@ function AppShell(){
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
- useEffect(()=>{document.title=`${pageLabel} · SIDE / JUJ`;},[pageLabel]);
+ useEffect(()=>{document.title=`${pageLabel} · Panel Analítico · José Ugalde Jerves`;},[pageLabel]);
  useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
@@ -110,7 +110,7 @@ function AppShell(){
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Trueque Labs');
   return <>
-   <div className="brand"><div className="brand-symbol"><Layers3 size={26} strokeWidth={1.5}/></div><div><strong>SIDE<span>®</span></strong><small>José Ugalde Jerves</small></div></div>
+   <div className="brand"><div className="brand-symbol"><Layers3 size={26} strokeWidth={1.5}/></div><div><strong>JUJ</strong><small>José Ugalde Jerves</small></div></div>
    <div className="brand-rule"/>
    <nav aria-label="Centros de inteligencia">{groupOrder.map(group=>{
     const gKey=`g:${group}`;const gOpen=expanded.has(gKey);const subs=subGroups[group];
@@ -137,7 +137,7 @@ function AppShell(){
    <div className="nav-trueque">
     <div className="nav-trueque-head"><Sparkles size={12}/><span>Trueque Labs</span></div>
     {truequePages.map(p=><NavItem key={p.id} p={p}/>)}
-    <div className="nav-trueque-foot">Powered by <b>Trueque Labs</b> · captación y factoría de módulos SIDE</div>
+    <div className="nav-trueque-foot">Powered by <b>Trueque Labs</b> · factoría de módulos a medida</div>
    </div>
    </nav>
    <div className="sidebar-foot"><div className="client-monogram">J</div><div><strong>JUJ</strong><span>Dirección empresarial</span></div><span className="foot-dot"/></div>
@@ -166,9 +166,6 @@ function AppShell(){
        <span className="odoo-dot"/><b>Odoo</b><em>· sync 07:58</em>
       </span>
       <TokensChip/>
-      <button type="button" className="ai-button" onClick={()=>setAiOpen(true)} aria-label="Abrir copiloto IA" title="Interpretar la pantalla con IA">
-       <Sparkles size={13}/><span>Interpretar con IA</span>
-      </button>
       <button type="button" className="icon-button bell" aria-label={`Alertas (${globalAlerts.length})`} title="Alertas del negocio" onClick={()=>setAlertsOpen(true)}>
        <Bell size={17}/>
        {criticalAlerts>0&&<span className="bell-badge">{criticalAlerts}</span>}
@@ -187,7 +184,7 @@ function AppShell(){
     </div>
     <header className="page-header">
      <div className="page-heading">
-      <div className="page-kicker"><span className="gold-line"/>SIDE / {pageGroup}{currentSub?` · ${currentSub}`:''}</div>
+      <div className="page-kicker"><span className="gold-line"/>{pageGroup}{currentSub?` · ${currentSub}`:''}</div>
       <h1>{pageLabel}</h1>
       <p>{pageQuestion}</p>
      </div>
@@ -205,11 +202,16 @@ function AppShell(){
     </section>}
     <div className="report-content" key={pageId}>
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<ReportNodes nodes={reportPage!.nodes}/>}
-     <div className="report-footer"><span>SIDE <i>/</i> {pageLabel}</span><span>JUJ · CONTROL EMPRESARIAL</span></div>
+     <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>José Ugalde Jerves · Control Empresarial</span></div>
     </div>
    </main>
   </div>
   {rulerOn&&<div className="reading-ruler" aria-hidden="true" style={{top:rulerY}}/>}
+  {!aiOpen&&<button type="button" className="ai-bubble" onClick={()=>setAiOpen(true)} aria-label="Abrir copiloto de análisis con IA" title="Interpretar la pantalla con IA">
+   <span className="ai-bubble-glow" aria-hidden="true"/>
+   <Sparkles size={20}/>
+   <span className="ai-bubble-label">Copiloto</span>
+  </button>}
   <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel}/>
   <AlertsDrawer open={alertsOpen} onClose={()=>setAlertsOpen(false)} onNavigate={navigate}/>
   <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} items={paletteItems} onSelect={navigate}/>

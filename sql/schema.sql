@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS trueque_requests(
 );
 CREATE INDEX IF NOT EXISTS trueque_requests_created_idx ON trueque_requests(created_at DESC);
 CREATE INDEX IF NOT EXISTS trueque_requests_status_idx ON trueque_requests(status);
+
+ALTER TABLE trueque_requests ADD COLUMN IF NOT EXISTS terms_accepted_at timestamptz;

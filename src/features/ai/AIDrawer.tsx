@@ -103,9 +103,9 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
   setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:cannedAnswer(q,pageId,pageLabel)}]);setBusy(false);},650);
  }
 
- return <aside className={`ai-drawer ${open?'open':''}`} role="dialog" aria-label="Copiloto de IA" aria-hidden={!open}>
+ return <aside className={`ai-drawer ${open?'open':''}`} role="dialog" aria-label="Copiloto de Análisis" aria-hidden={!open}>
   <header className="ai-head">
-   <div><Sparkles size={16}/><strong>Copiloto SIDE</strong><small>· {pageLabel}</small></div>
+   <div><Sparkles size={16}/><strong>Copiloto de Análisis</strong><small>· {pageLabel}</small></div>
    <button type="button" aria-label="Cerrar copiloto" onClick={onClose}><X size={16}/></button>
   </header>
   <div className="ai-body" ref={scrollRef}>
@@ -127,6 +127,6 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
    <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Preguntá sobre esta pantalla…" aria-label="Consulta al copiloto"/>
    <button type="button" className="chat-send" aria-label="Enviar" onClick={()=>ask()} disabled={!input.trim()||busy}><Send size={14}/></button>
   </footer>
-  <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos.</div>
+  <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos. Provisto por Trueque Labs.</div>
  </aside>;
 }

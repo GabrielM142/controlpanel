@@ -48,10 +48,11 @@ export default async function handler(req,res){
    const timeline=pickString(j.timeline,120)||null;
    const conversation=Array.isArray(j.conversation)?j.conversation.slice(0,80):[];
    const tokensUsed=Number.isFinite(j.tokens_used)?Math.max(0,Math.min(5000,j.tokens_used|0)):0;
+   const termsAcceptedAt=typeof j.terms_accepted_at==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(j.terms_accepted_at)?j.terms_accepted_at:null;
    const insert=await db.query(
-    `INSERT INTO trueque_requests(client_name,client_email,plan,title,process,actors,data_sources,integrations,outputs,priority,budget,timeline,conversation,tokens_used)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14) RETURNING id,created_at,status`,
-    [clientName,email,plan,title,process,actors,dataSources,integrations,outputs,priority,budget,timeline,JSON.stringify(conversation),tokensUsed]
+    `INSERT INTO trueque_requests(client_name,client_email,plan,title,process,actors,data_sources,integrations,outputs,priority,budget,timeline,conversation,tokens_used,terms_accepted_at)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15) RETURNING id,created_at,status`,
+    [clientName,email,plan,title,process,actors,dataSources,integrations,outputs,priority,budget,timeline,JSON.stringify(conversation),tokensUsed,termsAcceptedAt]
    );
    return send(201,insert.rows[0]);
   }
