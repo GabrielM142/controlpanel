@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS jobs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),status text NOT NULL CHECK(status IN ('queued','running','completed','failed')),created_at timestamptz NOT NULL DEFAULT now(),started_at timestamptz,finished_at timestamptz,error text);
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_job ON jobs((true)) WHERE status IN ('queued','running');
+CREATE TABLE IF NOT EXISTS snapshots(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),job_id uuid UNIQUE REFERENCES jobs(id),created_at timestamptz NOT NULL DEFAULT now(),source text NOT NULL,rows jsonb NOT NULL CHECK(jsonb_typeof(rows)='array'));

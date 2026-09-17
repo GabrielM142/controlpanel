@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>SIDE — Diseño para Power BI (v2 — nomenclatura definitiva)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#161B33; --pbi-yellow:#F2C811;
+  --ink:#252423; --muted:#605E5C; --line:#E1DFDD;
+  --bg:#F3F2F1; --card:#FFFFFF;
+  --gold:#AB8752;
+  --green:#107C41; --green-bg:#DFF6DD;
+  --amber:#C19C00; --amber-bg:#FFF4CE;
+  --red:#D13438; --red-bg:#FDE7E9;
+  --blue:#0078D4;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.app{display:flex;min-height:100vh;}
+.nav{width:230px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.nav-head{padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,.08);}
+.nav-head .badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;background:rgba(242,200,17,.15);color:var(--pbi-yellow);padding:3px 8px;border-radius:3px;font-weight:600;letter-spacing:.03em;}
+.nav-head .title{font-weight:700;font-size:15.5px;margin-top:9px;}
+.nav-head .sub{font-size:11px;color:#9AA0B4;margin-top:2px;}
+.nav-scroll{flex:1;overflow-y:auto;padding:10px 0 20px;}
+.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#8891A8;font-weight:600;padding:14px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:12.3px;color:#C7CCDC;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#fff;}
+.nav-item.active{background:rgba(242,200,17,.12);color:#fff;border-left-color:var(--pbi-yellow);font-weight:600;}
+.nav-item .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:12px 24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:19px;margin:0;font-weight:700;}
+.topbar .crumb{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.pageQuestion{font-size:12px;color:var(--blue);font-style:italic;margin-top:3px;}
+.nav-item.paused{opacity:.55;}
+.nav-item .pausetag{font-size:8px;background:rgba(255,255,255,.12);padding:1px 5px;border-radius:8px;margin-left:auto;text-transform:uppercase;letter-spacing:.03em;}
+.pause-box{background:#FAF9F8;border:1px dashed var(--line);border-radius:4px;padding:30px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.7;}
+.ai-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;background:linear-gradient(90deg,#EAE6FB,#DCEEFB);color:#5B3FBF;padding:3px 9px;border-radius:12px;font-weight:700;letter-spacing:.02em;}
+.ai-box{background:linear-gradient(180deg,#FBFAFF 0%,#FFFFFF 100%);border:1px solid #E3DEF7;border-radius:4px;}
+.ai-narrative{font-size:12.5px;line-height:1.8;color:var(--ink);padding:4px 0;}
+.ai-narrative b{color:#5B3FBF;}
+.ai-conf{font-size:10px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px dashed #E3DEF7;}
+.ai-pick{border:1px solid var(--line);border-radius:3px;padding:12px;}
+.ai-pick .k{font-size:9.5px;text-transform:uppercase;color:var(--muted);font-weight:600;letter-spacing:.03em;}
+.ai-pick .v{font-size:13px;font-weight:700;margin-top:5px;}
+.ai-pick .d{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.topbar .right{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
+.pbi-btn{border:1px solid var(--line);background:#fff;border-radius:2px;padding:5px 10px;font-size:11.5px;color:var(--ink);display:flex;align-items:center;gap:5px;cursor:pointer;}
+.filterbar{background:#FAF9F8;border-bottom:1px solid var(--line);padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filterbar .flabel{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-right:2px;}
+.slicer{position:relative;}
+.slicer-btn{background:#fff;border:1px solid var(--line);border-radius:2px;padding:6px 10px;font-size:11.5px;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:110px;justify-content:space-between;}
+.slicer-btn:hover{border-color:#C8C6C4;}
+.slicer-btn .k{color:var(--muted);}
+.slicer-btn .v{font-weight:600;color:var(--ink);}
+.slicer-drop{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--line);border-radius:2px;box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:150px;z-index:30;padding:6px 0;}
+.slicer.open .slicer-drop{display:block;}
+.slicer-opt{padding:7px 12px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.slicer-opt:hover{background:#F5F5F5;}
+.slicer-opt.sel{font-weight:600;color:var(--blue);}
+.wrap{padding:20px 24px 60px;max-width:1560px;}
+.updated{font-size:10.5px;color:var(--muted);margin-bottom:14px;}
+.viz{background:#fff;border:1px solid var(--line);border-radius:3px;}
+.viz-head{display:flex;justify-content:space-between;align-items:center;padding:9px 12px 7px;border-bottom:1px solid #F0EFED;flex-wrap:wrap;gap:6px;}
+.viz-head .t{font-size:12.5px;font-weight:600;color:var(--ink);}
+.viz-head .icons{display:flex;gap:8px;color:#A19F9D;font-size:12px;}
+.viz-body{padding:12px;}
+.grid{display:grid;gap:10px;}
+.g-2{grid-template-columns:1fr 1fr;}
+.g-6{grid-template-columns:repeat(6,1fr);}
+.g-5{grid-template-columns:repeat(5,1fr);}
+.g-4{grid-template-columns:repeat(4,1fr);}
+.g-3{grid-template-columns:repeat(3,1fr);}
+.section-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);font-weight:700;margin:22px 0 8px;}
+.card-kpi .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;font-weight:600;}
+.card-kpi .val{font-family:'IBM Plex Mono';font-size:19px;font-weight:700;margin-top:6px;}
+.card-kpi .delta{font-size:10px;margin-top:5px;display:flex;justify-content:space-between;color:var(--muted);}
+.card-kpi .delta b{font-family:'IBM Plex Mono';}
+.up{color:var(--green);} .down{color:var(--red);}
+.pill{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.pill.g{background:var(--green);} .pill.a{background:var(--amber);} .pill.r{background:var(--red);}
+table{width:100%;border-collapse:collapse;font-size:11.3px;}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line);background:#FAF9F8;}
+td{padding:6.5px 8px;border-bottom:1px solid #F0EFED;}
+td.num,th.num{text-align:right;font-family:'IBM Plex Mono';}
+tr:hover td{background:#FAF9F8;}
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;text-transform:uppercase;}
+.tag.g{background:var(--green-bg);color:var(--green);}
+.tag.a{background:var(--amber-bg);color:var(--amber);}
+.tag.r{background:var(--red-bg);color:var(--red);}
+.barlist .row{display:grid;grid-template-columns:120px 1fr 44px;align-items:center;gap:8px;font-size:11px;padding:4px 0;}
+.barbg{height:13px;background:#F0EFED;border-radius:2px;overflow:hidden;}
+.barfill{height:100%;background:var(--blue);}
+.barval{font-family:'IBM Plex Mono';text-align:right;}
+.kpi2 .label{font-size:9.8px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.kpi2 .val{font-family:'IBM Plex Mono';font-size:16px;font-weight:700;margin-top:5px;}
+.kpi2 .sub{font-size:9.8px;color:var(--muted);margin-top:4px;}
+.ph{font-size:8px;color:#94722F;background:#FAF0DA;padding:1px 5px;border-radius:8px;margin-left:4px;font-weight:700;}
+.toggle-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.toggle-btn{border:1px solid var(--line);background:#fff;padding:5px 11px;font-size:11px;border-radius:2px;cursor:pointer;color:var(--muted);}
+.toggle-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.crumbnav{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.crumbnav b{color:var(--blue);cursor:pointer;}
+.legend-note{margin-top:26px;padding:12px 14px;background:#FAF9F8;border:1px solid var(--line);border-radius:3px;font-size:11px;color:var(--muted);line-height:1.6;}
+.legend-note b{color:var(--ink);}
+.ise-card{display:flex;gap:16px;align-items:flex-start;}
+.ise-num{font-family:'IBM Plex Mono';font-size:34px;font-weight:700;}
+.ise-status{font-size:11px;font-weight:600;margin-top:2px;}
+.ise-comp{flex:1;}
+.ise-comp .row{display:grid;grid-template-columns:110px 1fr 32px;align-items:center;gap:6px;font-size:10.5px;margin-bottom:5px;}
+.ise-explain{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #F0EFED;font-size:11px;color:var(--muted);line-height:1.6;}
+.ise-explain.open{display:block;}
+.link-btn{background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;padding:0;margin-top:8px;}
+.matrix-cell{padding:8px 10px;border-radius:2px;font-size:11px;font-weight:600;text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="nav">
+    <div class="nav-head">
+      <span class="badge">DISEÑO PARA POWER BI · v2</span>
+      <div class="title">SIDE</div>
+      <div class="sub">José Ugalde Jerves</div>
+    </div>
+    <div class="nav-scroll" id="navScroll"></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="crumb" id="crumb">SIDE / Ejecutivo</div><h1 id="pageTitle">Centro de Dirección Empresarial</h1><div class="pageQuestion" id="pageQuestion"></div></div>
+      <div class="right"><span>Última actualización: hoy 07:58</span><button class="pbi-btn">↻ Actualizar</button><button class="pbi-btn">⤓ Exportar</button></div>
+    </div>
+    <div class="filterbar" id="filterbar"></div>
+    <div class="wrap" id="content"></div>
+  </div>
+</div>
+
+<script>
+const USD = n => '$' + n.toLocaleString('es-EC');
+
+const FILTER_DEFS = {
+  anio:{label:'Año', options:['2026','2025','2024'], sel:'2026'},
+  mes:{label:'Mes', options:['Todos','Enero','Febrero','Marzo','Abril','Mayo','Junio'], sel:'Junio'},
+  canal:{label:'Canal', options:['Todos','Mayorista','Retail'], sel:'Todos'},
+  unidad:{label:'Unidad de Negocio', options:['Todas','Mayorista Hogar','Mayorista Intorno','Retail JUJ','Retail Intorno'], sel:'Todas'},
+  provincia:{label:'Provincia', options:['Todas','Azuay','Cañar','Loja','El Oro'], sel:'Todas'},
+  canton:{label:'Cantón', options:['Todos','Cuenca','Gualaceo','Girón'], sel:'Todos'},
+  zona:{label:'Zona', options:['Todas','Zona 1','Zona 2','Zona 3'], sel:'Todas'},
+  vendedor:{label:'Vendedor', options:['Todos','Juan Pérez','Carlos López','María Santos'], sel:'Todos'},
+  marca:{label:'Marca', options:['Todas','UMCO','Warenhaus','Chaide','Mesas y Sillas JUJ'], sel:'Todas'},
+  categoria:{label:'Categoría', options:['Todas','Ollas','Sartenes','Electrodomésticos menores'], sel:'Todas'},
+  subcategoria:{label:'Subcategoría', options:['Todas','Línea Nara','Línea Meridiano','Línea Brilliance'], sel:'Todas'},
+  proveedor:{label:'Proveedor', options:['Todos','UMCO','Chaide','Warenhaus','Corpmunab'], sel:'Todos'},
+  bodega:{label:'Bodega', options:['Todas','Bodega Central','Punto Ordoñez Lazo'], sel:'Todas'},
+  estadopedido:{label:'Estado del pedido', options:['Todos','Pendiente','Retrasado','Completado'], sel:'Todos'},
+  transportista:{label:'Transportista', options:['Todos','Propio','Tercerizado'], sel:'Todos'},
+  campana:{label:'Campaña', options:['Todas','Verano 2026','Día de la Madre'], sel:'Todas'},
+  segmento:{label:'Segmento', options:['Todos','Mayorista','Minorista','Cliente Final'], sel:'Todos'},
+  estadosku:{label:'Estado SKU', options:['Todos','Activo','Sin movimiento','Descontinuado'], sel:'Todos'},
+  ciudad:{label:'Ciudad', options:['Todas','Cuenca','Machala','Loja'], sel:'Todas'},
+  empresa:{label:'Empresa', options:['José Ugalde Jerves Cía. Ltda.'], sel:'José Ugalde Jerves Cía. Ltda.'},
+  trimestre:{label:'Sesión Directorio', options:['Q2 2026','Q1 2026'], sel:'Q2 2026'},
+  semestre:{label:'Semestre', options:['S1 2026','S2 2025'], sel:'S1 2026'},
+  area:{label:'Área', options:['Todas','Comercial','Logística','Administración'], sel:'Todas'},
+  puntoventa:{label:'Punto de venta', options:['Todos','Local Centro','Local Norte'], sel:'Todos'},
+};
+
+const STANDARD_FILTERS = ['anio','mes','canal','unidad','marca','categoria','subcategoria','vendedor','proveedor','provincia','ciudad','zona'];
+
+const PAGES = [
+  {id:'nivel1', group:'Ejecutivo', label:'Dirección Empresarial', dot:'g', filters:['anio','mes','canal','unidad']},
+  {id:'comercial', group:'Centros de Inteligencia', label:'Comercial', dot:'g', filters:STANDARD_FILTERS},
+  {id:'financiero', group:'Centros de Inteligencia', label:'Financiero', dot:'g', filters:STANDARD_FILTERS},
+  {id:'compras', group:'Centros de Inteligencia', label:'Compras', dot:'a', filters:STANDARD_FILTERS},
+  {id:'inventarios', group:'Centros de Inteligencia', label:'Inventarios', dot:'a', filters:STANDARD_FILTERS},
+  {id:'clientes', group:'Centros de Inteligencia', label:'Clientes', dot:'a', filters:STANDARD_FILTERS},
+  {id:'logistica', group:'Centros de Inteligencia', label:'Logística', dot:'a', filters:STANDARD_FILTERS},
+  {id:'marketing', group:'Centros de Inteligencia', label:'Marketing', dot:'a', filters:STANDARD_FILTERS},
+  {id:'riesgos', group:'Centros de Inteligencia', label:'Riesgos', dot:'r', filters:STANDARD_FILTERS, paused:true},
+  {id:'mayoristahogar', group:'Unidades de Negocio', label:'Mayorista Hogar', dot:'g', filters:STANDARD_FILTERS},
+  {id:'mayoristaintorno', group:'Unidades de Negocio', label:'Mayorista Intorno', dot:'a', filters:STANDARD_FILTERS},
+  {id:'retailjuj', group:'Unidades de Negocio', label:'Retail JUJ', dot:'g', filters:STANDARD_FILTERS},
+  {id:'retailintorno', group:'Unidades de Negocio', label:'Retail Intorno', dot:'r', filters:STANDARD_FILTERS},
+];
+
+const QUESTIONS = {
+  nivel1: '¿Cómo está la empresa?',
+  comercial: '¿Cómo estamos vendiendo?',
+  financiero: '¿La empresa está generando valor?',
+  compras: '¿Estamos abasteciendo correctamente?',
+  inventarios: '¿Cómo está invertido nuestro capital?',
+  clientes: '¿Cómo está evolucionando nuestra cartera?',
+  logistica: '¿Estamos entregando correctamente?',
+  marketing: '¿Las campañas generan crecimiento?',
+  riesgos: '¿Qué riesgos enfrenta la empresa? — en pausa hasta completar el análisis',
+  mayoristahogar: '¿Cómo está funcionando Mayorista Hogar?',
+  mayoristaintorno: '¿Cómo está funcionando Mayorista Intorno?',
+  retailjuj: '¿Cómo está funcionando Retail JUJ?',
+  retailintorno: '¿Cómo está funcionando Retail Intorno?',
+};
+
+const navScroll = document.getElementById('navScroll');
+let lastGroup = null;
+PAGES.forEach(pg=>{
+  if(pg.group !== lastGroup){ const g=document.createElement('div'); g.className='nav-group'; g.textContent=pg.group; navScroll.appendChild(g); lastGroup=pg.group; }
+  const it = document.createElement('div');
+  it.className='nav-item'+(pg.id==='nivel1'?' active':'')+(pg.paused?' paused':'');
+  it.dataset.id = pg.id;
+  it.innerHTML = `<span class="dot pill ${pg.dot}"></span><span>${pg.label}</span>${pg.paused?'<span class="pausetag">en pausa</span>':''}`;
+  it.onclick = ()=>selectPage(pg.id);
+  navScroll.appendChild(it);
+});
+
+function selectPage(id){
+  const pg = PAGES.find(p=>p.id===id);
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.id===id));
+  document.getElementById('pageTitle').textContent = pg.label;
+  document.getElementById('crumb').textContent = 'SIDE / ' + pg.group;
+  document.getElementById('pageQuestion').textContent = QUESTIONS[id] || '';
+  renderFilterbar(pg.filters);
+  if(pg.paused && pg.id !== 'riesgos'){
+    document.getElementById('content').innerHTML = `<div class="pause-box">
+      <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">⏸ Centro en pausa</div>
+      Este Centro de Inteligencia queda en pausa hasta completar su análisis y definición funcional detallada,<br>
+      siguiendo el mismo estándar aplicado a Comercial, Financiero, Compras, Inventarios, Clientes, Logística y Marketing.
+    </div>`;
+  } else {
+    renderPage(id);
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function renderFilterbar(keys){
+  const fb = document.getElementById('filterbar');
+  fb.innerHTML = `<span class="flabel">Filtros</span>` + keys.map(k=>{
+    const f = FILTER_DEFS[k];
+    return `<div class="slicer" data-key="${k}">
+      <div class="slicer-btn" onclick="toggleSlicer(this)"><span><span class="k">${f.label}:</span> <span class="v">${f.sel}</span></span><span style="color:var(--muted);font-size:9px;">▾</span></div>
+      <div class="slicer-drop">${f.options.map(o=>`<div class="slicer-opt ${o===f.sel?'sel':''}" onclick="pickOption(event,'${k}','${o}')"><input type="checkbox" ${o===f.sel?'checked':''}/> ${o}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+function toggleSlicer(btn){
+  const s = btn.parentElement; const wasOpen = s.classList.contains('open');
+  document.querySelectorAll('.slicer.open').forEach(x=>x.classList.remove('open'));
+  if(!wasOpen) s.classList.add('open');
+}
+function pickOption(ev, key, val){
+  ev.stopPropagation(); FILTER_DEFS[key].sel = val;
+  const pg = PAGES.find(p=>p.id===document.querySelector('.nav-item.active').dataset.id);
+  renderFilterbar(pg.filters);
+}
+document.addEventListener('click', (e)=>{ if(!e.target.closest('.slicer')) document.querySelectorAll('.slicer.open').forEach(x=>x.classList.remove('open')); });
+
+/* ======= helpers ======= */
+function viz(title, bodyHtml, opts){ opts=opts||{};
+  return `<div class="viz" style="${opts.span?`grid-column:span ${opts.span};`:''}">
+    <div class="viz-head"><span class="t">${title}</span><span class="icons">⛶ ⋯</span></div>
+    <div class="viz-body">${bodyHtml}</div></div>`;
+}
+function kpiCard(label, val, deltas, sem){
+  return `<div class="viz"><div class="viz-body card-kpi">
+    <div style="display:flex;justify-content:space-between;"><span class="label">${label}</span><span class="pill ${sem}"></span></div>
+    <div class="val">${val}</div>
+    ${deltas.map(d=>`<div class="delta"><span>${d[0]}</span><b class="${d[2]||''}">${d[1]}</b></div>`).join('')}
+  </div></div>`;
+}
+function kpi2(label, val, sub){ return `<div class="viz"><div class="viz-body kpi2"><div class="label">${label}</div><div class="val">${val}</div><div class="sub">${sub}</div></div></div>`; }
+function barListViz(title, rows, maxOverride){
+  const max = maxOverride || Math.max(...rows.map(r=>r.v));
+  return viz(title, `<div class="barlist">${rows.map(r=>`<div class="row"><span>${r.n}</span><div class="barbg"><div class="barfill" style="width:${(r.v/max*100).toFixed(0)}%;${r.color?`background:${r.color}`:''}"></div></div><span class="barval">${r.vt}</span></div>`).join('')}</div>`);
+}
+function tableViz(title, headers, rows, opts){
+  return viz(title, `<table><tr>${headers.map(h=>`<th class="${h.num?'num':''}">${h.t}</th>`).join('')}</tr>
+    ${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${headers[i].num?'num':''}">${c}</td>`).join('')}</tr>`).join('')}</table>`, opts);
+}
+function listBlock(title, items){
+  return viz(title, items.map(it=>`<div style="padding:7px 0;border-bottom:1px solid #F0EFED;display:flex;gap:8px;">
+    <div style="width:3px;background:${it.c};border-radius:2px;flex-shrink:0;"></div>
+    <div><div style="font-size:11.5px;font-weight:600;">${it.t}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${it.d}</div></div></div>`).join(''));
+}
+function iseCard(id, score, status, statusColor, comps, formula){
+  return `<div class="viz"><div class="viz-body">
+    <div class="ise-card">
+      <div><div class="ise-num" style="color:${statusColor}">${score}</div><div style="font-size:9px;color:var(--muted);">/100</div><div class="ise-status" style="color:${statusColor}">${status}</div></div>
+      <div class="ise-comp">${comps.map(c=>`<div class="row"><span>${c[0]} (${c[1]}%)</span><div class="barbg"><div class="barfill" style="background:${statusColor}" ></div></div><span></span></div>`).join('')}
+        <button class="link-btn" onclick="document.getElementById('${id}').classList.toggle('open')">¿Cómo se calcula? ▾</button>
+        <div class="ise-explain" id="${id}">${formula}</div>
+      </div>
+    </div></div></div>`;
+}
+let toggleState = {};
+function toggleViz(vizId, title, options, defaultOpt, dataByOpt){
+  toggleState[vizId] = toggleState[vizId] || defaultOpt;
+  return viz(title, `
+    <div class="toggle-row" id="tr-${vizId}">
+      ${options.map(o=>`<button class="toggle-btn ${o===toggleState[vizId]?'active':''}" onclick="setToggle('${vizId}','${o}')">${o}</button>`).join('')}
+    </div>
+    <div id="tb-${vizId}">${renderToggleBody(dataByOpt[toggleState[vizId]])}</div>
+  `);
+}
+function renderToggleBody(rows){
+  const max = Math.max(...rows.map(r=>r.v));
+  return `<div class="barlist">${rows.map(r=>`<div class="row"><span>${r.n}</span><div class="barbg"><div class="barfill" style="width:${(r.v/max*100).toFixed(0)}%"></div></div><span class="barval">${r.vt}</span></div>`).join('')}</div>`;
+}
+window.setToggle = function(vizId, opt){ toggleState[vizId] = opt; renderPage(document.querySelector('.nav-item.active').dataset.id); };
+
+function semaphoreMatrix(rows){
+  const colors = {g:['var(--green-bg)','var(--green)'], a:['var(--amber-bg)','var(--amber)'], r:['var(--red-bg)','var(--red)']};
+  return viz('Matriz Comercial — mejor resultado / mayor riesgo', `<table>
+    <tr><th>Dimensión</th><th>Mejor resultado</th><th>Mayor riesgo</th></tr>
+    ${rows.map(r=>`<tr><td><b>${r[0]}</b></td>
+      <td><span class="matrix-cell" style="background:${colors.g[0]};color:${colors.g[1]}">${r[1]}</span></td>
+      <td><span class="matrix-cell" style="background:${colors.r[0]};color:${colors.r[1]}">${r[2]}</span></td></tr>`).join('')}
+  </table>`);
+}
+function geoNav(id){
+  return viz('Cobertura Comercial — Provincia → Cantón → Zona', `
+    <div class="crumbnav" id="crumb-${id}"><b onclick="geoReset('${id}')">Todas las provincias</b></div>
+    <div id="geobody-${id}">${geoTable([
+      {n:'Azuay', v:44, clientes:612, ticket:'$44.10', rent:'12.8%'},
+      {n:'Cañar', v:22, clientes:301, ticket:'$38.20', rent:'10.1%'},
+      {n:'Loja', v:19, clientes:264, ticket:'$35.90', rent:'6.4%'},
+      {n:'El Oro', v:15, clientes:198, ticket:'$41.00', rent:'11.2%'},
+    ], id, 'provincia')}</div>
+  `);
+}
+function geoTable(rows, id, level){
+  return `<table><tr><th>${level==='provincia'?'Provincia':level==='canton'?'Cantón':'Zona'}</th><th class="num">Ventas %</th><th class="num">Clientes Fact.</th><th class="num">Ticket Prom.</th><th class="num">Rentabilidad</th></tr>
+    ${rows.map(r=>`<tr style="cursor:pointer;" onclick="geoDrill('${id}','${level}','${r.n}')"><td><b style="color:var(--blue)">${r.n} ›</b></td><td class="num">${r.v}%</td><td class="num">${r.clientes}</td><td class="num">${r.ticket}</td><td class="num">${r.rent}</td></tr>`).join('')}
+  </table>`;
+}
+window.geoDrill = function(id, level, name){
+  const next = level==='provincia' ? [
+    {n:'Cuenca', v:70, clientes:420, ticket:'$45.00', rent:'13.1%'},
+    {n:'Gualaceo', v:18, clientes:110, ticket:'$40.50', rent:'11.0%'},
+    {n:'Girón', v:12, clientes:82, ticket:'$37.80', rent:'9.4%'},
+  ] : [
+    {n:'Zona 1', v:52, clientes:210, ticket:'$46.20', rent:'13.5%'},
+    {n:'Zona 2', v:48, clientes:210, ticket:'$43.90', rent:'12.6%'},
+  ];
+  const nextLevel = level==='provincia' ? 'canton' : 'zona';
+  document.getElementById('geobody-'+id).innerHTML = geoTable(next, id, nextLevel);
+  document.getElementById('crumb-'+id).innerHTML = `<b onclick="geoReset('${id}')">Todas las provincias</b> › ${name}`;
+};
+window.geoReset = function(id){
+  document.getElementById('crumb-'+id).innerHTML = `<b onclick="geoReset('${id}')">Todas las provincias</b>`;
+  document.getElementById('geobody-'+id).innerHTML = geoTable([
+    {n:'Azuay', v:44, clientes:612, ticket:'$44.10', rent:'12.8%'}, {n:'Cañar', v:22, clientes:301, ticket:'$38.20', rent:'10.1%'},
+    {n:'Loja', v:19, clientes:264, ticket:'$35.90', rent:'6.4%'}, {n:'El Oro', v:15, clientes:198, ticket:'$41.00', rent:'11.2%'},
+  ], id, 'provincia');
+};
+
+/* ======= pages ======= */
+function renderPage(id){
+  const c = document.getElementById('content');
+  const map = {nivel1:pageNivel1, comercial:pageComercial, financiero:pageFinanciero,
+    compras:pageCompras, inventarios:pageInventarios, clientes:pageClientes, logistica:pageLogistica, marketing:pageMarketing, riesgos:pageRiesgos,
+  };
+  if(map[id]) return c.innerHTML = map[id]();
+  return c.innerHTML = pageUnidad(id);
+}
+
+function pageNivel1(){
+  return `
+  <div class="updated">Página 1 de 13 · Corte YTD junio 2026 · Este dashboard solo muestra el estado de la empresa — no analiza ni profundiza</div>
+  <div class="section-label">Fila 1 — Estado general</div>
+  <div class="grid g-6">
+    ${kpiCard('Ventas', USD(2276387), [['vs Año Ant.','+1.7%','up']],'g')}
+    ${kpiCard('Cumplimiento', '104.2%', [['Presupuesto','','']],'g')}
+    ${kpiCard('Utilidad', '−'+USD(63707), [['vs Año Ant.','','down']],'r')}
+    ${kpiCard('Utilidad %', '-2.8%', [['sobre ventas','','']],'r')}
+    ${kpiCard('Rentabilidad', '13.6%', [['margen bruto','','']],'a')}
+    ${kpiCard('ISE General', '68 /100', [['Atención','','']],'a')}
+  </div>
+  <div class="section-label">Fila 2 — Resultado Corporativo por Unidad de Negocio</div>
+  ${tableViz('Ventas → Presupuesto → Año Anterior → Crecimiento → Rentabilidad → ISE', [{t:'Unidad'},{t:'Ventas',num:1},{t:'Presupuesto',num:1},{t:'Año Anterior',num:1},{t:'Crecimiento',num:1},{t:'Rentabilidad',num:1},{t:'ISE',num:1}], [
+    ['Mayorista Hogar', USD(1945618), USD(1801000), USD(1774727), '+9.6%', '12.5%', '<b>81 🟢</b>'],
+    ['Mayorista Intorno', '—', '—', '—', '—', 'en implementación', '<b>— </b>'],
+    ['Retail JUJ', USD(270187), USD(290000), USD(386000), '-30.0%', '20.0%', '<b>72 🟡</b>'],
+    ['Retail Intorno', USD(60581), USD(116000), USD(76793), '-21.1%', '-23.3%', '<b>29 🔴</b>'],
+    ['<b>Total compañía</b>', '<b>'+USD(2276387)+'</b>', USD(2207000), USD(2237520), '<b>+1.7%</b>', '-2.8%', '<b>68 🟡</b>'],
+  ])}
+  <div class="section-label">Fila 3 — ISE por Unidad</div>
+  <div class="grid g-2">
+    ${tableViz('ISE por Unidad de Negocio', [{t:'Unidad'},{t:'ISE',num:1},{t:'Estado'}], [
+      ['Mayorista Hogar','81','<span class="tag g">Bueno</span>'], ['Mayorista Intorno','—','<span class="tag a">Sin datos</span>'],
+      ['Retail JUJ','72','<span class="tag a">Atención</span>'], ['Retail Intorno','29','<span class="tag r">Crítico</span>'],
+    ])}
+    ${viz('ISE General', `<div style="text-align:center;padding:20px 0;"><div style="font-family:'IBM Plex Mono';font-size:52px;font-weight:700;color:var(--amber);">68</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">/100 · Atención</div></div>`)}
+  </div>
+  <div class="section-label">Fila 4 — Riesgos, oportunidades y alertas estratégicas</div>
+  <div class="grid g-3">
+    ${listBlock('Riesgos Estratégicos (Top 5)', [
+      {c:'var(--red)', t:'Rentabilidad inferior al objetivo', d:'Margen neto -2.8% vs. meta ≥5%'},
+      {c:'var(--red)', t:'Retail Intorno bajo punto de equilibrio', d:'2° año consecutivo de pérdida'},
+      {c:'var(--amber)', t:'Cartera crítica', d:'9.4% vencida a +360 días'},
+      {c:'var(--amber)', t:'Sobrestock en categorías seleccionadas', d:'Inventario -24.6% sin explicación'},
+      {c:'var(--amber)', t:'Caída de ventas en Retail JUJ', d:'-30% vs. año anterior'},
+    ])}
+    ${listBlock('Oportunidades', [
+      {c:'var(--gold)', t:'Marca con mayor crecimiento: Warenhaus', d:'+18% vs. año anterior'},
+      {c:'var(--gold)', t:'Categoría con mayor crecimiento: Ollas', d:'+14% vs. año anterior'},
+      {c:'var(--gold)', t:'Provincia con mayor crecimiento: Azuay', d:'+11% vs. año anterior'},
+      {c:'var(--gold)', t:'Cliente con mayor potencial: Segmento B recuperable', d:'85 clientes Pareto fugados 2025'},
+      {c:'var(--gold)', t:'Línea con mayor rentabilidad: UMCO Eléctricos', d:'Margen 9%, espacio de mejora'},
+    ])}
+    ${listBlock('Alertas Estratégicas', [
+      {c:'var(--red)', t:'Rentabilidad Retail Intorno bajo objetivo', d:'-23.3% neto'},
+      {c:'var(--amber)', t:'Inventario UMCO elevado', d:'36% del inventario total'},
+      {c:'var(--green)', t:'Mayorista Hogar sobre presupuesto', d:'108% de cumplimiento'},
+      {c:'var(--red)', t:'Cartera vencida superior a meta', d:'9.4% vs. meta 5%'},
+    ])}
+  </div>
+  <div class="section-label">Fila 5 — Mapa de la empresa</div>
+  ${tableViz('Estado por Centro de Inteligencia (clic para profundizar)', [{t:'Centro de Inteligencia'},{t:'Estado'}], [
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'comercial\')">Comercial ›</b>','<span class="tag g">Bueno</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'financiero\')">Financiero ›</b>','<span class="tag a">Atención</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'compras\')">Compras ›</b>','<span class="tag g">Bueno</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'inventarios\')">Inventario ›</b>','<span class="tag a">Atención</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'clientes\')">Clientes ›</b>','<span class="tag g">Bueno</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'logistica\')">Logística ›</b>','<span class="tag a">Atención</span>'],
+    ['<b style="color:var(--blue);cursor:pointer;" onclick="selectPage(\'marketing\')">Marketing ›</b>','<span class="tag a">Atención</span>'],
+  ])}
+  <div class="legend-note"><b>Filtros:</b> Año, Mes, Canal, Unidad de Negocio. Este dashboard responde únicamente "¿Cómo está la empresa?" — el análisis del porqué ocurre en cada Centro de Inteligencia.</div>`;
+}
+
+function pageComercial(){
+  return `
+  <div class="updated">Página 2 de 13 · Modelo: Fact_Ventas + Dim_UnidadNegocio + Dim_Producto (Marca→Categoría→Subcategoría→SKU) + Dim_Geografia (Provincia→Cantón→Zona) + Dim_Vendedor</div>
+  <div class="section-label">Fila 1 — Resultado Comercial</div>
+  <div class="grid g-6">
+    ${kpiCard('Ventas', USD(1945618), [['Año Ant.',USD(1774727),''],['Crecim.','+9.6%','up']],'g')}
+    ${kpiCard('Cumplimiento', '108%', [['Meta','95%','']],'g')}
+    ${kpiCard('Rentabilidad', '12.5%', [['Año Ant.','11.8%','up']],'g')}
+    ${kpiCard('Clientes Facturados', '1,842', [['Año Ant.','1,704','up']],'g')}
+    ${kpiCard('Ticket', '$47.30', [['Año Ant.','$45.80','up']],'g')}
+    ${iseCard('iseComercial', 87, 'Bueno', 'var(--green)', [['Ventas',30],['Rentabilidad',25],['Presupuesto',20],['Clientes Facturados',15],['Ticket Promedio',10]],
+      'El ISE Comercial pondera cinco componentes: qué tanto crecen las ventas, qué tan rentable es esa venta, qué tanto se cumple el presupuesto, cuántos clientes distintos compraron, y qué tan alto es el ticket promedio. Cada componente se normaliza de 0 a 100 según su distancia a la meta, y se combina con el peso indicado. El resultado clasifica en Excelente / Bueno / Atención / Crítico.')}
+  </div>
+  <div class="section-label">Backorder de Pedidos — pendientes de facturar</div>
+  <div class="grid g-4">
+    ${kpiCard('Pedidos Pendientes de Facturar', '58'+'<span class="ph">ejemplo</span>', [['Valor','$41,200'+'<span class="ph">ej.</span>','']],'a')}
+    ${kpiCard('Valor en Backorder', '$41,200'+'<span class="ph">ejemplo</span>', [['% s/venta mes','2.1%','']],'a')}
+    ${kpiCard('Antigüedad promedio', '6 días'+'<span class="ph">ejemplo</span>', [['Meta','3 días','down']],'a')}
+    ${kpiCard('Pedidos +15 días sin facturar', '9'+'<span class="ph">ejemplo</span>', [['requieren atención','','']],'r')}
+  </div>
+  <div class="section-label">Fila 2 — Resultado por Unidad de Negocio</div>
+  ${tableViz('¿Cuál unidad vende mejor?', [{t:'Unidad'},{t:'Ventas',num:1},{t:'Crecimiento',num:1},{t:'Rentabilidad',num:1},{t:'ISE',num:1}], [
+    ['Mayorista Hogar', USD(1945618), '+9.6%', '12.5%', '<b>81 🟢</b>'],
+    ['Mayorista Intorno', '—', '—', 'en implementación', '<b>—</b>'],
+    ['Retail JUJ', USD(270187), '-30.0%', '20.0%', '<b>72 🟡</b>'],
+    ['Retail Intorno', USD(60581), '-21.1%', '-23.3%', '<b>29 🔴</b>'],
+  ])}
+  <div class="section-label">Fila 3 — Participación del negocio</div>
+  ${toggleViz('participacion', 'Participación del negocio', ['Marca','Categoría','Subcategoría','SKU'], 'Marca', {
+    'Marca':[{n:'UMCO', v:34, vt:'34%'},{n:'Chaide', v:22, vt:'22%'},{n:'Warenhaus', v:14, vt:'14%'},{n:'Mesas y Sillas JUJ', v:12, vt:'12%'},{n:'Otras', v:18, vt:'18%'}],
+    'Categoría':[{n:'Ollas', v:38, vt:'38%'},{n:'Sartenes', v:29, vt:'29%'},{n:'Electrodom. menores', v:19, vt:'19%'},{n:'Otros', v:14, vt:'14%'}],
+    'Subcategoría':[{n:'Línea Brilliance', v:31, vt:'31%'},{n:'Línea Nara', v:27, vt:'27%'},{n:'Línea Meridiano', v:22, vt:'22%'},{n:'Otras', v:20, vt:'20%'}],
+    'SKU':[{n:'Set Brilliance 10pz', v:14, vt:'14%'},{n:'Olla Titán 24cm', v:11, vt:'11%'},{n:'Sartén Chef 28cm', v:9, vt:'9%'},{n:'Otros SKU', v:66, vt:'66%'}],
+  })}
+  <div class="section-label">Fila 4 — Top / Bottom dinámico</div>
+  ${toggleViz('topbottom', 'Top / Bottom por Ventas, Rentabilidad, Crecimiento o Margen (nivel: Marca)', ['Ventas','Rentabilidad','Crecimiento','Margen'], 'Ventas', {
+    'Ventas':[{n:'UMCO', v:661000, vt:'$661K'},{n:'Chaide', v:428000, vt:'$428K'},{n:'Warenhaus', v:272000, vt:'$272K'},{n:'Mesas y Sillas JUJ', v:233000, vt:'$233K'}],
+    'Rentabilidad':[{n:'UMCO Eléctricos', v:9, vt:'9%'},{n:'Mesas y Sillas JUJ', v:8, vt:'8%'},{n:'Chaide', v:1, vt:'1%'},{n:'Warenhaus', v:5, vt:'5%'}],
+    'Crecimiento':[{n:'Warenhaus', v:18, vt:'+18%'},{n:'UMCO', v:9, vt:'+9%'},{n:'Mesas y Sillas JUJ', v:4, vt:'+4%'},{n:'Chaide', v:-3, vt:'-3%'}],
+    'Margen':[{n:'UMCO General', v:34, vt:'34%'},{n:'Mesas y Sillas JUJ', v:28, vt:'28%'},{n:'Warenhaus', v:14, vt:'14%'},{n:'Chaide', v:2, vt:'2%'}],
+  })}
+  <div class="section-label">Fila 5 — Vendedores</div>
+  ${tableViz('Vendedores — resultados generales', [{t:'Vendedor'},{t:'Ventas',num:1},{t:'Presupuesto',num:1},{t:'Cumplimiento',num:1},{t:'Rentabilidad',num:1},{t:'Clientes Fact.',num:1},{t:'Ticket Prom.',num:1}], [
+    ['Juan Pérez', '$210,701', '$188,000', '<span class="tag g">112%</span>', '13.4%', '86', '$48.20'],
+    ['María Santos', '$557,146', '$605,000', '<span class="tag a">92%</span>', '11.9%', '120', '$45.10'],
+    ['Carlos López', '$569,435', '$712,000', '<span class="tag r">80%</span>', '9.2%', '104', '$41.60'],
+  ])}
+  <div class="section-label">Fila 6 — Cobertura</div>
+  ${geoNav('cobertura')}
+  <div class="section-label">Fila 7 — Top clientes</div>
+  ${tableViz('Top clientes (analizable por provincia, cantón, zona, vendedor, marca)', [{t:'Cliente'},{t:'Ventas',num:1},{t:'Rentabilidad',num:1},{t:'Ticket Prom.',num:1},{t:'Participación',num:1}], [
+    ['Comercial XYZ', '$42,900', '13.8%', '$95.40', '2.2%'], ['Distribuidora ABC', '$38,200', '11.2%', '$88.10', '1.9%'], ['Ferretería Del Valle', '$29,600', '9.7%', '$72.30', '1.5%'],
+  ])}
+  <div class="section-label">Fila 8 — Resumen ejecutivo</div>
+  <div class="grid g-2">
+    ${viz('Resumen Ejecutivo (generado automáticamente)', `<div style="font-size:11.3px;line-height:1.7;">
+      El período cerró con ventas de ${USD(1945618)} (+9.6% vs. año anterior) y 108% de cumplimiento de presupuesto.
+      UMCO lideró la venta por marca con 34% de participación. Juan Pérez fue el vendedor destacado con 112% de cumplimiento.
+      Azuay fue la provincia de mayor crecimiento. Existe oportunidad en la recuperación de clientes Pareto fugados en 2025.</div>`)}
+    ${semaphoreMatrix([
+      ['Marca','UMCO','Warenhaus'], ['Categoría','Ollas','Electrodomésticos menores'], ['Provincia','Azuay','Loja'],
+      ['Vendedor','Juan Pérez','Carlos López'], ['Cliente','Comercial XYZ','Cliente ABC'],
+    ])}
+  </div>
+  <div class="legend-note"><b>Navegación oficial:</b> Canal → Unidad de Negocio → Provincia → Cantón → Zona → Marca → Categoría → Subcategoría → SKU → Cliente. Sin detalle transaccional (pertenece al ERP). <b>Filtros:</b> Año, Mes, Canal, Unidad de Negocio, Provincia, Cantón, Zona, Vendedor.</div>`;
+}
+
+function pageFinanciero(){
+  return `
+  <div class="updated">Página 3 de 13 · Modelo: Fact_EstadoResultados + Fact_Tesorería + Dim_Fecha + Dim_UnidadNegocio</div>
+  <div class="section-label">Fila 1 — Resultado financiero</div>
+  <div class="grid g-6">
+    ${kpiCard('Ventas Netas', USD(2276387), [['Año Ant.',USD(2237520),''],['Crecim.','+1.7%','up'],['Cumpl.','104%','up']],'g')}
+    ${kpiCard('Utilidad Bruta', USD(309985), [['% s/ventas','13.6%','']],'a')}
+    ${kpiCard('EBITDA', USD(126460), [['% s/ventas','5.6%','']],'a')}
+    ${kpiCard('Utilidad Neta', '−'+USD(63707), [['% s/ventas','-2.8%','down']],'r')}
+    ${kpi2('Flujo de Caja Disponible', USD(58200)+'<span class="ph">ejemplo</span>', 'valor actual')}
+    ${kpi2('Capital de Trabajo', USD(412000)+'<span class="ph">ejemplo</span>', 'valor actual')}
+  </div>
+  <div class="section-label">Fila 2 — Rentabilidad</div>
+  <div class="grid g-6">
+    ${kpi2('Margen Bruto','13.6%','meta 15%')} ${kpi2('Margen Operacional','6.2%'+'<span class="ph">ejemplo</span>','meta 8%')}
+    ${kpi2('Margen Neto','-2.8%','meta 5%')} ${kpi2('ROE','-4.75%','auditoría 2025')}
+    ${kpi2('ROA','—'+'<span class="ph">ejemplo</span>','pendiente cálculo')} ${kpi2('Punto de Equilibrio (% alcanzado)','82%','vs. venta actual')}
+  </div>
+  <div class="section-label">Fila 3 — Liquidez y endeudamiento</div>
+  <div class="grid g-6">
+    ${kpi2('Liquidez Corriente','1.76x','')} ${kpi2('Prueba Ácida','—'+'<span class="ph">ejemplo</span>','')}
+    ${kpi2('Endeudamiento','~48%','')} ${kpi2('Cobertura de Intereses','—'+'<span class="ph">ejemplo</span>','veces')}
+    ${kpi2('CCE','17 días','-37% vs. AA')} ${kpi2('Capital de Trabajo',USD(412000)+'<span class="ph">ejemplo</span>','')}
+  </div>
+  <div class="section-label">Fila 4 — Eficiencia operativa</div>
+  <div class="grid g-6">
+    ${kpi2('Rotación Inventarios','5.59x','64 días')} ${kpi2('Rotación CxC','13x','28 días')}
+    ${kpi2('Rotación CxP','4.79x','75 días')} ${kpi2('CCE','17 días','')}
+    ${kpi2('Días Inventario','64 días','')} ${kpi2('Días Prom. Cobro / Pago','28 / 75 días','')}
+  </div>
+  <div class="section-label">Fila 5 — Control de gastos</div>
+  <div class="grid g-4">
+    ${kpi2('Gastos Administrativos','$23,900'+'<span class="ph">ejemplo</span>','vs. presup. y AA')} ${kpi2('Gastos Comerciales','$67,200'+'<span class="ph">ejemplo</span>','vs. presup. y AA')}
+    ${kpi2('Gastos Financieros','$4,300'+'<span class="ph">ejemplo</span>','vs. presup. y AA')} ${kpi2('Gastos Totales','$95,400'+'<span class="ph">ejemplo</span>','% sobre ventas')}
+  </div>
+  <div class="section-label">Fila 6 — Tendencias (12 meses)</div>
+  <div class="grid g-4">
+    ${barListViz('EBITDA', [{n:'Ene',v:15,vt:'15K'},{n:'Feb',v:18,vt:'18K'},{n:'Mar',v:12,vt:'12K'},{n:'Abr',v:21,vt:'21K'},{n:'May',v:19,vt:'19K'},{n:'Jun',v:22,vt:'22K'}])}
+    ${barListViz('Utilidad Neta', [{n:'Ene',v:-3,vt:'-3K',color:'var(--red)'},{n:'Feb',v:2,vt:'2K'},{n:'Mar',v:-5,vt:'-5K',color:'var(--red)'},{n:'Abr',v:4,vt:'4K'},{n:'May',v:1,vt:'1K'},{n:'Jun',v:-3,vt:'-3K',color:'var(--red)'}], 5)}
+    ${barListViz('Liquidez', [{n:'Ene',v:1.6,vt:'1.6x'},{n:'Feb',v:1.7,vt:'1.7x'},{n:'Mar',v:1.5,vt:'1.5x'},{n:'Abr',v:1.8,vt:'1.8x'},{n:'May',v:1.7,vt:'1.7x'},{n:'Jun',v:1.76,vt:'1.76x'}], 2)}
+    ${barListViz('Flujo de Caja', [{n:'Ene',v:12,vt:'12K'},{n:'Feb',v:9,vt:'9K'},{n:'Mar',v:15,vt:'15K'},{n:'Abr',v:8,vt:'8K'},{n:'May',v:14,vt:'14K'},{n:'Jun',v:58,vt:'58K'}])}
+  </div>
+  <div class="section-label">Fila 7 — Generación de valor, alertas y resumen</div>
+  <div class="grid g-3">
+    ${tableViz('Generación de Valor', [{t:'Indicador'},{t:'Valor',num:1}], [
+      ['Ventas Netas', USD(2276387)], ['Utilidad Bruta', USD(309985)], ['EBITDA', USD(126460)],
+      ['Utilidad Neta', '−'+USD(63707)], ['Flujo de Caja', USD(58200)+'<span class="ph">ejemplo</span>'], ['Capital de Trabajo', USD(412000)+'<span class="ph">ejemplo</span>'],
+    ])}
+    ${listBlock('Top 5 Alertas', [
+      {c:'var(--red)', t:'Gastos administrativos +12% vs. presupuesto', d:'ejemplo — validar con Administración'},
+      {c:'var(--amber)', t:'Liquidez disminuyó vs. mes anterior', d:''},
+      {c:'var(--red)', t:'EBITDA bajo presupuesto', d:''},
+      {c:'var(--green)', t:'Inventario mejoró su rotación', d:''},
+      {c:'var(--green)', t:'Margen bruto aumentó levemente', d:''},
+    ])}
+    ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">La empresa mantiene un crecimiento del 1.7% respecto al año anterior; sin embargo, la rentabilidad neta es negativa (-2.8%) debido al deterioro de márgenes y al incremento de gastos. La liquidez permanece dentro del rango esperado (1.76x), aunque el flujo de caja requiere seguimiento durante las próximas semanas.</div>`)}
+  </div>
+  <div class="legend-note"><b>Drill through:</b> Ventas → Comercial · Gastos → Contabilidad · Cartera → Centro de Clientes · Inventarios → Centro de Inventarios · Compras → Centro de Compras. <b>Filtros:</b> Año, Mes, Unidad de Negocio, Canal, Empresa.</div>`;
+}
+
+function pageCompras(){
+  return `
+  <div class="updated">Página 4 de 13 · Modelo: Fact_Compras + Dim_Proveedor + Dim_Producto</div>
+  <div class="section-label">Fila 1 — Resumen ejecutivo</div>
+  <div class="grid g-5">
+    ${kpiCard('Compras Totales', USD(1850000)+'<span class="ph">ejemplo</span>', [['Año Ant.',USD(1700000),''],['Crecim.','+8.8%','up'],['Cumpl.','96%','']],'g')}
+    ${kpiCard('Fill Rate Proveedor', '91%', [['Meta','95%','down']],'a')}
+    ${kpiCard('Lead Time Promedio', '18 días', [['Meta','15 días','down']],'a')}
+    ${kpiCard('Backorders', '34 SKU', [['Valor','$12,400','']],'a')}
+    ${kpiCard('Cumpl. Presupuesto Compras', '96%', [['acumulado','','']],'g')}
+  </div>
+  <div class="section-label">Fila 2 — Análisis de compras</div>
+  <div class="grid g-4">
+    ${barListViz('Compras por Marca', [{n:'UMCO',v:38,vt:'38%'},{n:'Chaide',v:24,vt:'24%'},{n:'Warenhaus',v:20,vt:'20%'},{n:'Otras',v:18,vt:'18%'}])}
+    ${barListViz('Compras por Proveedor', [{n:'UMCO',v:34,vt:'34%'},{n:'Chaide',v:26,vt:'26%'},{n:'Corpmunab',v:21,vt:'21%'},{n:'Otros',v:19,vt:'19%'}])}
+    ${barListViz('Compras por Categoría', [{n:'Ollas',v:31,vt:'31%'},{n:'Electrodom.',v:29,vt:'29%'},{n:'Sartenes',v:22,vt:'22%'},{n:'Otras',v:18,vt:'18%'}])}
+    ${barListViz('Compras por Subcategoría', [{n:'Línea Brilliance',v:28,vt:'28%'},{n:'Línea Nara',v:25,vt:'25%'},{n:'Línea Meridiano',v:24,vt:'24%'},{n:'Otras',v:23,vt:'23%'}])}
+  </div>
+  <div class="section-label">Fila 3 — Análisis de proveedores</div>
+  ${tableViz('Proveedores', [{t:'Proveedor'},{t:'Compras',num:1},{t:'Participación',num:1},{t:'Fill Rate',num:1},{t:'Lead Time',num:1},{t:'Backorders',num:1}], [
+    ['UMCO','$629,000','34%','93%','16 días','9'], ['Chaide','$481,000','26%','88%','21 días','14'], ['Corpmunab','$388,500','21%','95%','12 días','3'],
+  ])}
+  <div class="section-label">Fila 4 — Abastecimiento</div>
+  <div class="grid g-5">
+    ${kpi2('SKU riesgo de quiebre','27'+'<span class="ph">ejemplo</span>','')} ${kpi2('SKU pendientes de compra','41'+'<span class="ph">ejemplo</span>','')}
+    ${kpi2('SKU en tránsito','19'+'<span class="ph">ejemplo</span>','')} ${kpi2('SKU con sobrestock','34'+'<span class="ph">ejemplo</span>','')}
+    ${kpi2('Cobertura promedio','64 días','')}
+  </div>
+  <div class="section-label">Fila 5 — Presupuesto</div>
+  ${barListViz('Compras vs. Presupuesto por Marca', [{n:'UMCO',v:96,vt:'96%'},{n:'Chaide',v:88,vt:'88%'},{n:'Warenhaus',v:104,vt:'104%'},{n:'Otras',v:79,vt:'79%'}], 110)}
+  <div class="section-label">Fila 6-8 — Tendencias, alertas y resumen</div>
+  <div class="grid g-3">
+    ${barListViz('Tendencias — Compras Totales (12m)', [{n:'Ene',v:280,vt:'280K'},{n:'Feb',v:295,vt:'295K'},{n:'Mar',v:310,vt:'310K'},{n:'Abr',v:305,vt:'305K'},{n:'May',v:320,vt:'320K'},{n:'Jun',v:340,vt:'340K'}])}
+    ${listBlock('Alertas', [
+      {c:'var(--red)', t:'Fill Rate por debajo de la meta', d:'91% vs. meta 95%'},
+      {c:'var(--amber)', t:'Lead Time superior al promedio', d:'18 días vs. 15 días meta'},
+      {c:'var(--red)', t:'Incremento de Backorders', d:'34 SKU abiertos'},
+      {c:'var(--amber)', t:'Riesgo de quiebre de inventario', d:'27 SKU identificados'},
+    ])}
+    ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">Las compras del período alcanzaron $1.85M (96% del presupuesto). El fill rate promedio de proveedores es 91%, por debajo de la meta. Se recomienda dar seguimiento prioritario a los 34 backorders abiertos y a los 27 SKU en riesgo de quiebre.</div>`)}
+  </div>
+  <div class="legend-note"><b>Drill down:</b> Proveedor → Marca → Categoría → Subcategoría → SKU → Orden de Compra. <b>Filtros:</b> Año, Mes, Proveedor, Marca, Categoría, Subcategoría.</div>`;
+}
+
+function pageInventarios(){
+  return `
+  <div class="updated">Página 5 de 13 · Modelo: Fact_Inventario + Dim_Producto + Dim_Fecha</div>
+  <div class="section-label">Fila 1 — KPIs ejecutivos</div>
+  <div class="grid g-6">
+    ${kpiCard('Valor Total del Inventario', USD(631000)+'<span class="ph">ejemplo</span>', [['Año Ant.',USD(836000)+'<span class="ph">ej.</span>',''],['Variación','-24.6%','down']],'a')}
+    ${kpiCard('Rotación de Inventario', '5.59x', [['Días','64 días',''],['Año Ant.','4.9x','up']],'g')}
+    ${kpiCard('Cobertura de Inventario', '64 días', [['Meta','60 días','down']],'a')}
+    ${kpiCard('Variación del Inventario', '-24.6%', [['vs. Año Ant.','','']],'a')}
+    ${kpiCard('SKU Activos', '1,240'+'<span class="ph">ejemplo</span>', [['con existencia','','']],'g')}
+    ${kpiCard('Inventario Obsoleto', '$48,200'+'<span class="ph">ejemplo</span>', [['% del total','7.6%','down']],'r')}
+  </div>
+  <div class="section-label">Fila 2 — Composición del inventario</div>
+  <div class="grid g-4">
+    ${barListViz('Inventario por Marca', [{n:'UMCO',v:36,vt:'36%'},{n:'Chaide',v:25,vt:'25%'},{n:'Warenhaus',v:21,vt:'21%'},{n:'Otras',v:18,vt:'18%'}])}
+    ${barListViz('Inventario por Proveedor', [{n:'UMCO',v:33,vt:'33%'},{n:'Chaide',v:27,vt:'27%'},{n:'Corpmunab',v:22,vt:'22%'},{n:'Otros',v:18,vt:'18%'}])}
+    ${barListViz('Inventario por Categoría', [{n:'Ollas',v:34,vt:'34%'},{n:'Electrodom.',v:28,vt:'28%'},{n:'Sartenes',v:20,vt:'20%'},{n:'Otras',v:18,vt:'18%'}])}
+    ${barListViz('Inventario por Subcategoría', [{n:'Línea Brilliance',v:29,vt:'29%'},{n:'Línea Nara',v:26,vt:'26%'},{n:'Línea Meridiano',v:24,vt:'24%'},{n:'Otras',v:21,vt:'21%'}])}
+  </div>
+  <div class="section-label">Fila 3 — Análisis de rotación</div>
+  <div class="grid g-2">
+    ${tableViz('Top 5 SKU mayor rotación', [{t:'SKU'},{t:'Stock',num:1},{t:'Ventas',num:1},{t:'Rotación',num:1}], [
+      ['Set Brilliance 10pz','120','$18,400','9.2x'], ['Olla Titán 24cm','95','$15,900','8.1x'], ['Sartén Chef 28cm','80','$12,100','7.4x'],
+    ])}
+    ${tableViz('Bottom 5 SKU menor rotación', [{t:'SKU'},{t:'Stock',num:1},{t:'Ventas',num:1},{t:'Rotación',num:1}], [
+      ['<span style="color:var(--red)">SKU-4471</span>','340','$210','0.2x'], ['<span style="color:var(--red)">SKU-2209</span>','290','$180','0.2x'],
+    ])}
+  </div>
+  <div class="section-label">Fila 4 — Alertas de inventario (prioridades)</div>
+  ${tableViz('SKU que requieren acción', [{t:'Estado'},{t:'SKU'},{t:'Días sin movimiento',num:1},{t:'Valor',num:1}], [
+    ['<span class="tag r">Sin movimiento +180d</span>','SKU-4471','210','$4,100'], ['<span class="tag a">Sobrestock</span>','SKU-3390','—','$8,900'],
+    ['<span class="tag r">Riesgo de quiebre</span>','Set Brilliance 10pz','—','—'], ['<span class="tag a">Agotado</span>','SKU-1187','—','$0'],
+  ])}
+  <div class="section-label">Fila 5 — Capital inmovilizado por baja rotación</div>
+  <div class="grid g-4">
+    ${kpi2('Valor total inmovilizado', '$48,200'+'<span class="ph">ejemplo</span>', '7.6% del inventario total')}
+    ${kpi2('% del inventario total', '7.6%', '')}
+    ${kpi2('Marca con más capital inmovilizado', 'Chaide'+'<span class="ph">ejemplo</span>', '')}
+    ${kpi2('Categoría con más capital inmovilizado', 'Electrodomésticos menores'+'<span class="ph">ejemplo</span>', '')}
+  </div>
+  <div class="section-label">Fila 6-7 — Tendencias y resumen</div>
+  <div class="grid g-2">
+    ${barListViz('Tendencia — Valor del Inventario (12m)', [{n:'Ene',v:820,vt:'820K'},{n:'Feb',v:800,vt:'800K'},{n:'Mar',v:780,vt:'780K'},{n:'Abr',v:720,vt:'720K'},{n:'May',v:680,vt:'680K'},{n:'Jun',v:631,vt:'631K'}])}
+    ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">El inventario presenta una disminución del 24.6% respecto al año anterior. La rotación mejoró a 5.59 veces; sin embargo, existen SKU sin movimiento superior a 180 días y $48,200 de capital inmovilizado por baja rotación, concentrado principalmente en Chaide.</div>`)}
+  </div>
+  <div class="legend-note"><b>Drill down:</b> Marca → Categoría → Subcategoría → SKU → Movimiento del SKU. <b>Filtros:</b> Año, Mes, Marca, Proveedor, Categoría, Subcategoría, Bodega, Estado del SKU.</div>`;
+}
+
+function pageClientes(){
+  return `
+  <div class="updated">Página 6 de 13 · Modelo: Fact_Ventas + Fact_Cartera + Dim_Cliente + Dim_Vendedor + Dim_Geografia</div>
+  <div class="section-label">Fila 1 — Resumen ejecutivo</div>
+  <div class="grid g-6">
+    ${kpiCard('Clientes Facturados', '1,842', [['Año Ant.','1,704',''],['Crecim.','+8.1%','up']],'g')}
+    ${kpiCard('Clientes Activos (90d)', '1,780'+'<span class="ph">ejemplo</span>', [['Año Ant.','1,650','up']],'g')}
+    ${kpiCard('Clientes Nuevos', '105', [['Meta','100','up']],'g')}
+    ${kpiCard('Clientes Perdidos', '62', [['Año Ant.','85','up']],'a')}
+    ${kpiCard('Ticket Promedio', '$47.30', [['Año Ant.','$45.80','up']],'g')}
+    ${kpi2('Frecuencia de Compra', '1.6x/mes'+'<span class="ph">ejemplo</span>', 'promedio por cliente')}
+  </div>
+  <div class="section-label">Fila 2 — Top clientes (dinámico)</div>
+  ${toggleViz('topclientes', 'Top clientes por Ventas, Rentabilidad, Crecimiento o Ticket Promedio', ['Ventas','Rentabilidad','Crecimiento','Ticket Promedio'], 'Ventas', {
+    'Ventas':[{n:'Comercial XYZ',v:42900,vt:'$42.9K'},{n:'Distribuidora ABC',v:38200,vt:'$38.2K'},{n:'Ferretería Del Valle',v:29600,vt:'$29.6K'}],
+    'Rentabilidad':[{n:'Comercial XYZ',v:13.8,vt:'13.8%'},{n:'Ferretería Del Valle',v:9.7,vt:'9.7%'},{n:'Distribuidora ABC',v:11.2,vt:'11.2%'}],
+    'Crecimiento':[{n:'Ferretería Del Valle',v:22,vt:'+22%'},{n:'Comercial XYZ',v:9,vt:'+9%'},{n:'Distribuidora ABC',v:4,vt:'+4%'}],
+    'Ticket Promedio':[{n:'Comercial XYZ',v:95.4,vt:'$95.40'},{n:'Distribuidora ABC',v:88.1,vt:'$88.10'},{n:'Ferretería Del Valle',v:72.3,vt:'$72.30'}],
+  })}
+  <div class="section-label">Fila 3 — Análisis geográfico</div>
+  ${geoNav('clientesgeo')}
+  <div class="section-label">Fila 4-5 — Clientes por vendedor y Pareto</div>
+  <div class="grid g-2">
+    ${tableViz('Clientes por vendedor', [{t:'Vendedor'},{t:'Asignados',num:1},{t:'Facturados',num:1},{t:'Nuevos',num:1},{t:'Perdidos',num:1},{t:'Ticket Prom.',num:1}], [
+      ['Juan Pérez','92','86','12','4','$48.20'], ['María Santos','130','120','8','9','$45.10'], ['Carlos López','118','104','6','11','$41.60'],
+    ])}
+    ${barListViz('Pareto de clientes — Top 20 por ventas', [{n:'Top 5 (A)',v:44,vt:'44%'},{n:'Siguiente 15 (B)',v:30,vt:'30%'},{n:'Resto (C)',v:26,vt:'26%'}])}
+  </div>
+  <div class="section-label">Fila 6 — Comportamiento de compra y clientes por marca</div>
+  <div class="grid g-2">
+    ${tableViz('Ranking de clientes (completo, muestra)', [{t:'Cliente'},{t:'Ventas',num:1},{t:'Frecuencia',num:1},{t:'Última compra'}], [
+      ['Comercial XYZ','$42,900','2.1x/mes','03/06/2026'], ['Distribuidora ABC','$38,200','1.8x/mes','01/06/2026'],
+    ])}
+    ${tableViz('Clientes por marca', [{t:'Marca'},{t:'N.º clientes',num:1},{t:'Ventas',num:1},{t:'Ticket Prom.',num:1}], [
+      ['UMCO','612','$661,000','$44.90'], ['Chaide','480','$428,000','$41.20'],
+    ])}
+  </div>
+  <div class="section-label">Fila 7 — Alertas y clientes con potencial</div>
+  <div class="grid g-2">
+    ${listBlock('Alertas', [
+      {c:'var(--red)', t:'Clientes que dejaron de comprar', d:'62 clientes en el período'},
+      {c:'var(--amber)', t:'Clientes con caída superior al 20%', d:''},
+      {c:'var(--green)', t:'Clientes con alto crecimiento', d:''},
+      {c:'var(--red)', t:'Clientes con margen negativo', d:'18 clientes identificados'},
+    ])}
+    ${tableViz('Clientes con potencial', [{t:'Cliente'},{t:'Situación'}], [
+      ['Cliente Recuperable A','Compra poco, alto potencial'], ['Cliente Recuperable B','Redujo compras 30%'],
+    ])}
+  </div>
+  <div class="section-label">Fila 8 — Resumen ejecutivo</div>
+  ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">Durante el período se facturaron 1,842 clientes, con un crecimiento del 8.1% respecto al año anterior. Se incorporaron 105 nuevos clientes, mientras que 62 dejaron de comprar. Azuay mantiene el mayor crecimiento y los clientes Pareto (Top 20) representan el 74% de las ventas.</div>`)}
+  <div class="legend-note"><b>Drill down:</b> Cliente → Marcas compradas → Categorías → Subcategorías → SKU. <b>Filtros:</b> Año, Mes, Unidad de Negocio, Zona, Provincia, Ciudad, Cantón, Vendedor, Marca, Categoría, Subcategoría, Segmento.</div>`;
+}
+
+function pageLogistica(){
+  return `
+  <div class="updated">Página 7 de 13 · Modelo: Fact_Despachos + Dim_Bodega + Dim_Geografia</div>
+  <div class="section-label">Fila 1 — Resumen ejecutivo</div>
+  <div class="grid g-6">
+    ${kpiCard('Pedidos Despachados', '3,485'+'<span class="ph">ejemplo</span>', [['Año Ant.','3,180','up']],'g')}
+    ${kpiCard('Pedidos Pendientes', '42'+'<span class="ph">ejemplo</span>', [['Valor','$18,200'+'<span class="ph">ej.</span>','']],'a')}
+    ${kpiCard('Tiempo Prom. Despacho', '1.4 días', [['Meta','1.0 día','down']],'a')}
+    ${kpiCard('Costo Logístico', '3.8%', [['sobre ventas','','']],'a')}
+    ${kpiCard('Exactitud de Inventario', '96%', [['Meta','97%','down']],'a')}
+    ${kpiCard('OTIF', '89%', [['Meta','95%','down']],'a')}
+  </div>
+  <div class="section-label">Fila 2 — Gestión de despachos</div>
+  <div class="grid g-4">
+    ${barListViz('Despachos por Mes', [{n:'Abr',v:560,vt:'560'},{n:'May',v:590,vt:'590'},{n:'Jun',v:610,vt:'610'}])}
+    ${barListViz('Despachos por Unidad de Negocio', [{n:'Mayorista Hogar',v:62,vt:'62%'},{n:'Retail JUJ',v:24,vt:'24%'},{n:'Retail Intorno',v:14,vt:'14%'}])}
+    ${barListViz('Despachos por Provincia', [{n:'Azuay',v:48,vt:'48%'},{n:'Cañar',v:22,vt:'22%'},{n:'Loja',v:18,vt:'18%'},{n:'El Oro',v:12,vt:'12%'}])}
+    ${barListViz('Despachos por Zona', [{n:'Zona 1',v:55,vt:'55%'},{n:'Zona 2',v:45,vt:'45%'}])}
+  </div>
+  <div class="section-label">Fila 3-4 — Tiempos logísticos y operación de bodega</div>
+  <div class="grid g-2">
+    ${kpi2('Tiempo prom. preparación', '0.6 días'+'<span class="ph">ejemplo</span>', '')}
+    ${tableViz('Operación de bodega', [{t:'Estado'},{t:'N.º pedidos',num:1}], [
+      ['Preparados','610'],['Pendientes','42'],['Retrasados','9'],['En proceso','31'],['Completados','601'],
+    ])}
+  </div>
+  <div class="section-label">Fila 5 — Productividad</div>
+  <div class="grid g-4">
+    ${kpi2('Pedidos por día', '20.3'+'<span class="ph">ejemplo</span>', '')} ${kpi2('Líneas despachadas', '1,840'+'<span class="ph">ejemplo</span>', 'por mes')}
+    ${kpi2('SKU despachados', '640'+'<span class="ph">ejemplo</span>', 'por mes')} ${kpi2('Valor despachado', USD(1945618), 'del período')}
+  </div>
+  <div class="section-label">Fila 6-8 — Alertas, tendencias y resumen</div>
+  <div class="grid g-2">
+    ${listBlock('Alertas Logísticas', [
+      {c:'var(--red)', t:'Pedidos retrasados', d:'9 pedidos'},
+      {c:'var(--amber)', t:'Baja exactitud de inventario', d:'96% vs. meta 97%'},
+      {c:'var(--red)', t:'Incremento del tiempo de despacho', d:'1.4 días vs. meta 1.0'},
+    ])}
+    ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">Durante el período se despacharon 3,485 pedidos con un tiempo promedio de 1.4 días. El costo logístico representa el 3.8% de las ventas y la exactitud de inventario alcanzó el 96%. Existen 42 pedidos pendientes de despacho que requieren atención.</div>`)}
+  </div>
+  <div class="legend-note" style="margin-top:12px;background:#fff;"><i>Nota de diseño: se eliminó el bloque "Acciones Prioritarias" de este y todos los Centros — Power BI informa, no administra tareas. La gestión de esas acciones pertenece a un ERP o herramienta de gestión de tareas.</i></div>
+  <div class="legend-note"><b>Drill down:</b> Bodega → Pedido → Cliente → Factura → SKU. <b>Filtros:</b> Año, Mes, Bodega, Unidad de Negocio, Provincia, Zona, Estado del Pedido, Transportista.</div>`;
+}
+
+function pageMarketing(){
+  return `
+  <div class="updated">Página 8 de 13 · Modelo: Fact_Campañas + Dim_Canal + Dim_Producto</div>
+  <div class="section-label">Fila 1 — KPIs ejecutivos</div>
+  <div class="grid g-6">
+    ${kpiCard('Inversión en Marketing', '$18,400'+'<span class="ph">ejemplo</span>', [['Cumpl.','92%','']],'g')}
+    ${kpiCard('Campañas Ejecutadas', '8'+'<span class="ph">ejemplo</span>', [['Planificadas','9','']],'a')}
+    ${kpiCard('Ventas Generadas por Campaña', '$142,000'+'<span class="ph">ejemplo</span>', [['Participación','7.3%','']],'g')}
+    ${kpiCard('ROI por Campaña', '18%'+'<span class="ph">ejemplo</span>', [['promedio','','']],'g')}
+    ${kpiCard('Clientes Captados', '105', [['Meta','100','up']],'g')}
+    ${kpiCard('Recompra Retail', '31%'+'<span class="ph">ejemplo</span>', [['Año Ant.','26%','up']],'g')}
+  </div>
+  <div class="section-label">Fila 2 — Desempeño de campañas</div>
+  ${tableViz('Ranking de campañas', [{t:'Campaña'},{t:'Inversión',num:1},{t:'Ventas',num:1},{t:'ROI',num:1},{t:'Clientes captados',num:1}], [
+    ['Verano 2026','$4,200','$28,900','+588%','32'], ['Día de la Madre','$3,100','$19,400','+526%','24'], ['Retail Intorno Impulso','$2,800','$1,900','-32%','5'],
+  ])}
+  <div class="section-label">Fila 3-4 — Impacto por marca y por canal</div>
+  <div class="grid g-2">
+    ${tableViz('Impacto por marca', [{t:'Marca'},{t:'Inversión',num:1},{t:'Ventas',num:1},{t:'Crecim.',num:1}], [
+      ['UMCO','$7,200','$61,000','+9%'], ['Chaide','$4,800','$38,000','-3%'],
+    ])}
+    ${tableViz('Impacto por canal', [{t:'Unidad de Negocio'},{t:'Inversión',num:1},{t:'Ventas',num:1},{t:'ROI',num:1}], [
+      ['Mayorista Hogar','$9,000','$88,000','+878%'], ['Retail JUJ','$6,200','$41,000','+561%'], ['Retail Intorno','$3,200','$13,000','+306%'],
+    ])}
+  </div>
+  <div class="section-label">Fila 5-6 — Clientes y tendencias</div>
+  <div class="grid g-2">
+    ${kpi2('Clientes nuevos por campaña', '61'+'<span class="ph">ejemplo</span>', 'de 105 totales')}
+    ${barListViz('Evolución de Recompra Retail (12m)', [{n:'Ene',v:24,vt:'24%'},{n:'Feb',v:26,vt:'26%'},{n:'Mar',v:27,vt:'27%'},{n:'Abr',v:29,vt:'29%'},{n:'May',v:30,vt:'30%'},{n:'Jun',v:31,vt:'31%'}], 35)}
+  </div>
+  <div class="section-label">Fila 7-8 — Alertas y resumen</div>
+  <div class="grid g-2">
+    ${listBlock('Alertas', [
+      {c:'var(--red)', t:'Campaña con ROI negativo', d:'Retail Intorno Impulso: -32%'},
+      {c:'var(--amber)', t:'Marca sin campañas activas', d:'Warenhaus, Mesas y Sillas JUJ'},
+      {c:'var(--green)', t:'Incremento de recompra en Retail', d:'31% vs. 26% año anterior'},
+    ])}
+    ${viz('Resumen Ejecutivo', `<div style="font-size:11.3px;line-height:1.7;">Durante el período se ejecutaron 8 campañas con una inversión del 92% del presupuesto. Las campañas dirigidas a UMCO generaron el mayor crecimiento en ventas y la recompra en Retail aumentó al 31%. Se recomienda reforzar las campañas de Retail Intorno, cuyo ROI se encuentra por debajo del objetivo.</div>`)}
+  </div>
+  <div class="legend-note"><b>Drill down:</b> Campaña → Marca → Categoría → Canal → Clientes → Ventas. <b>Filtros:</b> Año, Mes, Campaña, Canal, Marca, Categoría, Unidad de Negocio.</div>`;
+}
+
+function pageRiesgos(){
+  return `
+  <div class="updated">Centro en pausa para KPIs detallados — se habilita únicamente el bloque de Análisis con IA solicitado</div>
+  <div class="viz ai-box">
+    <div class="viz-head"><span class="t">Análisis de Riesgos y Oportunidades</span><span class="ai-badge">✨ Generado por IA</span></div>
+    <div class="viz-body">
+      <div class="ai-narrative">
+        El análisis automatizado identifica que el <b>riesgo prioritario</b> es la rentabilidad negativa sostenida en <b>Retail Intorno</b> (-23.3% neto),
+        con ventas por debajo del punto de equilibrio por segundo período consecutivo. En paralelo, se detecta una <b>oportunidad de alto impacto</b>
+        en la recuperación de clientes Pareto fugados (85 clientes en 2025), cuyo valor histórico estimado supera los $180,000 en ventas anuales.
+        La correlación entre el crecimiento de <b>Warenhaus</b> (+18%) y el margen general por debajo de meta sugiere una oportunidad de mejora en el
+        mix de producto hacia líneas de mayor rentabilidad. Se recomienda priorizar la revisión de la unidad Retail Intorno y activar un plan de
+        recuperación de cartera Pareto en el corto plazo.
+      </div>
+      <div class="grid g-2" style="margin-top:14px;">
+        <div class="ai-pick"><div class="k">Riesgo priorizado por IA</div><div class="v" style="color:var(--red)">Retail Intorno — rentabilidad negativa</div><div class="d">Severidad crítica · confianza 92% · basado en Fact_EstadoResultados + Fact_Ventas</div></div>
+        <div class="ai-pick"><div class="k">Oportunidad priorizada por IA</div><div class="v" style="color:var(--gold)">Recuperación de clientes Pareto fugados</div><div class="d">Impacto estimado $180K/año · confianza 78% · basado en Fact_Ventas + Dim_Cliente</div></div>
+      </div>
+      <div class="ai-conf">Análisis generado automáticamente a partir de los datos de todos los Centros de Inteligencia (Comercial, Financiero, Inventarios, Clientes). Debe ser validado por el equipo antes de tomar decisiones. <button class="pbi-btn" style="margin-left:8px;">↻ Actualizar análisis</button></div>
+    </div>
+  </div>
+  <div class="legend-note"><b>Filtros:</b> ver panel superior — el análisis de IA puede recalcularse por vendedor, marca, zona, unidad de negocio, etc. El resto de la estructura de este Centro (KPIs, tablas, tendencias) permanece en pausa hasta su definición funcional detallada.</div>`;
+}
+
+function pageGenerico(title, kpis){
+  return `<div class="updated">Modelo pendiente de definición detallada (fuera de esta ronda de revisión)</div>
+  <div class="kpi-grid grid g-4">${kpis.map(k=>kpi2(k[0], k[1]+(k[1]==='—'?'<span class="ph">ejemplo</span>':''), k[2])).join('')}</div>
+  <div class="legend-note">Filtros y estructura detallada de ${title} se definirán en una próxima ronda, siguiendo el mismo estándar aplicado a Comercial, Financiero, Compras, Inventarios, Clientes, Logística y Marketing.</div>`;
+}
+
+const UNIT_DATA = {
+  mayoristahogar: {t:'Mayorista Hogar', ventas:'$1.99M', cumpl:'108%', marg:'12.5%', pe:'$401,691', estado:'g', nota:'Canal priorizado — sobre punto de equilibrio (+24%)'},
+  mayoristaintorno: {t:'Mayorista Intorno', ventas:'En implementación', cumpl:'—', marg:'—', pe:'—', estado:'a', nota:'Sin datos operativos aún.'},
+  retailjuj: {t:'Retail JUJ', ventas:'$270K', cumpl:'93%', marg:'20.0%', pe:'$35,509', estado:'a', nota:'Ticket promedio $34.80 · margen sano'},
+  retailintorno: {t:'Retail Intorno', ventas:'$61K', cumpl:'52%', marg:'21.4% bruto / -23.3% neto', pe:'$23,440', estado:'r', nota:'Bajo punto de equilibrio: déficit +132%. Decisión pendiente del Directorio.'},
+};
+function pageUnidad(id){
+  const u = UNIT_DATA[id];
+  return `<div class="updated">Modelo: Fact_Ventas filtrado por Dim_UnidadNegocio = "${u.t}"</div>
+  <div class="grid g-4">
+    ${kpi2('Ventas YTD', u.ventas, 'vs. presupuesto y año anterior')} ${kpi2('Cumplimiento', u.cumpl, 'presupuesto de la unidad')}
+    ${kpi2('Margen', u.marg, 'bruto / neto')} ${kpi2('Punto de equilibrio', u.pe, 'vs. venta promedio actual')}
+  </div>
+  <div class="legend-note"><span class="pill ${u.estado}"></span> &nbsp;${u.nota}</div>`;
+}
+
+selectPage('nivel1');
+</script>
+</body>
+</html>

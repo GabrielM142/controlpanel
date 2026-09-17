@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {demoRows,validateRows,summarize} from '../lib/model.mjs';import handler from '../api/index.mjs';
+test('validates reporting contract',()=>{assert.equal(validateRows(demoRows()).length,24);assert.throws(()=>validateRows([{period:'bad'}]));assert.throws(()=>validateRows([{...demoRows()[0],sales:NaN}]));});
+test('zero sales does not produce infinite margin',()=>{assert.equal(summarize([]).margin,0);assert.equal(summarize([{sales:100,cost:75,receivable:0,overdue:0,inventory:0,orders:1}]).margin,25);});
+function response(){return {headers:{},setHeader(k,v){this.headers[k]=v;},end(body){this.body=JSON.parse(body);}};}
+test('production fails closed without password',async()=>{process.env.APP_MODE='live';delete process.env.PANEL_PASSWORD;const res=response();await handler({url:'/api/state',method:'GET',headers:{}},res);assert.equal(res.statusCode,401);});
+test('demo is explicit and cannot enqueue',async()=>{process.env.APP_MODE='demo';const res=response();await handler({url:'/api/refresh',method:'POST',headers:{}},res);assert.equal(res.statusCode,409);const read=response();await handler({url:'/api/state',method:'GET',headers:{}},read);assert.equal(read.body.mode,'demo');assert.equal(read.body.snapshots[0].rows.length,24);});
