@@ -1,6 +1,6 @@
 import {timingSafeEqual} from 'node:crypto';
 
-// Trueque Factory intake endpoint. GET lists recent requests; POST persists a new one.
+// Nova Factory intake endpoint. GET lists recent requests; POST persists a new one.
 // Same auth model as api/index.mjs: allowed when APP_MODE=demo or on Basic auth match.
 
 function authorized(req){

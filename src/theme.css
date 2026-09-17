@@ -886,3 +886,10 @@ td .sla-mini+em{font-style:normal;font-size:10px;color:#5b6d85;font-weight:600}
 :root[data-theme=dark] .more-menu button.is-active>svg{color:#dcb260}
 
 @media print{.more-wrap{display:none!important}}
+
+/* === Iteration 7: Nova Business branding footer === */
+.nova-foot .nova-mark{display:grid;place-items:center;width:33px;height:33px;border-radius:9px;background:linear-gradient(135deg,#c8a865,#a5811f);color:#1a1408;border:1px solid #c8a86540;box-shadow:inset 0 1px 0 #ffffff30}
+.nova-foot strong{font-family:'Manrope Variable',sans-serif;font-size:11px;color:#e6d3aa;letter-spacing:.16em;font-weight:700}
+.nova-foot span{font-size:9px;color:#8fa1bb;letter-spacing:.02em;text-transform:uppercase;font-weight:500}
+:root[data-theme=dark] .nova-foot strong{color:#f0e2c4}
+:root[data-theme=dark] .nova-foot span{color:#a3b4cc}

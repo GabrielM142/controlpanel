@@ -14,7 +14,7 @@ const pageOptions=[
  {id:'inventarios',label:'Inventarios'},
  {id:'clientes',label:'Clientes'},
  {id:'tickets',label:'Tickets Vigentes'},
- {id:'trueque-list',label:'Trueque Labs · Solicitudes'},
+ {id:'trueque-list',label:'Nova Factory · Solicitudes'},
 ];
 
 function fmtDate(d?:string){if(!d)return '—';try{return new Date(d).toLocaleDateString('es-EC',{day:'2-digit',month:'short'});}catch{return d;}}

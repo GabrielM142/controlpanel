@@ -11,7 +11,7 @@ type NotesState={
 };
 
 const Ctx=createContext<NotesState|null>(null);
-const KEY='side.notes';
+const KEY='nova.notes';
 const AUTHOR='JUJ';
 
 const seed:Note[]=[

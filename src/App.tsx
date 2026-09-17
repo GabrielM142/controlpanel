@@ -27,15 +27,15 @@ const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
  {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
- {id:'trueque',group:'Trueque Labs',label:'Nueva Solicitud',question:'Chateá con Trueque IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Trueque Labs.',component:TruequeChat,icon:Wand2},
- {id:'trueque-list',group:'Trueque Labs',label:'Mis Solicitudes',question:'Historial de módulos solicitados a Trueque Labs con su estado actual.',component:TruequeList,icon:ListChecks},
+ {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Nova IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Nova Business.',component:TruequeChat,icon:Wand2},
+ {id:'trueque-list',group:'Factory',label:'Mis Solicitudes',question:'Historial de módulos solicitados a Nova Business con su estado actual.',component:TruequeList,icon:ListChecks},
 ];
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
 const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote};
 
-// Sidebar taxonomy. Soporte and Espacio Personal join the main groups; Trueque Labs is a dedicated bottom block.
+// Sidebar taxonomy. Soporte and Espacio Personal join the main groups; Factory is a dedicated bottom block.
 const groupOrder=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Espacio Personal'] as const;
 const subGroups:Record<string,{label:string;ids:string[]}[]>={
  'Centros de Inteligencia':[
@@ -63,15 +63,15 @@ function AppShell(){
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
- const [theme,setTheme]=useState<'light'|'dark'>(()=>ls.get('side.theme','light')==='dark'?'dark':'light');
+ const [theme,setTheme]=useState<'light'|'dark'>(()=>ls.get('nova.theme','light')==='dark'?'dark':'light');
  const [isFullscreen,setIsFullscreen]=useState(false);
- const [rulerOn,setRulerOn]=useState(()=>ls.get('side.ruler','off')==='on');
+ const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
  const [rulerY,setRulerY]=useState(0);
  const [aiOpen,setAiOpen]=useState(false);
  const [alertsOpen,setAlertsOpen]=useState(false);
  const [paletteOpen,setPaletteOpen]=useState(false);
  const [presentation,setPresentation]=useState(false);
- const [expanded,setExpanded]=useState<Set<string>>(()=>{try{const raw=localStorage.getItem('side.nav');if(raw)return new Set(JSON.parse(raw));}catch{}return new Set(groupOrder.map(g=>`g:${g}`));});
+ const [expanded,setExpanded]=useState<Set<string>>(()=>{try{const raw=localStorage.getItem('nova.nav');if(raw)return new Set(JSON.parse(raw));}catch{}return new Set(groupOrder.map(g=>`g:${g}`));});
  const drawer=useRef<HTMLDialogElement>(null);
 
  const isVirtual=virtualIds.has(pageId);
@@ -93,10 +93,10 @@ function AppShell(){
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
 
  useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);next.add(`g:${pageGroup}`);if(currentSub)next.add(`s:${pageGroup}::${currentSub}`);return next;});},[pageGroup,currentSub]);
- useEffect(()=>{ls.set('side.nav',JSON.stringify([...expanded]));},[expanded]);
+ useEffect(()=>{ls.set('nova.nav',JSON.stringify([...expanded]));},[expanded]);
 
- useEffect(()=>{document.documentElement.dataset.theme=theme;ls.set('side.theme',theme);},[theme]);
- useEffect(()=>{ls.set('side.ruler',rulerOn?'on':'off');},[rulerOn]);
+ useEffect(()=>{document.documentElement.dataset.theme=theme;ls.set('nova.theme',theme);},[theme]);
+ useEffect(()=>{ls.set('nova.ruler',rulerOn?'on':'off');},[rulerOn]);
  useEffect(()=>{if(!rulerOn)return;const move=(e:MouseEvent)=>setRulerY(e.clientY);window.addEventListener('mousemove',move);return()=>window.removeEventListener('mousemove',move);},[rulerOn]);
 
  useEffect(()=>{const onFs=()=>setIsFullscreen(!!document.fullscreenElement);document.addEventListener('fullscreenchange',onFs);return()=>document.removeEventListener('fullscreenchange',onFs);},[]);
@@ -124,7 +124,7 @@ function AppShell(){
  function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.65}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:p.id===pageId?<ChevronRight size={13}/>:null}</button>;}
 
  function Sidebar(){
-  const truequePages=virtualPages.filter(p=>p.group==='Trueque Labs');
+  const truequePages=virtualPages.filter(p=>p.group==='Factory');
   return <>
    <TenantSwitcher/>
    <div className="brand-rule"/>
@@ -151,9 +151,9 @@ function AppShell(){
     </div>;
    })}
    <div className="nav-trueque">
-    <div className="nav-trueque-head"><Sparkles size={12}/><span>Trueque Labs</span></div>
+    <div className="nav-trueque-head"><Sparkles size={12}/><span>Factory</span></div>
     {truequePages.map(p=><NavItem key={p.id} p={p}/>)}
-    <div className="nav-trueque-foot">Powered by <b>Trueque Labs</b> · factoría de módulos a medida</div>
+    <div className="nav-trueque-foot">Powered by <b>Nova Business</b> · factoría de módulos a medida</div>
    </div>
    </nav>
    <SidebarFoot/>
@@ -161,8 +161,11 @@ function AppShell(){
  }
 
  function SidebarFoot(){
-  const {active}=useTenants();
-  return <div className="sidebar-foot"><div className="client-monogram">{active.monogram}</div><div><strong>{active.name}</strong><span>{active.sector}</span></div><span className="foot-dot"/></div>;
+  return <div className="sidebar-foot nova-foot">
+   <div className="nova-mark" aria-hidden="true"><Sparkles size={14}/></div>
+   <div><strong>Nova Business</strong><span>Dashboard · Soporte · Factory</span></div>
+   <span className="foot-dot"/>
+  </div>;
  }
 
  return <NavigateContext.Provider value={navigate}>

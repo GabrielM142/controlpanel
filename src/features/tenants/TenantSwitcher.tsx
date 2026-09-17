@@ -20,7 +20,7 @@ export function TenantSwitcher(){
     <span className="tenant-info"><strong>{t.name}</strong><em>{t.subtitle}</em><small>{t.sector}</small></span>
     {t.id===active.id&&<Check size={13}/>}
    </button>)}
-   <div className="tenant-menu-foot">Los datos analizados corresponden al cliente seleccionado. Panel operado por <b>Trueque Labs</b>.</div>
+   <div className="tenant-menu-foot">Los datos analizados corresponden al cliente seleccionado. Panel operado por <b>Nova Business</b>.</div>
   </div>}
  </div>;
 }

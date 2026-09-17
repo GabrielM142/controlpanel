@@ -7,12 +7,12 @@ const STEPS:TourStep[]=[
  {selector:'.tenant-switch,.brand',title:'Cliente en análisis',body:'Este panel muestra la información del cliente que estás analizando. Podés cambiarlo desde el logo superior.',placement:'right'},
  {selector:'.nav-group-header',title:'Menú organizado',body:'Los grupos y subgrupos son plegables. Se auto-expanden con la vista activa y recuerdan tu preferencia.',placement:'right'},
  {selector:'.ai-bubble',title:'Copiloto de análisis',body:'Con esta burbuja abrís al copiloto IA. Puede interpretar la pantalla actual, responder consultas y trabajar sobre tus tareas y notas.',placement:'right'},
- {selector:'.tokens-wrap,.tokens-chip',title:'Tokens de gerencia',body:'Cada acción del copiloto consume tokens del plan. Renuevan cada mes según tu suscripción con Trueque Labs.',placement:'bottom'},
+ {selector:'.tokens-wrap,.tokens-chip',title:'Tokens de gerencia',body:'Cada acción del copiloto consume tokens del plan. Renuevan cada mes según tu suscripción con Nova Business.',placement:'bottom'},
  {selector:'.icon-button.bell',title:'Centro de alertas',body:'Cambios críticos entre vistas: cartera, stock, SLA. Click te lleva directo a la vista relacionada.',placement:'bottom'},
- {selector:'.nav-trueque',title:'Trueque Labs',body:'Podés pedir un módulo nuevo. La IA arma la solicitud paso a paso y nuestro equipo la cotiza.',placement:'right'},
+ {selector:'.nav-trueque',title:'Factory',body:'Pedí un módulo nuevo cuando lo necesites. Nova IA arma la solicitud paso a paso y el equipo Nova Business la cotiza.',placement:'right'},
 ];
 
-const KEY='side.tour.seen';
+const KEY='nova.tour.seen';
 
 function useForceOpen(){
  const [open,setOpen]=useState(false);

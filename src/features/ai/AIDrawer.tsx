@@ -56,7 +56,7 @@ const summaries:Record<string,string[]>={
   'Cola de soporte con 5 tickets activos, 2 en riesgo de SLA. Andrea M. está sobrecargada con 3 casos en paralelo.',
   'Recomendación: redistribuir un caso de Andrea a Bryan (menor carga) para asegurar el SLA de Distribuidora El Oro.',
  ],
- trueque:['Estás en Trueque Factory. Contame qué módulo necesitás y armo la solicitud paso a paso.'],
+ trueque:['Estás en Nova Factory. Contame qué módulo necesitás y armo la solicitud paso a paso.'],
  'trueque-list':['Historial de solicitudes enviadas. Podés recargar para traer las que persistieron en la base analítica.'],
 };
 
@@ -178,6 +178,6 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
    <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Preguntá sobre esta pantalla…" aria-label="Consulta al copiloto"/>
    <button type="button" className="chat-send" aria-label="Enviar" onClick={()=>ask()} disabled={!input.trim()||busy}><Send size={14}/></button>
   </footer>}
-  <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos. Provisto por Trueque Labs.</div>
+  <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos. Provisto por Nova Business.</div>
  </aside>;
 }

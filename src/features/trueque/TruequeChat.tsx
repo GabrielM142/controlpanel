@@ -1,4 +1,4 @@
-// Boceto Trueque Factory: guided intake with 7 questions. AI responses are canned
+// Boceto Nova Factory: guided intake with 12 questions. AI responses are canned
 // so the demo shows the flow without depending on an external LLM.
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Bot,Check,CircleUser,Cpu,FileText,Loader2,Send,Sparkles,X} from 'lucide-react';
@@ -9,7 +9,7 @@ type Msg={role:'bot'|'user';text:string;at:number};
 type Step={key:'title'|'process'|'actors'|'data_sources'|'integrations'|'outputs'|'priority'|'timeline'|'budget'|'client_name'|'email'|'plan';q:string;placeholder:string;options?:string[];optional?:boolean};
 
 const steps:Step[]=[
- {key:'title',q:'Perfecto. En una frase, ¿qué módulo o proceso te gustaría automatizar con SIDE?',placeholder:'Ej: Alertas de cartera vencida por WhatsApp'},
+ {key:'title',q:'Perfecto. En una frase, ¿qué módulo o proceso te gustaría automatizar con Nova Business?',placeholder:'Ej: Alertas de cartera vencida por WhatsApp'},
  {key:'process',q:'Contame el proceso actual: ¿cómo lo hacen hoy y dónde se traba?',placeholder:'Ej: revisamos Excel a mano cada lunes y perdemos tiempo…'},
  {key:'actors',q:'¿Quiénes participan? (roles, equipos)',placeholder:'Ej: cartera, comercial, gerencia'},
  {key:'data_sources',q:'¿De dónde salen los datos? (Odoo, Excel, otro sistema)',placeholder:'Ej: Odoo módulo Contabilidad + Excel de comerciales'},
@@ -23,7 +23,7 @@ const steps:Step[]=[
  {key:'plan',q:'¿Bajo qué plan queda registrada esta solicitud?',placeholder:'Elegí un plan',options:['free','pro','enterprise']},
 ];
 
-const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Trueque IA. Voy a hacerte 12 preguntas cortas para armar tu solicitud de módulo. Al final el equipo de Trueque Labs la recibe y te envía una cotización. Empecemos…'};
+const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Nova IA. Voy a hacerte 12 preguntas cortas para armar tu solicitud de módulo. Al final el equipo de Nova Business la recibe y te envía una cotización. Empecemos…'};
 
 function planLabel(p:string){return p==='free'?'Free · 100 tk':p==='pro'?'Pro · 500 tk/mes':'Enterprise · 2000 tk/mes';}
 
@@ -35,7 +35,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
  const [stepIdx,setStepIdx]=useState(0);
  const [sending,setSending]=useState(false);
  const [submitted,setSubmitted]=useState<null|{id:string;fallback?:boolean}>(null);
- const [termsAccepted,setTermsAccepted]=useState<boolean>(()=>{try{return localStorage.getItem('side.trueque.terms')==='1';}catch{return false;}});
+ const [termsAccepted,setTermsAccepted]=useState<boolean>(()=>{try{return localStorage.getItem('nova.factory.terms')==='1';}catch{return false;}});
  const [termsOpen,setTermsOpen]=useState(false);
  const scrollRef=useRef<HTMLDivElement>(null);
 
@@ -60,14 +60,14 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
   setMsgs(m=>[...m,{role:'user',at:Date.now(),text:value||'(saltado)'}]);
   setValues(nextValues);setStepIdx(nextIdx);setInput('');
   // Small delay to simulate thinking and consume 1 token per turn (mock).
-  setTimeout(()=>{tokens.spend(1,'Trueque Factory · turno de captación');nextBotLine(nextValues,nextIdx);},420);
+  setTimeout(()=>{tokens.spend(1,'Nova Factory · turno de captación');nextBotLine(nextValues,nextIdx);},420);
  }
 
  async function send(){
   if(!done||sending||submitted||!termsAccepted)return;
   setSending(true);
   const acceptedAt=new Date().toISOString();
-  try{localStorage.setItem('side.trueque.terms','1');}catch{}
+  try{localStorage.setItem('nova.factory.terms','1');}catch{}
   const payload={
    client_name:values.client_name||'Sin nombre',
    client_email:values.email||null,
@@ -92,10 +92,10 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
   }catch{
    // Fallback: persist locally so the boceto works even without DATABASE_URL configured.
    try{
-    const raw=localStorage.getItem('side.trueque.local');
+    const raw=localStorage.getItem('nova.factory.local');
     const list=raw?JSON.parse(raw):[];
     const local={...payload,id:'local-'+Date.now(),created_at:new Date().toISOString(),status:'received',tokens_used:steps.length};
-    localStorage.setItem('side.trueque.local',JSON.stringify([local,...list].slice(0,30)));
+    localStorage.setItem('nova.factory.local',JSON.stringify([local,...list].slice(0,30)));
     setSubmitted({id:local.id,fallback:true});
    }catch{}
   }finally{setSending(false);onSubmitted?.();}
@@ -104,8 +104,8 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
  return <div className="trueque-shell">
   <aside className="trueque-summary">
    <div className="trueque-summary-head">
-    <div className="trueque-brand"><Sparkles size={16}/><strong>Trueque Factory</strong></div>
-    <p>Contanos qué módulo necesitás. El equipo de Trueque Labs lo diseña, cotiza y construye.</p>
+    <div className="trueque-brand"><Sparkles size={16}/><strong>Nova Factory</strong></div>
+    <p>Contanos qué módulo necesitás. El equipo de Nova Business lo diseña, cotiza y construye.</p>
    </div>
    <div className="trueque-plans">
     <div className="plan"><strong>Free</strong><em>100 tk/mes</em><span>Un módulo por trimestre · soporte comunidad</span></div>
@@ -144,7 +144,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
      <div className="chat-bubble">{m.text}</div>
     </div>)}
     {submitted&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble success">
-     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud enviada a Trueque Labs</strong>
+     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud enviada a Nova Business</strong>
      <p>ID interno: <code>{submitted.id}</code>{submitted.fallback?' · guardado en modo boceto (todavía no hay base analítica conectada)':''}</p>
      <p>El equipo revisa tu solicitud y te contactamos con la cotización. Consumidos {steps.length} tokens del período.</p>
     </div></div>}
@@ -164,34 +164,34 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
     {done&&!submitted&&<div className="trueque-terms">
      <label className="trueque-terms-check">
       <input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)}/>
-      <span>Acepto los <button type="button" className="terms-link" onClick={()=>setTermsOpen(true)}>términos y condiciones</button> de <b>Trueque Labs</b> y el tratamiento responsable de mis datos.</span>
+      <span>Acepto los <button type="button" className="terms-link" onClick={()=>setTermsOpen(true)}>términos y condiciones</button> de <b>Nova Business</b> y el tratamiento responsable de mis datos.</span>
      </label>
-     <button type="button" className="chat-submit" onClick={send} disabled={sending||!termsAccepted} aria-disabled={sending||!termsAccepted}>{sending?<><Loader2 size={14} className="spin"/> Enviando…</>:<><Cpu size={14}/> Enviar solicitud a Trueque Labs</>}</button>
+     <button type="button" className="chat-submit" onClick={send} disabled={sending||!termsAccepted} aria-disabled={sending||!termsAccepted}>{sending?<><Loader2 size={14} className="spin"/> Enviando…</>:<><Cpu size={14}/> Enviar solicitud a Nova Business</>}</button>
     </div>}
     {submitted&&<button type="button" className="chat-submit" onClick={()=>{setMsgs([openingBot,{role:'bot',at:Date.now(),text:steps[0].q}]);setValues({});setStepIdx(0);setInput('');setSubmitted(null);}}><Sparkles size={14}/> Nueva solicitud</button>}
    </footer>
   </section>
   {termsOpen&&<div className="terms-backdrop" onClick={e=>{if(e.target===e.currentTarget)setTermsOpen(false);}}>
-   <div className="terms-modal" role="dialog" aria-label="Términos y condiciones de Trueque Labs">
+   <div className="terms-modal" role="dialog" aria-label="Términos y condiciones de Nova Business">
     <header className="terms-head">
-     <div><FileText size={16}/><strong>Términos y condiciones</strong><small>· Trueque Labs</small></div>
+     <div><FileText size={16}/><strong>Términos y condiciones</strong><small>· Nova Business</small></div>
      <button type="button" aria-label="Cerrar" onClick={()=>setTermsOpen(false)}><X size={16}/></button>
     </header>
     <div className="terms-body">
-     <p><b>Trueque Labs</b> (en adelante “Trueque Labs”, “nosotros”) es responsable del tratamiento de los datos que se recopilan a través de este formulario y del chat de captación. Al enviar tu solicitud declarás haber leído y aceptar lo siguiente:</p>
+     <p><b>Nova Business</b> (en adelante “Nova Business”, “nosotros”) es responsable del tratamiento de los datos que se recopilan a través de este formulario y del chat de captación. Al enviar tu solicitud declarás haber leído y aceptar lo siguiente:</p>
      <ol>
       <li><b>Finalidad.</b> Los datos ingresados se utilizan únicamente para analizar la necesidad planteada, elaborar una cotización y contactarte por los canales que indicaste. No compartimos tu información con terceros ajenos al proyecto sin tu autorización expresa.</li>
-      <li><b>Confidencialidad.</b> Los datos se almacenan de manera confidencial. Podés solicitar su modificación o eliminación cuando quieras escribiendo a <em>contacto@truequelabs.com</em>.</li>
-      <li><b>Uso responsable.</b> Te comprometes a no cargar información falsa, datos sensibles sin autorización de sus titulares, ni contenidos que violen la normativa vigente. Trueque Labs puede archivar o rechazar solicitudes que no cumplan con estas condiciones.</li>
+      <li><b>Confidencialidad.</b> Los datos se almacenan de manera confidencial. Podés solicitar su modificación o eliminación cuando quieras escribiendo a <em>contacto@novabusiness.io</em>.</li>
+      <li><b>Uso responsable.</b> Te comprometes a no cargar información falsa, datos sensibles sin autorización de sus titulares, ni contenidos que violen la normativa vigente. Nova Business puede archivar o rechazar solicitudes que no cumplan con estas condiciones.</li>
       <li><b>Tokens y facturación.</b> Los tokens del plan son <b>no acumulables</b> y se consumen por captación, análisis e interpretación de datos. La cotización final del módulo se comunica por escrito y requiere aprobación explícita antes de facturarse.</li>
-      <li><b>Propiedad intelectual.</b> Los entregables desarrollados por Trueque Labs se licencian de acuerdo al plan contratado. La información operativa cargada por el cliente sigue siendo de su propiedad.</li>
+      <li><b>Propiedad intelectual.</b> Los entregables desarrollados por Nova Business se licencian de acuerdo al plan contratado. La información operativa cargada por el cliente sigue siendo de su propiedad.</li>
       <li><b>Vigencia.</b> Estos términos rigen desde 09/2026. Para el detalle completo consultá la política extendida con tu ejecutivo comercial.</li>
      </ol>
      <p className="terms-note">Al hacer clic en “Aceptar” confirmás que actuás en representación de la empresa indicada y que estás autorizado a compartir la información cargada.</p>
     </div>
     <footer className="terms-foot">
      <button type="button" className="button secondary" onClick={()=>setTermsOpen(false)}>Cerrar</button>
-     <button type="button" className="button primary" onClick={()=>{setTermsAccepted(true);try{localStorage.setItem('side.trueque.terms','1');}catch{}setTermsOpen(false);}}><Check size={14}/> Aceptar</button>
+     <button type="button" className="button primary" onClick={()=>{setTermsAccepted(true);try{localStorage.setItem('nova.factory.terms','1');}catch{}setTermsOpen(false);}}><Check size={14}/> Aceptar</button>
     </footer>
    </div>
   </div>}

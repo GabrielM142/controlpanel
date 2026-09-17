@@ -1,4 +1,4 @@
-# CONTROLPANEL · JUJ / SIDE
+# Nova Business · Panel de Control (cliente JUJ)
 
 Aplicación React + TypeScript + Vite para Vercel. Contiene las 13 vistas completas del cliente: Dirección Empresarial; Comercial, Financiero, Compras, Inventarios, Clientes, Logística, Marketing y Riesgos; Mayorista Hogar, Mayorista Intorno, Retail JUJ y Retail Intorno.
 

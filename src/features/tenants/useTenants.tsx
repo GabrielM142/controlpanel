@@ -16,7 +16,7 @@ type TenantsState={
 };
 
 const Ctx=createContext<TenantsState|null>(null);
-const KEY='side.tenant';
+const KEY='nova.tenant';
 
 export function TenantsProvider({children}:{children:ReactNode}){
  const [id,setId]=useState<string>(()=>{try{return localStorage.getItem(KEY)||catalog[0].id;}catch{return catalog[0].id;}});

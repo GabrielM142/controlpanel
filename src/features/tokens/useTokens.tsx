@@ -13,19 +13,19 @@ export type TokensState={
 
 // Boceto values: managerial plan resets on the 1st of the next month.
 const DEFAULT_BUDGET=1000;
-const PLAN_LABEL='Plan Gerencia';
+const PLAN_LABEL='Plan Gerencia Nova';
 
 function firstOfNextMonth(){const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1).toISOString().slice(0,10);}
 
 const Ctx=createContext<TokensState|null>(null);
 
 export function TokensProvider({children}:{children:ReactNode}){
- const [used,setUsed]=useState<number>(()=>{try{return Math.max(0,parseInt(localStorage.getItem('side.tokens.used')||'0',10)||0);}catch{return 0;}});
- const [history,setHistory]=useState<{at:string;cost:number;reason:string}[]>(()=>{try{const raw=localStorage.getItem('side.tokens.history');if(raw){const p=JSON.parse(raw);if(Array.isArray(p))return p.slice(0,40);}}catch{}return [];});
+ const [used,setUsed]=useState<number>(()=>{try{return Math.max(0,parseInt(localStorage.getItem('nova.tokens.used')||'0',10)||0);}catch{return 0;}});
+ const [history,setHistory]=useState<{at:string;cost:number;reason:string}[]>(()=>{try{const raw=localStorage.getItem('nova.tokens.history');if(raw){const p=JSON.parse(raw);if(Array.isArray(p))return p.slice(0,40);}}catch{}return [];});
  const [nextReset]=useState(firstOfNextMonth);
 
- useEffect(()=>{try{localStorage.setItem('side.tokens.used',String(used));}catch{}},[used]);
- useEffect(()=>{try{localStorage.setItem('side.tokens.history',JSON.stringify(history.slice(0,40)));}catch{}},[history]);
+ useEffect(()=>{try{localStorage.setItem('nova.tokens.used',String(used));}catch{}},[used]);
+ useEffect(()=>{try{localStorage.setItem('nova.tokens.history',JSON.stringify(history.slice(0,40)));}catch{}},[history]);
 
  const spend=useCallback((cost:number,reason:string)=>{
   const c=Math.max(1,Math.round(cost));
