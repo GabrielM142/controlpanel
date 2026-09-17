@@ -799,3 +799,90 @@ td .sla-mini+em{font-style:normal;font-size:10px;color:#5b6d85;font-weight:600}
  .tour-tooltip{max-width:calc(100vw - 32px)}
 }
 @media print{.tour-overlay,.tenant-menu{display:none!important}}
+
+/* === Iteration 6: mobile audit + MoreMenu === */
+
+/* Responsive helpers used across the utility bar. */
+.hide-mobile{}
+.show-mobile{display:none!important}
+.hide-mobile-small{}
+
+/* MoreMenu (mobile overflow trigger). */
+.more-wrap{position:relative}
+.more-trigger{padding:6px;color:#5d6d83}
+.more-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:240px;background:#fff;border:1px solid #e1e7ef;border-radius:10px;box-shadow:0 14px 32px #14274022;padding:6px;z-index:140}
+.more-menu ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.more-menu button{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:0;text-align:left;padding:9px 10px;border-radius:6px;color:#25334a;font-size:12px;cursor:pointer;position:relative}
+.more-menu button:hover{background:#f4f0e2;color:#25334a}
+.more-menu button>svg{color:#8b7a4e;flex-shrink:0}
+.more-menu button>span{flex:1;line-height:1.4}
+.more-menu button>em{font-style:normal;font-size:9px;color:#8b95a5;background:#eef1f6;padding:2px 6px;border-radius:4px;letter-spacing:.04em}
+.more-menu button.is-active{background:#faf4e1;color:#5b4715}
+.more-menu button.is-active>svg{color:#a5811f}
+.more-dot{width:6px;height:6px;border-radius:50%;background:#c8a865;flex-shrink:0}
+
+/* Mobile activation. */
+@media(max-width:760px){
+ .hide-mobile{display:none!important}
+ .show-mobile{display:inline-block!important}
+ .utility-bar{padding:0 14px;gap:8px;height:52px}
+ .utility-right{gap:8px;flex-wrap:nowrap}
+ .breadcrumbs{gap:6px;flex:1;min-width:0;overflow:hidden}
+ .breadcrumbs>span:first-of-type{font-size:9px}
+ .breadcrumbs>span:nth-of-type(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#25334a}
+ .breadcrumbs svg{flex-shrink:0}
+ .icon-button{padding:5px}
+ .icon-button.bell{padding:5px}
+ .bell-badge{min-width:14px;height:14px;font-size:8px}
+ .tokens-chip{padding:4px 8px;border-radius:14px}
+ .tokens-value{font-size:9px}
+ .tokens-value strong{font-size:10px}
+ .avatar{width:28px;height:28px;font-size:8px}
+ .more-trigger{padding:5px}
+ .more-menu{position:fixed;top:52px;left:8px;right:8px;min-width:0;max-height:calc(100vh - 68px);overflow-y:auto}
+}
+
+/* Very small viewports (<400px): hide avatar & extra chrome to save room. */
+@media(max-width:400px){
+ .hide-mobile-small{display:none!important}
+ .utility-bar{padding:0 10px;gap:6px}
+ .utility-right{gap:6px}
+ .breadcrumbs>span:first-of-type{display:none}
+ .breadcrumbs svg:first-of-type{display:none}
+ .tokens-chip{padding:4px 6px}
+ .tokens-value strong{font-size:10px}
+ .tokens-value{white-space:nowrap}
+}
+
+/* Kill leftover rule from an earlier pass that hid the entire tool bar. */
+@media(max-width:480px){.tool-buttons{display:none}}
+@media(min-width:761px){.show-mobile{display:none!important}}
+
+/* Tenant switcher inside the sidebar: tighter padding when the sidebar shrinks. */
+@media(max-width:1080px){
+ .tenant-brand{padding:26px 20px 22px}
+ .tenant-menu{left:12px;right:12px}
+}
+@media(max-width:760px){
+ .mobile-drawer .tenant-brand{padding:26px 22px 20px}
+ .mobile-drawer .tenant-menu{position:absolute;left:12px;right:12px}
+}
+
+/* AI bubble should not overlap the toast on mobile. Toast is centered — no conflict. */
+@media(max-width:760px){
+ .ai-bubble{bottom:16px;left:16px;padding:11px}
+ .ai-bubble-label{display:none}
+ .ai-bubble-glow{inset:-3px}
+ .toast{bottom:82px}
+}
+
+/* Dark mode for MoreMenu. */
+:root[data-theme=dark] .more-menu{background:#161f2c;border-color:#22304a;box-shadow:0 14px 32px #00000060}
+:root[data-theme=dark] .more-menu button{color:#e0e8f4}
+:root[data-theme=dark] .more-menu button:hover{background:#22304a}
+:root[data-theme=dark] .more-menu button>svg{color:#a3b4cc}
+:root[data-theme=dark] .more-menu button>em{background:#22304a;color:#a3b4cc}
+:root[data-theme=dark] .more-menu button.is-active{background:#3d2f14;color:#dcb260}
+:root[data-theme=dark] .more-menu button.is-active>svg{color:#dcb260}
+
+@media print{.more-wrap{display:none!important}}

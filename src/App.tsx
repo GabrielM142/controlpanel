@@ -18,6 +18,7 @@ import NotesView from './features/notes/NotesView';
 import {TenantsProvider,useTenants} from './features/tenants/useTenants';
 import {TenantSwitcher} from './features/tenants/TenantSwitcher';
 import {OnboardingTour,startTour} from './features/tour/OnboardingTour';
+import {MoreMenu} from './features/topbar/MoreMenu';
 
 const report=reportData as Report;
 
@@ -182,7 +183,7 @@ function AppShell(){
       <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
      </div>
      <div className="utility-right">
-      <span className="odoo-chip" title="Datos de ejemplo · Odoo pendiente de conexión">
+      <span className="odoo-chip hide-mobile" title="Datos de ejemplo · Odoo pendiente de conexión">
        <span className="odoo-dot"/><b>Odoo</b><em>· sync 07:58</em>
       </span>
       <TokensChip/>
@@ -190,22 +191,31 @@ function AppShell(){
        <Bell size={17}/>
        {criticalAlerts>0&&<span className="bell-badge">{criticalAlerts}</span>}
       </button>
-      <button type="button" className="icon-button" aria-label="Búsqueda rápida (Ctrl+K)" title="Búsqueda rápida (Ctrl+K)" onClick={()=>setPaletteOpen(true)}>
+      <button type="button" className="icon-button hide-mobile" aria-label="Búsqueda rápida (Ctrl+K)" title="Búsqueda rápida (Ctrl+K)" onClick={()=>setPaletteOpen(true)}>
        <Search size={16}/>
       </button>
-      <button type="button" className="icon-button" aria-label="Compartir esta vista" title="Compartir enlace de esta vista" onClick={shareView}>
+      <button type="button" className="icon-button hide-mobile" aria-label="Compartir esta vista" title="Compartir enlace de esta vista" onClick={shareView}>
        <Share2 size={15}/>
       </button>
-      <button type="button" className="icon-button" aria-label="Iniciar tour de bienvenida" title="Repetir tour de bienvenida" onClick={()=>startTour()}>
+      <button type="button" className="icon-button hide-mobile" aria-label="Iniciar tour de bienvenida" title="Repetir tour de bienvenida" onClick={()=>startTour()}>
        <GraduationCap size={16}/>
       </button>
-      <div className="tool-buttons" role="group" aria-label="Herramientas de lectura">
+      <div className="tool-buttons hide-mobile" role="group" aria-label="Herramientas de lectura">
        <button type="button" className={`tool-button ${rulerOn?'on':''}`} aria-pressed={rulerOn} aria-label="Regla de lectura" title="Regla de lectura" onClick={()=>setRulerOn(v=>!v)}><Minus size={16}/></button>
        <button type="button" className={`tool-button ${presentation?'on':''}`} aria-pressed={presentation} aria-label="Modo presentación" title="Modo presentación (oculta filtros y bordes)" onClick={()=>setPresentation(v=>!v)}><Play size={14}/></button>
        <button type="button" className="tool-button" aria-label={theme==='dark'?'Modo claro':'Modo oscuro'} title={theme==='dark'?'Modo claro':'Modo oscuro'} onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}>{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</button>
        <button type="button" className="tool-button" aria-label={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} title={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} onClick={toggleFullscreen}>{isFullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}</button>
       </div>
-      <span className="avatar">JUJ</span>
+      <MoreMenu className="show-mobile" items={[
+       {icon:Search,label:'Buscar vista',shortcut:'Ctrl+K',onClick:()=>setPaletteOpen(true)},
+       {icon:Share2,label:'Compartir esta vista',onClick:shareView},
+       {icon:GraduationCap,label:'Repetir tour',onClick:()=>startTour()},
+       {icon:Minus,label:'Regla de lectura',active:rulerOn,onClick:()=>setRulerOn(v=>!v)},
+       {icon:Play,label:'Modo presentación',active:presentation,onClick:()=>setPresentation(v=>!v)},
+       {icon:theme==='dark'?Sun:Moon,label:theme==='dark'?'Modo claro':'Modo oscuro',onClick:()=>setTheme(t=>t==='dark'?'light':'dark')},
+       {icon:isFullscreen?Minimize2:Maximize2,label:isFullscreen?'Salir de pantalla completa':'Pantalla completa',onClick:toggleFullscreen},
+      ]}/>
+      <span className="avatar hide-mobile-small">JUJ</span>
      </div>
     </div>
     <header className="page-header">
