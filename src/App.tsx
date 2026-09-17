@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,X,type LucideIcon} from 'lucide-react';
+import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes} from './components/Report';
@@ -21,6 +21,7 @@ import {OnboardingTour,startTour} from './features/tour/OnboardingTour';
 import {MoreMenu} from './features/topbar/MoreMenu';
 import {ThresholdsProvider,useThresholds} from './features/thresholds/useThresholds';
 import ThresholdsView from './features/thresholds/ThresholdsView';
+import {MarketAll,MarketOdoo,MarketSkills,MarketAutomations,MarketServices} from './features/market/wrappers';
 
 const report=reportData as Report;
 
@@ -28,6 +29,11 @@ type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:
 const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
+ {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de Nova Business — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
+ {id:'market-odoo',group:'Market',subgroup:'Catálogo',label:'Módulos Odoo',question:'Extensiones certificadas para tu instancia de Odoo. Precio de referencia o “a cotizar”.',component:MarketOdoo,icon:Package},
+ {id:'market-skills',group:'Market',subgroup:'Catálogo',label:'Skills',question:'Paquetes de expertise y consultoría con nuestro equipo especializado.',component:MarketSkills,icon:Sparkles},
+ {id:'market-automations',group:'Market',subgroup:'Catálogo',label:'Automatizaciones',question:'Bots, integraciones y flujos automáticos que ahorran horas al mes.',component:MarketAutomations,icon:Zap},
+ {id:'market-services',group:'Market',subgroup:'Catálogo',label:'Servicios',question:'Retainers, auditorías y paquetes de acompañamiento continuo.',component:MarketServices,icon:Wrench},
  {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
  {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
  {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Nova IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Nova Business.',component:TruequeChat,icon:Wand2},
@@ -36,14 +42,14 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // Sidebar taxonomy: "Control Total" wraps the three analytical groups; other groups are top-level; Factory renders as its own bottom block.
-const superGroupOrder=['Control Total','Soporte','Ajustes','Espacio Personal'] as const;
+const superGroupOrder=['Control Total','Soporte','Market','Ajustes','Espacio Personal'] as const;
 const superGroups:Record<string,string[]>={
  'Control Total':['Ejecutivo','Centros de Inteligencia','Unidades de Negocio'],
 };
-const allGroups=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Ajustes','Espacio Personal'] as const;
+const allGroups=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Market','Ajustes','Espacio Personal'] as const;
 function findSuperGroup(group:string):string|undefined{for(const [sg,gs] of Object.entries(superGroups))if(gs.includes(group))return sg;return undefined;}
 const subGroups:Record<string,{label:string;ids:string[]}[]>={
  'Centros de Inteligencia':[
@@ -60,6 +66,9 @@ const subGroups:Record<string,{label:string;ids:string[]}[]>={
  ],
  'Ajustes':[
   {label:'Configuración',ids:['control']},
+ ],
+ 'Market':[
+  {label:'Catálogo',ids:['market','market-odoo','market-skills','market-automations','market-services']},
  ],
 };
 
