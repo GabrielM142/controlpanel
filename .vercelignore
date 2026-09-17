@@ -3,7 +3,6 @@ worker/
 lib/
 sql/
 tests/
-server.mjs
-public/referencia.html
-public/app.mjs
-public/style.css
+reference/
+scripts/migrate-report.mjs
+public/
