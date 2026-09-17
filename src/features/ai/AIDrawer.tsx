@@ -1,7 +1,9 @@
 // Boceto AI Copilot: canned interpretations & Q&A per page. No LLM required yet.
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Bot,CircleUser,Loader2,Send,Sparkles,X,Zap} from 'lucide-react';
+import {Bot,CheckCircle2,CircleUser,ListTodo,Loader2,Send,Sparkles,StickyNote,Wand2,X,Zap} from 'lucide-react';
 import {useTokens} from '../tokens/useTokens';
+import {useTasks,type Task} from '../tasks/useTasks';
+import {useNotes} from '../notes/useNotes';
 
 type Msg={role:'bot'|'user';text:string;at:number};
 
@@ -77,12 +79,15 @@ function cannedAnswer(question:string,pageId:string,pageLabel:string){
 
 export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:()=>void;pageId:string;pageLabel:string}){
  const tokens=useTokens();
+ const {tasks,setStatus,markAiReview,counts}=useTasks();
+ const {forPage}=useNotes();
  const [msgs,setMsgs]=useState<Msg[]>([]);
  const [input,setInput]=useState('');
  const [busy,setBusy]=useState(false);
+ const [tab,setTab]=useState<'chat'|'tareas'|'notas'>('chat');
  const scrollRef=useRef<HTMLDivElement>(null);
 
- useEffect(()=>{if(!open)return;setMsgs([]);setInput('');},[open,pageId]);
+ useEffect(()=>{if(!open)return;setMsgs([]);setInput('');setTab('chat');},[open,pageId]);
  useEffect(()=>{scrollRef.current?.scrollTo({top:scrollRef.current.scrollHeight,behavior:'smooth'});},[msgs,busy]);
 
  const summary=useMemo(()=>summaries[pageId]||[`Interpretación IA para ${pageLabel} — se activará al conectar la base analítica.`],[pageId,pageLabel]);
@@ -103,12 +108,35 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
   setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:cannedAnswer(q,pageId,pageLabel)}]);setBusy(false);},650);
  }
 
+ function reviewTask(t:Task){
+  if(busy)return;
+  const ok=tokens.spend(5,`IA · revisión tarea "${t.title.slice(0,40)}"`);
+  if(!ok){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período para revisar tareas.'}]);return;}
+  const suggestion=t.priority==='alta'?'Sugerido: bloquear 30 min hoy para cerrarla, es la de mayor impacto.':t.dueDate?'Sugerido: agendarla en el bloque de la mañana, antes del vencimiento.':'Sugerido: convertirla en subtareas concretas para destrabarla.';
+  markAiReview(t.id,suggestion);
+  setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`Revisé "${t.title}": ${suggestion}`}]);
+ }
+
+ function completeTask(t:Task){
+  setStatus(t.id,'done');
+  setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`✅ Marcada como hecha: "${t.title}".`}]);
+ }
+
+ const pendingTasks=tasks.filter(t=>t.status==='pending'||t.status==='in_progress').slice(0,10);
+ const pageNotes=forPage(pageId);
+
  return <aside className={`ai-drawer ${open?'open':''}`} role="dialog" aria-label="Copiloto de Análisis" aria-hidden={!open}>
   <header className="ai-head">
    <div><Sparkles size={16}/><strong>Copiloto de Análisis</strong><small>· {pageLabel}</small></div>
    <button type="button" aria-label="Cerrar copiloto" onClick={onClose}><X size={16}/></button>
   </header>
+  <div className="ai-tabs" role="tablist">
+   <button type="button" role="tab" aria-selected={tab==='chat'} className={tab==='chat'?'is-active':''} onClick={()=>setTab('chat')}><Wand2 size={12}/>Chat</button>
+   <button type="button" role="tab" aria-selected={tab==='tareas'} className={tab==='tareas'?'is-active':''} onClick={()=>setTab('tareas')}><ListTodo size={12}/>Tareas <span className="ai-tab-badge">{counts.pending}</span></button>
+   <button type="button" role="tab" aria-selected={tab==='notas'} className={tab==='notas'?'is-active':''} onClick={()=>setTab('notas')}><StickyNote size={12}/>Notas <span className="ai-tab-badge">{pageNotes.length}</span></button>
+  </div>
   <div className="ai-body" ref={scrollRef}>
+   {tab==='chat'&&<>
    <div className="ai-intro">
     <p>Puedo <b>interpretar</b> los datos que estás viendo y responder consultas puntuales sobre la vista <b>{pageLabel}</b>.</p>
     <button type="button" className="ai-action" onClick={interpret} disabled={busy}><Zap size={13}/> Generar interpretación de la pantalla ({busy?'…':'-12 tk'})</button>
@@ -122,11 +150,34 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
     <div className="chat-bubble">{m.text}</div>
    </div>)}
    {busy&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble ai-thinking"><Loader2 size={12} className="spin"/> Pensando…</div></div>}
+   </>}
+
+   {tab==='tareas'&&<div className="ai-tasks">
+    <p className="ai-tasks-intro"><b>{counts.pending}</b> pendientes · <b>{counts.in_progress}</b> en curso · <b className="down">{counts.overdue}</b> vencidas. Marcá hechas rápido o pedí una sugerencia por tarea.</p>
+    {pendingTasks.length===0
+     ?<p className="ai-empty">Todo cerrado por ahora. Buen trabajo.</p>
+     :<ul className="ai-task-list">{pendingTasks.map(t=><li key={t.id} className={`ai-task p-${t.priority}`}>
+      <div className="ai-task-head"><strong>{t.title}</strong><span className={`tag ${t.priority==='alta'?'r':t.priority==='baja'?'g':'a'}`}>{t.priority}</span></div>
+      {t.description&&<p>{t.description}</p>}
+      {t.aiSuggestion&&<p className="ai-task-suggestion"><Sparkles size={11}/> {t.aiSuggestion}</p>}
+      <div className="ai-task-actions">
+       <button type="button" onClick={()=>reviewTask(t)} disabled={busy}><Sparkles size={12}/> Revisar (-5 tk)</button>
+       <button type="button" className="primary" onClick={()=>completeTask(t)}><CheckCircle2 size={12}/> Marcar hecha</button>
+      </div>
+     </li>)}</ul>}
+   </div>}
+
+   {tab==='notas'&&<div className="ai-notes">
+    <p className="ai-tasks-intro">Notas vinculadas a <b>{pageLabel}</b>: {pageNotes.length}.</p>
+    {pageNotes.length===0
+     ?<p className="ai-empty">No hay anotaciones para esta vista. Podés crearlas desde “Espacio Personal · Mis Notas”.</p>
+     :<ul className="ai-note-list">{pageNotes.map(n=><li key={n.id} className={`ai-note note-color-${n.color}`}><p>{n.text}</p><em>{new Date(n.createdAt).toLocaleDateString('es-EC',{day:'2-digit',month:'short'})}</em></li>)}</ul>}
+   </div>}
   </div>
-  <footer className="ai-composer">
+  {tab==='chat'&&<footer className="ai-composer">
    <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Preguntá sobre esta pantalla…" aria-label="Consulta al copiloto"/>
    <button type="button" className="chat-send" aria-label="Enviar" onClick={()=>ask()} disabled={!input.trim()||busy}><Send size={14}/></button>
-  </footer>
+  </footer>}
   <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos. Provisto por Trueque Labs.</div>
  </aside>;
 }

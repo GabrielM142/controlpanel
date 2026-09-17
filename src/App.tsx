@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Cpu,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,Sun,Truck,Users,Volume2,Wand2,X,type LucideIcon} from 'lucide-react';
+import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,X,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes} from './components/Report';
@@ -11,22 +11,31 @@ import {CommandPalette,type PaletteItem} from './features/palette/CommandPalette
 import TicketsView from './features/tickets/TicketsView';
 import TruequeChat from './features/trueque/TruequeChat';
 import TruequeList from './features/trueque/TruequeList';
+import {TasksProvider} from './features/tasks/useTasks';
+import TasksView from './features/tasks/TasksView';
+import {NotesProvider} from './features/notes/useNotes';
+import NotesView from './features/notes/NotesView';
+import {TenantsProvider,useTenants} from './features/tenants/useTenants';
+import {TenantSwitcher} from './features/tenants/TenantSwitcher';
+import {OnboardingTour,startTour} from './features/tour/OnboardingTour';
 
 const report=reportData as Report;
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
 const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
- {id:'trueque',group:'Trueque Labs',label:'Nueva Solicitud',question:'Chateá con Trueque IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo SIDE.',component:TruequeChat,icon:Wand2},
- {id:'trueque-list',group:'Trueque Labs',label:'Mis Solicitudes',question:'Historial de módulos solicitados a SIDE con su estado actual.',component:TruequeList,icon:ListChecks},
+ {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
+ {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
+ {id:'trueque',group:'Trueque Labs',label:'Nueva Solicitud',question:'Chateá con Trueque IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Trueque Labs.',component:TruequeChat,icon:Wand2},
+ {id:'trueque-list',group:'Trueque Labs',label:'Mis Solicitudes',question:'Historial de módulos solicitados a Trueque Labs con su estado actual.',component:TruequeList,icon:ListChecks},
 ];
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote};
 
-// Sidebar taxonomy. Soporte joins the main groups; Trueque Labs is a dedicated bottom block.
-const groupOrder=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte'] as const;
+// Sidebar taxonomy. Soporte and Espacio Personal join the main groups; Trueque Labs is a dedicated bottom block.
+const groupOrder=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Espacio Personal'] as const;
 const subGroups:Record<string,{label:string;ids:string[]}[]>={
  'Centros de Inteligencia':[
   {label:'Mercado',ids:['comercial','clientes','marketing']},
@@ -48,6 +57,7 @@ const findSub=(id:string,group:string)=>subGroups[group]?.find(sg=>sg.ids.includ
 const ls={get(k:string,f:string){try{return localStorage.getItem(k)??f;}catch{return f;}},set(k:string,v:string){try{localStorage.setItem(k,v);}catch{}}};
 
 function AppShell(){
+ const {active:activeTenant}=useTenants();
  const [pageId,setPageId]=useState(getPage);
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
@@ -76,7 +86,7 @@ function AppShell(){
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
- useEffect(()=>{document.title=`${pageLabel} · Panel Analítico · José Ugalde Jerves`;},[pageLabel]);
+ useEffect(()=>{document.title=`${pageLabel} · Panel Analítico · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
  useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
@@ -98,6 +108,11 @@ function AppShell(){
 
  const toggleKey=useCallback((k:string)=>{setExpanded(prev=>{const next=new Set(prev);if(next.has(k))next.delete(k);else next.add(k);return next;});},[]);
 
+ const shareView=useCallback(async()=>{
+  try{await navigator.clipboard.writeText(location.href);setNotice('Enlace copiado al portapapeles. Compartilo con tu equipo.');}
+  catch{setNotice('No se pudo copiar el enlace. Copialo desde la barra de direcciones.');}
+ },[]);
+
  const paletteItems=useMemo<PaletteItem[]>(()=>[
   ...report.pages.map(p=>({id:p.id,label:p.label,group:p.group,subgroup:findSub(p.id,p.group),keywords:p.question})),
   ...virtualPages.map(p=>({id:p.id,label:p.label,group:p.group,subgroup:p.subgroup,keywords:p.question})),
@@ -110,7 +125,7 @@ function AppShell(){
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Trueque Labs');
   return <>
-   <div className="brand"><div className="brand-symbol"><Layers3 size={26} strokeWidth={1.5}/></div><div><strong>JUJ</strong><small>José Ugalde Jerves</small></div></div>
+   <TenantSwitcher/>
    <div className="brand-rule"/>
    <nav aria-label="Centros de inteligencia">{groupOrder.map(group=>{
     const gKey=`g:${group}`;const gOpen=expanded.has(gKey);const subs=subGroups[group];
@@ -140,8 +155,13 @@ function AppShell(){
     <div className="nav-trueque-foot">Powered by <b>Trueque Labs</b> · factoría de módulos a medida</div>
    </div>
    </nav>
-   <div className="sidebar-foot"><div className="client-monogram">J</div><div><strong>JUJ</strong><span>Dirección empresarial</span></div><span className="foot-dot"/></div>
+   <SidebarFoot/>
   </>;
+ }
+
+ function SidebarFoot(){
+  const {active}=useTenants();
+  return <div className="sidebar-foot"><div className="client-monogram">{active.monogram}</div><div><strong>{active.name}</strong><span>{active.sector}</span></div><span className="foot-dot"/></div>;
  }
 
  return <NavigateContext.Provider value={navigate}>
@@ -172,6 +192,12 @@ function AppShell(){
       </button>
       <button type="button" className="icon-button" aria-label="Búsqueda rápida (Ctrl+K)" title="Búsqueda rápida (Ctrl+K)" onClick={()=>setPaletteOpen(true)}>
        <Search size={16}/>
+      </button>
+      <button type="button" className="icon-button" aria-label="Compartir esta vista" title="Compartir enlace de esta vista" onClick={shareView}>
+       <Share2 size={15}/>
+      </button>
+      <button type="button" className="icon-button" aria-label="Iniciar tour de bienvenida" title="Repetir tour de bienvenida" onClick={()=>startTour()}>
+       <GraduationCap size={16}/>
       </button>
       <div className="tool-buttons" role="group" aria-label="Herramientas de lectura">
        <button type="button" className={`tool-button ${rulerOn?'on':''}`} aria-pressed={rulerOn} aria-label="Regla de lectura" title="Regla de lectura" onClick={()=>setRulerOn(v=>!v)}><Minus size={16}/></button>
@@ -220,4 +246,4 @@ function AppShell(){
  </NavigateContext.Provider>;
 }
 
-export default function App(){return <TokensProvider><AppShell/></TokensProvider>;}
+export default function App(){return <TenantsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></TenantsProvider>;}
