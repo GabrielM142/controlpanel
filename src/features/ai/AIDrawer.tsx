@@ -58,6 +58,9 @@ const summaries:Record<string,string[]>={
  ],
  trueque:['Estás en Nova Factory. Contame qué módulo necesitás y armo la solicitud paso a paso.'],
  'trueque-list':['Historial de solicitudes enviadas. Podés recargar para traer las que persistieron en la base analítica.'],
+ control:['Estás en el Panel de Control. Los umbrales que definís acá alimentan a la campana de alertas y a mis resúmenes. Recomiendo mantener siempre activos los umbrales críticos de cartera, stock y SLA.'],
+ tasks:['Tu tablero personal de tareas. Puedo priorizar por vencimiento y sugerirte cuáles cerrar hoy.'],
+ notes:['Tus anotaciones colaborativas. Las leo al armar el resumen de la vista vinculada.'],
 };
 
 const followUps=[

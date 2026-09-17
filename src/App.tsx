@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,X,type LucideIcon} from 'lucide-react';
+import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,X,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes} from './components/Report';
@@ -19,12 +19,15 @@ import {TenantsProvider,useTenants} from './features/tenants/useTenants';
 import {TenantSwitcher} from './features/tenants/TenantSwitcher';
 import {OnboardingTour,startTour} from './features/tour/OnboardingTour';
 import {MoreMenu} from './features/topbar/MoreMenu';
+import {ThresholdsProvider,useThresholds} from './features/thresholds/useThresholds';
+import ThresholdsView from './features/thresholds/ThresholdsView';
 
 const report=reportData as Report;
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
 const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
+ {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
  {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
  {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Nova IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Nova Business.',component:TruequeChat,icon:Wand2},
@@ -33,10 +36,15 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge};
 
-// Sidebar taxonomy. Soporte and Espacio Personal join the main groups; Factory is a dedicated bottom block.
-const groupOrder=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Espacio Personal'] as const;
+// Sidebar taxonomy: "Control Total" wraps the three analytical groups; other groups are top-level; Factory renders as its own bottom block.
+const superGroupOrder=['Control Total','Soporte','Ajustes','Espacio Personal'] as const;
+const superGroups:Record<string,string[]>={
+ 'Control Total':['Ejecutivo','Centros de Inteligencia','Unidades de Negocio'],
+};
+const allGroups=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Ajustes','Espacio Personal'] as const;
+function findSuperGroup(group:string):string|undefined{for(const [sg,gs] of Object.entries(superGroups))if(gs.includes(group))return sg;return undefined;}
 const subGroups:Record<string,{label:string;ids:string[]}[]>={
  'Centros de Inteligencia':[
   {label:'Mercado',ids:['comercial','clientes','marketing']},
@@ -49,6 +57,9 @@ const subGroups:Record<string,{label:string;ids:string[]}[]>={
  ],
  'Soporte':[
   {label:'Helpdesk',ids:['tickets']},
+ ],
+ 'Ajustes':[
+  {label:'Configuración',ids:['control']},
  ],
 };
 
@@ -71,7 +82,7 @@ function AppShell(){
  const [alertsOpen,setAlertsOpen]=useState(false);
  const [paletteOpen,setPaletteOpen]=useState(false);
  const [presentation,setPresentation]=useState(false);
- const [expanded,setExpanded]=useState<Set<string>>(()=>{try{const raw=localStorage.getItem('nova.nav');if(raw)return new Set(JSON.parse(raw));}catch{}return new Set(groupOrder.map(g=>`g:${g}`));});
+ const [expanded,setExpanded]=useState<Set<string>>(()=>{try{const raw=localStorage.getItem('nova.nav');if(raw)return new Set(JSON.parse(raw));}catch{}return new Set([...Object.keys(superGroups).map(sg=>`sg:${sg}`),...allGroups.map(g=>`g:${g}`)]);});
  const drawer=useRef<HTMLDialogElement>(null);
 
  const isVirtual=virtualIds.has(pageId);
@@ -92,7 +103,7 @@ function AppShell(){
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
 
- useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);next.add(`g:${pageGroup}`);if(currentSub)next.add(`s:${pageGroup}::${currentSub}`);return next;});},[pageGroup,currentSub]);
+ useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);const sg=findSuperGroup(pageGroup);if(sg)next.add(`sg:${sg}`);next.add(`g:${pageGroup}`);if(currentSub)next.add(`s:${pageGroup}::${currentSub}`);return next;});},[pageGroup,currentSub]);
  useEffect(()=>{ls.set('nova.nav',JSON.stringify([...expanded]));},[expanded]);
 
  useEffect(()=>{document.documentElement.dataset.theme=theme;ls.set('nova.theme',theme);},[theme]);
@@ -119,35 +130,55 @@ function AppShell(){
   ...virtualPages.map(p=>({id:p.id,label:p.label,group:p.group,subgroup:p.subgroup,keywords:p.question})),
  ],[]);
 
- const criticalAlerts=globalAlerts.filter(a=>a.severity==='r').length;
+ const {activeAlerts}=useThresholds();
+ const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=globalAlerts.filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts]);
+ const bellTotal=useMemo(()=>globalAlerts.length+activeAlerts.length,[activeAlerts]);
 
  function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.65}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:p.id===pageId?<ChevronRight size={13}/>:null}</button>;}
 
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Factory');
+  const currentSuperGroup=findSuperGroup(pageGroup);
+
+  function renderGroup(group:string){
+   const gKey=`g:${group}`;const gOpen=expanded.has(gKey);const subs=subGroups[group];
+   const rp=report.pages.filter(p=>p.group===group);
+   const vp=virtualPages.filter(p=>p.group===group);
+   const groupPages=[...rp,...vp];
+   if(groupPages.length===0)return null;
+   return <div className={`nav-group ${gOpen?'open':'closed'}`} key={group}>
+    <button type="button" className="nav-group-header" aria-expanded={gOpen} onClick={()=>toggleKey(gKey)}><span>{group}</span><ChevronDown size={12} className={gOpen?'':'rotate-neg90'}/></button>
+    {gOpen&&<div className="nav-group-body">{subs
+     ?<>{subs.map(sg=>{
+       const sKey=`s:${group}::${sg.label}`;const sOpen=expanded.has(sKey);
+       const sgPages=sg.ids.map(id=>groupPages.find(p=>p.id===id)).filter(Boolean) as (ReportPage|VirtualPage)[];
+       if(sgPages.length===0)return null;
+       return <div className={`nav-sub ${sOpen?'open':'closed'}`} key={sg.label}>
+        <button type="button" className="nav-sub-header" aria-expanded={sOpen} onClick={()=>toggleKey(sKey)}><ChevronRight size={11} className={sOpen?'rotate-90':''}/><span>{sg.label}</span></button>
+        {sOpen&&sgPages.map(p=><NavItem key={p.id} p={p}/>)}
+       </div>;
+      })}
+      {groupPages.filter(p=>!subs.some(sg=>sg.ids.includes(p.id))).map(p=><NavItem key={p.id} p={p}/>)}
+     </>
+     :groupPages.map(p=><NavItem key={p.id} p={p}/>)}
+    </div>}
+   </div>;
+  }
+
   return <>
    <TenantSwitcher/>
    <div className="brand-rule"/>
-   <nav aria-label="Centros de inteligencia">{groupOrder.map(group=>{
-    const gKey=`g:${group}`;const gOpen=expanded.has(gKey);const subs=subGroups[group];
-    const rp=report.pages.filter(p=>p.group===group);
-    const vp=virtualPages.filter(p=>p.group===group);
-    const groupPages=[...rp,...vp];
-    return <div className={`nav-group ${gOpen?'open':'closed'}`} key={group}>
-     <button type="button" className="nav-group-header" aria-expanded={gOpen} onClick={()=>toggleKey(gKey)}><span>{group}</span><ChevronDown size={12} className={gOpen?'':'rotate-neg90'}/></button>
-     {gOpen&&<div className="nav-group-body">{subs
-      ?<>{subs.map(sg=>{
-        const sKey=`s:${group}::${sg.label}`;const sOpen=expanded.has(sKey);
-        const sgPages=sg.ids.map(id=>groupPages.find(p=>p.id===id)).filter(Boolean) as (ReportPage|VirtualPage)[];
-        return <div className={`nav-sub ${sOpen?'open':'closed'}`} key={sg.label}>
-         <button type="button" className="nav-sub-header" aria-expanded={sOpen} onClick={()=>toggleKey(sKey)}><ChevronRight size={11} className={sOpen?'rotate-90':''}/><span>{sg.label}</span></button>
-         {sOpen&&sgPages.map(p=><NavItem key={p.id} p={p}/>)}
-        </div>;
-       })}
-       {groupPages.filter(p=>!subs.some(sg=>sg.ids.includes(p.id))).map(p=><NavItem key={p.id} p={p}/>)}
-      </>
-      :groupPages.map(p=><NavItem key={p.id} p={p}/>)}
-     </div>}
+   <nav aria-label="Menú principal">{superGroupOrder.map(entry=>{
+    const nested=superGroups[entry];
+    if(!nested)return renderGroup(entry);
+    const sgKey=`sg:${entry}`;const sgOpen=expanded.has(sgKey);const isActive=currentSuperGroup===entry;
+    return <div className={`nav-super ${sgOpen?'open':'closed'}${isActive?' is-active':''}`} key={entry}>
+     <button type="button" className="nav-super-header" aria-expanded={sgOpen} onClick={()=>toggleKey(sgKey)}>
+      <span className="nav-super-icon"><Command size={13}/></span>
+      <span className="nav-super-label">{entry}</span>
+      <ChevronDown size={12} className={sgOpen?'nav-super-chev':'nav-super-chev rotate-neg90'}/>
+     </button>
+     {sgOpen&&<div className="nav-super-body">{nested.map(g=>renderGroup(g))}</div>}
     </div>;
    })}
    <div className="nav-trueque">
@@ -180,7 +211,8 @@ function AppShell(){
     <div className="utility-bar">
      <div className="breadcrumbs">
       <button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(true)}><Menu size={21}/></button>
-      <span>CONTROLPANEL</span>
+      <span>Nova Business</span>
+      {findSuperGroup(pageGroup)&&<><ChevronRight size={12}/><span className="crumb-sub">{findSuperGroup(pageGroup)}</span></>}
       <ChevronRight size={12}/><span>{pageGroup}</span>
       {currentSub&&<><ChevronRight size={12}/><span className="crumb-sub">{currentSub}</span></>}
       <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
@@ -190,7 +222,7 @@ function AppShell(){
        <span className="odoo-dot"/><b>Odoo</b><em>· sync 07:58</em>
       </span>
       <TokensChip/>
-      <button type="button" className="icon-button bell" aria-label={`Alertas (${globalAlerts.length})`} title="Alertas del negocio" onClick={()=>setAlertsOpen(true)}>
+      <button type="button" className="icon-button bell" aria-label={`Alertas (${bellTotal})`} title="Alertas del negocio y umbrales configurados" onClick={()=>setAlertsOpen(true)}>
        <Bell size={17}/>
        {criticalAlerts>0&&<span className="bell-badge">{criticalAlerts}</span>}
       </button>
@@ -259,4 +291,4 @@ function AppShell(){
  </NavigateContext.Provider>;
 }
 
-export default function App(){return <TenantsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></TenantsProvider>;}
+export default function App(){return <TenantsProvider><ThresholdsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></ThresholdsProvider></TenantsProvider>;}
