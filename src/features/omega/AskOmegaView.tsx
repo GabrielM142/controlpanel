@@ -1,8 +1,9 @@
 import {useCallback,useContext,useEffect,useState,type FormEvent} from 'react';
 import {ArrowUpRight,Bookmark,BookmarkCheck,Clock3,Database,Send} from 'lucide-react';
 import {NavigateContext} from '../../components/Report';
-import {api,type ReportPayload,type Widget} from '../../data/api';
-import {useLive} from '../live/LiveData';
+import {type ReportPayload,type Widget} from '../../data/api';
+import {useLive,versionKey} from '../live/LiveData';
+import {cachedGet} from '../live/cache';
 import {useTokens} from '../tokens/useTokens';
 import {blocksOf,kpisOf,pageById,pageReading} from './data';
 import {useDecisions} from './useDecisions';
@@ -63,13 +64,13 @@ export default function AskOmegaView(){
    const pageId=INTENTS.find(([re])=>re.test(text))?.[1]||'nivel1';
    let widgets:Record<string,Widget>|null=null;let cut='Datos de demostración (sin conexión a Odoo)';let version:number|undefined;
    if(live.live&&live.tenantId){
-    const r=await api<ReportPayload>(`/api/reports/${pageId}`,{tenant:live.tenantId});
+    const r=await cachedGet<ReportPayload>(live.tenantId,`/api/reports/${pageId}`,versionKey(live.status));
     widgets=r.widgets;version=r.published?.version;cut=r.published?`Cierre ${r.published.business_date} · versión ${r.published.version}`:'Sin datos publicados';
    }
    const a=buildAnswer(text,pageId,widgets,cut,version);
    setCurrent(a);setHistory(h=>[a,...h].slice(0,20));setQ('');setSent(null);
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
- },[busy,live.live,live.tenantId,tokens]);
+ },[busy,live.live,live.tenantId,live.status,tokens]);
 
  useEffect(()=>{let pre:string|null=null;try{pre=sessionStorage.getItem('nova.omega.prefill');sessionStorage.removeItem('nova.omega.prefill');}catch{}if(pre)ask(pre);},[]); // eslint-disable-line react-hooks/exhaustive-deps
 

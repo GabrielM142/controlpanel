@@ -3,7 +3,8 @@ import {Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogO
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
-import {LiveProvider,useLive,useReportData,WidgetsContext} from './features/live/LiveData';
+import {LiveProvider,useLive,useReportData,versionKey,WidgetsContext} from './features/live/LiveData';
+import {cachedGet} from './features/live/cache';
 import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
 import {BrandThemeProvider,useBrandTheme} from './features/theme/useBrandTheme';
@@ -16,7 +17,7 @@ import {buildReportContext} from './features/omega/reportAI';
 import {ReportAssistant} from './features/omega/ReportAssistant';
 import {demoTickets} from './features/tickets/TicketsView';
 import LoginView from './features/live/LoginView';
-import {api,download} from './data/api';
+import {download} from './data/api';
 import {TokensProvider} from './features/tokens/useTokens';
 import {TokensChip} from './features/tokens/TokensChip';
 import {AIDrawer} from './features/ai/AIDrawer';
@@ -159,7 +160,8 @@ function AppShell(){
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
  useEffect(()=>{document.title=`${pageLabel} · OMEGA · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
- useEffect(()=>{if(!live.live||!live.tenantId){setLiveOptions({});return;}let off=false;api<Record<string,string[]>>('/api/filters',{tenant:live.tenantId}).then(o=>{if(!off)setLiveOptions(o);}).catch(()=>{});return()=>{off=true;};},[live.live,live.tenantId,published?.version]);
+ const liveVersion=versionKey(live.status);
+ useEffect(()=>{if(!live.live||!live.tenantId){setLiveOptions({});return;}if(liveVersion===null)return;let off=false;cachedGet<Record<string,string[]>>(live.tenantId,'/api/filters',liveVersion).then(o=>{if(!off)setLiveOptions(o);}).catch(()=>{});return()=>{off=true;};},[live.live,live.tenantId,liveVersion]);
  useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
