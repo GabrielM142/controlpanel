@@ -733,6 +733,11 @@
           "type": "datetime",
           "optional": false,
           "sensitivity": []
+        },
+        "delivery_status": {
+          "type": "selection",
+          "optional": true,
+          "sensitivity": []
         }
       },
       "capture": {

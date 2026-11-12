@@ -183,6 +183,17 @@
         }
       ]
     },
+    "delivery_status": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "extra": {
       "type": "object",
       "maxProperties": 40

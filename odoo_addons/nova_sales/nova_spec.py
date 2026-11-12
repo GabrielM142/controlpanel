@@ -11,7 +11,10 @@ DATASETS = [
                 "partner_shipping_id": "m2o", "date_order": "datetime", "state": "selection",
                 "user_id": "m2o", "team_id": "m2o", "company_id": "m2o", "currency_id": "m2o",
                 "pricelist_id": "m2o", "amount_untaxed": "decimal,price", "amount_total": "decimal,price",
-                "invoice_status": "selection", "commitment_date": "datetime"},
+                "invoice_status": "selection", "commitment_date": "datetime",
+                # sale_stock: 'full' once every delivery is done or cancelled, even if quantities
+                # remain undelivered; that remainder will never ship and is not backorder.
+                "delivery_status": "selection,opt"},
      "capture": {"fields": None, "refs": ["company_id", "partner_id", "user_id", "date_order"]},
      "children": [{"dataset": "sale_order_line", "fk": "order_id"}]},
     {"key": "sale_order_line", "version": 1, "model": "sale.order.line", "company_scope": "strict",
