@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {encryptSecret, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
+import {encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
 import {buildReport, METRICS, parseFilters, receivableSummary} from '../lib/metrics.mjs';
@@ -131,26 +131,61 @@ export function createHandler({pool, config, now = () => new Date()}) {
     throw new HttpError(410, 'Actualizar consulta la última publicación (/api/status); ya no dispara extracciones al ERP.');
   });
 
+  // Brute-force protection: exponential lock per email (after 5 failures) and per client
+  // IP (after 30), stored in app.auth_throttle. A missing user still runs scrypt
+  // against a fixed dummy hash so response time does not reveal which emails exist.
+  let dummyHash;
+  const clientIp = req => String(req.headers['x-real-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0]
+    || req.socket?.remoteAddress || 'unknown').trim().slice(0, 64);
+  const throttleKeys = (req, email) => [[`email:${email}`, 5], [`ip:${clientIp(req)}`, 30]];
+  async function assertNotLocked(keys) {
+    const row = await tx({}, async c => (await c.query(
+      'SELECT max(locked_until) AS until FROM app.auth_throttle WHERE key = ANY($1) AND locked_until > now()', [keys.map(k => k[0])])).rows[0]);
+    if (row?.until) {
+      const minutes = Math.max(1, Math.ceil((new Date(row.until).getTime() - Date.now()) / 60000));
+      throw new HttpError(429, `Demasiados intentos fallidos. Vuelve a intentar en ${minutes} min.`, {retryAfter: minutes * 60});
+    }
+  }
+  async function recordFailure(keys) {
+    await tx({}, async c => {
+      for (const [key, free] of keys) {
+        await c.query(`INSERT INTO app.auth_throttle AS t(key, failures, updated_at) VALUES ($1, 1, now())
+          ON CONFLICT (key) DO UPDATE SET
+            failures = CASE WHEN t.updated_at < now() - interval '1 day' THEN 1 ELSE t.failures + 1 END,
+            updated_at = now()`, [key]);
+        await c.query(`UPDATE app.auth_throttle SET locked_until = now() + make_interval(mins => least(60, power(2, failures - $2)::int))
+          WHERE key = $1 AND failures >= $2`, [key, free]);
+      }
+      if (Math.random() < 0.02) await c.query("DELETE FROM app.auth_throttle WHERE updated_at < now() - interval '2 days'");
+    });
+  }
+
   route('POST', /^\/api\/auth\/login$/, async ({req}) => {
     requireCsrf(req);
     const body = await readJson(req, 4096);
     const email = str(body.email, 200, {required: true, name: 'email'}).toLowerCase();
-    const password = typeof body.password === 'string' ? body.password : '';
+    const password = typeof body.password === 'string' ? body.password.slice(0, 1024) : '';
+    const keys = throttleKeys(req, email);
+    await assertNotLocked(keys);
     const user = await tx({}, async c => (await c.query('SELECT id, email, name, password_hash, disabled_at FROM app.users WHERE email = $1', [email])).rows[0]);
-    const ok = user && !user.disabled_at && await verifyPassword(password, user.password_hash);
-    if (!ok) throw new HttpError(401, 'Credenciales inválidas');
+    dummyHash ??= await hashPassword(newToken());
+    const valid = await verifyPassword(password, user ? user.password_hash : dummyHash);
+    const ok = user && !user.disabled_at && valid;
+    if (!ok) { await recordFailure(keys); throw new HttpError(401, 'Credenciales inválidas'); }
+    await tx({}, c => c.query('DELETE FROM app.auth_throttle WHERE key = $1', [keys[0][0]]));
     const token = newToken();
     const expires = new Date(now().getTime() + config.sessionHours * 3600000);
     await tx({}, c => c.query('INSERT INTO app.sessions(token_hash, user_id, expires_at) VALUES ($1, $2, $3)', [sha256(token), user.id, expires]));
-    const cookie = `${COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${config.sessionHours * 3600}; SameSite=${config.cookieSecure ? 'None; Secure' : 'Lax'}`;
+    const cookie = `${COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${config.sessionHours * 3600}; SameSite=${config.cookieSameSite}${config.cookieSecure ? '; Secure' : ''}`;
     return {status: 200, headers: {'Set-Cookie': cookie},
       body: {user: {id: user.id, email: user.email, name: user.name}, memberships: await memberships(user.id), token_type: 'cookie'}};
   });
   route('POST', /^\/api\/auth\/logout$/, async ({req}) => {
     requireCsrf(req);
-    const token = parseCookies(req.headers.cookie)[COOKIE];
-    if (token) await tx({}, c => c.query('UPDATE app.sessions SET revoked_at = now() WHERE token_hash = $1', [sha256(token)]));
-    return {status: 200, headers: {'Set-Cookie': `${COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`}, body: {ok: true}};
+    const auth = String(req.headers.authorization || '');
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : parseCookies(req.headers.cookie)[COOKIE];
+    if (token && token.length <= 200) await tx({}, c => c.query('UPDATE app.sessions SET revoked_at = now() WHERE token_hash = $1', [sha256(token)]));
+    return {status: 200, headers: {'Set-Cookie': `${COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=${config.cookieSameSite}${config.cookieSecure ? '; Secure' : ''}`}, body: {ok: true}};
   });
   route('GET', /^\/api\/session$/, async ({req}) => {
     if (config.mode === 'demo' && !pool) return {mode: 'demo'};
@@ -363,6 +398,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
   });
 
   route('POST', /^\/mcp$/, async ({req}) => {
+    // Cross-site CSRF is blocked by the SameSite=Lax session cookie and the exact JSON content type.
     const user = await session(req);
     if (!user) throw new HttpError(401, 'Token requerido');
     const body = await readJson(req, 16 * 1024);

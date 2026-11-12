@@ -3,16 +3,76 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/index.mjs": {"maxDuration": 30, "includeFiles": "{contracts/**,src/data/report.json,package.json}"},
-    "api/cron.mjs": {"maxDuration": 800, "includeFiles": "{contracts/**,src/data/report.json,package.json}"}
+    "api/index.mjs": {
+      "maxDuration": 30,
+      "includeFiles": "{contracts/**,src/data/report.json,package.json}"
+    },
+    "api/cron.mjs": {
+      "maxDuration": 800,
+      "includeFiles": "{contracts/**,src/data/report.json,package.json}"
+    }
   },
-  "crons": [{"path": "/api/cron", "schedule": "*/5 * * * *"}],
-  "rewrites": [
-    {"source": "/api/cron", "destination": "/api/cron"},
-    {"source": "/api/:path*", "destination": "/api/index"},
-    {"source": "/health/:path*", "destination": "/api/index"},
-    {"source": "/mcp", "destination": "/api/index"},
-    {"source": "/((?!assets/|api/|health/|mcp).*)", "destination": "/index.html"}
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "*/5 * * * *"
+    }
   ],
-  "headers": [{"source": "/(.*)", "headers": [{"key": "X-Content-Type-Options", "value": "nosniff"}, {"key": "Referrer-Policy", "value": "same-origin"}, {"key": "X-Frame-Options", "value": "SAMEORIGIN"}]}]
+  "rewrites": [
+    {
+      "source": "/api/cron",
+      "destination": "/api/cron"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/((?!assets/|api/|health/|mcp).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        }
+      ]
+    }
+  ]
 }

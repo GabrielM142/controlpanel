@@ -16,7 +16,7 @@ export async function readJson(req, limit = 32 * 1024) {
   }
   if (!size) return {};
   const type = String(req.headers['content-type'] || '');
-  if (!type.includes('application/json')) throw new HttpError(415, 'Se requiere application/json');
+  if (type.split(';')[0].trim().toLowerCase() !== 'application/json') throw new HttpError(415, 'Se requiere application/json');
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new HttpError(400, 'JSON inválido'); }
 }
 
@@ -71,7 +71,7 @@ export function toCsv(rows) {
   const cell = v => {
     let s = v === null || v === undefined ? '' : String(v);
     if (/^[=+\-@\t\r]/.test(s) && !/^-?[\d.,]+%?$/.test(s)) s = `'${s}`;
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return rows.map(r => r.map(cell).join(',')).join('\r\n') + '\r\n';
 }
