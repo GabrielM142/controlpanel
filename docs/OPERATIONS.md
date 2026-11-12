@@ -26,6 +26,21 @@ Las funciones se conectan como dueño de la base y bajan privilegios con `SET LO
 Piloto: API, worker y PostgreSQL 15 pueden compartir una VM con pools acotados (`PGPOOL_MAX`) y
 `NOVA_WORKER_CONCURRENCY`. Dimensionar tras medir; no hay número de clientes garantizado.
 
+## Staging Odoo 16 conectado (2026-11-12)
+
+| Pieza | Valor |
+|---|---|
+| Servidor | `omega-test` (Ubuntu 20.04, 2 CPU, 3,8 GB), Odoo 16.0+e como servicio `odoo16`, base `gca` |
+| Addons NOVA | `/opt/odoo16/core/nova` (agregado al final de `addons_path`); 9 instalados, `nova_website_sale` no (sin `website_sale`) |
+| HTTPS para el worker | `https://159-203-88-214.sslip.io` → nginx → `127.0.0.1:8069` (Let's Encrypt, renovación automática de certbot) |
+| Usuario técnico | `nova.integracion`: solo "Usuario interno" + "Usuario técnico integración NOVA"; API key "OMEGA NOVA" cifrada en OMEGA |
+| Respaldo previo | `/var/backups/nova/gca-antes-nova-20261112-1300.dump` (`pg_restore -d gca --clean`) y `/root/nova-backup/odoo16.conf.bak-20261112` |
+| Pruebas en el propio Odoo | base desechable `nova_test` con todos los addons del cliente: 39/39 |
+| Carga histórica | `max_pending_bytes` = 5,5 MB **comprimidos** por lote (~180 mil filas, ~85 MB sin comprimir, ~7 min de aplicación central, bajo el límite de 800 s de Vercel) |
+
+Reversión en staging: desinstalar los `nova_*` desde Aplicaciones (o restaurar el respaldo), quitar
+`/opt/odoo16/core/nova` del `addons_path`, borrar `/etc/nginx/sites-enabled/nova-staging` y reiniciar `odoo16`.
+
 ## Alta de un cliente
 
 1. `npm run migrate`; crear roles de login: `CREATE ROLE nova_api_login LOGIN PASSWORD '…' IN ROLE nova_api;`
