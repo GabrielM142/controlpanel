@@ -1,6 +1,6 @@
 # Estado de la misión NOVA + Odoo 16
 
-Actualizado: 2026-11-11. Rama: `main` (decisión explícita del propietario). Commit base: `d3271f8`
+Actualizado: 2026-11-12. Rama: `main` (decisión explícita del propietario). Commit base: `d3271f8`
 (= ZIP auditado `controlpanel-main.zip`, sin diferencias de código).
 
 Leyenda de columnas: **Impl.** código escrito · **Local** probado automáticamente en esta máquina ·
@@ -26,27 +26,27 @@ Leyenda de columnas: **Impl.** código escrito · **Local** probado automáticam
 | F1 Migraciones centrales versionadas (app/ingest/staging/core/mart/ops) | ✔ | ✔ | n/a | — | `sql/migrations/0000-0005`, checksum + lock; legado `trueque_requests` copiado sin borrar. Probado en PostgreSQL 18 (PGlite); objetivo PG15. |
 | F1 Auth/sesiones/roles/membresías + RLS | ✔ | ✔ | n/a | — | scrypt + cookie HttpOnly + anti-CSRF; RLS por `nova.tenant_id` transaccional; rol API sin acceso a secretos. Pruebas negativas de acceso cruzado (API, MCP, SQL directo). Proveedor de identidad definitivo: pendiente (M11). |
 | F1 Fixtures de dos tenants | ✔ | ✔ | — | — | `tests/fixtures/batches` generados por la librería Python del addon (mismos ids en ambas fuentes). |
-| F2 `nova_connector` (conexión, vinculación, outbox, lotes, partes, cursores, RPC, crons, retención, cuotas, clones) | ✔ | ◐ | ⏳ CI | — | Lógica pura 13/13 (Py 3.10/3.12); verificación estática (Py 3.8, XML, ACL). Pruebas Odoo en `tests/` del addon: se ejecutan en el job `odoo16` de CI. |
-| F2 `nova_master_data` | ✔ | ◐ | ⏳ CI | — | Captura create/write/unlink, rollback, commits fuera de orden, archivado, fuera de alcance, PII excluida, límites de parte. |
-| F3 `nova_sales`, `nova_account`, `nova_stock`, `nova_stock_account`, `nova_purchase`, `nova_pos` | ✔ | ◐ | ⏳ CI | — | Validación de nombres de campo contra Odoo 16 instalado en CI; pago/conciliación → cartera; NC; quants. POS: solo verificación de campos (sin escenario de sesión). |
-| F3 `nova_juj` (adaptador) | ✔ | ◐ | ⏳ CI | — | Sin nombres técnicos JUJ: mapeo configurable de marca/unidad/canal/zona/cantón. Campos reales: **pendiente JUJ**. |
+| F2 `nova_connector` (conexión, vinculación, outbox, lotes, partes, cursores, RPC, crons, retención, cuotas, clones) | ✔ | ◐ | ✔ CI | — | Lógica pura 13/13 (Py 3.10/3.12); verificación estática (Py 3.8, XML, ACL). Pruebas Odoo en `tests/` del addon: se ejecutan en el job `odoo16` de CI. |
+| F2 `nova_master_data` | ✔ | ◐ | ✔ CI | — | Captura create/write/unlink, rollback, commits fuera de orden, archivado, fuera de alcance, PII excluida, límites de parte. |
+| F3 `nova_sales`, `nova_account`, `nova_stock`, `nova_stock_account`, `nova_purchase`, `nova_pos` | ✔ | ◐ | ✔ CI | — | Validación de nombres de campo contra Odoo 16 instalado en CI; pago/conciliación → cartera; NC; quants. POS: solo verificación de campos (sin escenario de sesión). |
+| F3 `nova_juj` (adaptador) | ✔ | ◐ | ✔ CI | — | Sin nombres técnicos JUJ: mapeo configurable de marca/unidad/canal/zona/cantón. Campos reales: **pendiente JUJ**. |
 | F3 Ingesta central (descarga, checksum, límites, ACK, aplicación idempotente, cascadas, snapshot/resync, conciliación, publicación) | ✔ | ✔ | — | — | `tests/pipeline.test.mjs` 10/10: M4.4 casos 1-8, corrupto/truncado/versión/gap/tamaño/generación, ACK perdido, caída a mitad. |
 | F4 API semántica + reportes reales (Dirección, Comercial, 4 unidades, inventario, cartera básica) | ✔ | ✔ | — | — | `tests/api.test.mjs` 15/15: cifras cambian con filtro y concilian con fixtures; sin números demo en modo real; sin consulta ERP al visualizar. Cartera: API `/api/receivables` (sin pantalla propia aún). |
 | F4 Frontend (modo real/demo, corte, carga/error/sin datos, CSV, filtros reales, fuentes de datos, login) | ✔ | ✔ | n/a | — | Preservación del demo 2/2; prueba SSR de modo real; build OK. QA visual en navegador/móvil/impresión: **pendiente**. |
 | F5 Compras, logística, clientes avanzados, finanzas completas | ◐ | — | — | — | Datos ya exportados (compras, movimientos, pickings, apuntes). Marts/métricas: pendientes de mapeo contable y definiciones. |
 | F6 Tareas/notas/umbrales/Factory/Market/planes | ◐ | ✔ | n/a | — | API de tareas/notas/umbrales/Factory (idempotente, términos versionados) ✔; UI de tareas/notas aún local; Market sin falsa confirmación; tokens: simulación corregida y etiquetada; ledger de planes: tabla creada, lógica pendiente de definición comercial. |
 | F7 MCP analítico | ◐ | ✔ | n/a | — | `/mcp` con `list_tenants`, `get_data_freshness`, `get_dashboard`, `get_metric_definition`, reautorización por llamada. Backend LLM: **pendiente** (proveedor/presupuesto). |
-| F8 Compose staging, CI, ZIP, runbooks | ✔ | ◐ | ⏳ CI | — | `infra/`, `.github/workflows/ci.yml`, `npm run addons:zip`, `docs/OPERATIONS.md`. Compose no ejecutado aquí (sin Docker). Mediciones de recursos 2 CPU/2 GB: **no realizadas**. |
+| F8 Compose staging, CI, ZIP, runbooks | ✔ | ◐ | ✔ CI | — | `infra/`, `.github/workflows/ci.yml`, `npm run addons:zip`, `docs/OPERATIONS.md`. Compose no ejecutado aquí (sin Docker). Mediciones de recursos 2 CPU/2 GB: **no realizadas**. |
 
-`⏳ CI`: el job `odoo16` instala, prueba y actualiza (`-i`, `--test-enable`, `-u`) los 9 addons sobre
-una base desechable; su resultado se registra en el reporte de entrega. Hasta que pase, no considerar
-los addons "probados en Odoo 16".
+`✔ CI`: desde el commit `13a1801` (2026-11-12) el job `odoo16` instala, prueba y actualiza (`-i`,
+`--test-enable`, `-u`) los 10 addons (incluye `nova_website_sale`) sobre Odoo 16 Community: 41/41
+pruebas, sin líneas ERROR, más la instalación solo-núcleo. Falta validarlo en el staging del cliente.
 
 ## Definición mínima "enlace NOVA–Odoo funciona" (M10)
 
 | Requisito | Estado |
 |---|---|
-| Addon instalado en Odoo 16 de pruebas | ⏳ CI |
+| Addon instalado en Odoo 16 de pruebas | ✔ CI |
 | Fuente enlazada a tenant/compañías | Implementado (worker `link`), probado con transporte fixture; contra Odoo real: pendiente staging |
 | Carga inicial + ≥2 deltas con altas/cambios/bajas | Probado con lotes producidos por la librería del addon; con Odoo real: pendiente staging |
 | Recibos y reintentos idempotentes | ✔ local |
@@ -71,6 +71,15 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 6. **Planes, precios, términos legales**: textos actuales son del boceto; registrar versión con
    `npm run admin -- terms` solo tras aprobación.
 7. **Acceso a Docker/staging** para medir recursos y probar Compose.
+
+## Despliegue y seguridad (2026-11-12)
+
+- Producción en Vercel: panel + API (`api/index.mjs`) + carga nocturna por Vercel Cron (`api/cron.mjs`, cada 5 min)
+  sobre Neon Postgres `omega-db`. Modo en vivo activo en `controlpanel-gamma.vercel.app`; demo en Preview.
+- Revisión de seguridad aplicada: SSRF (IPv6 con IPv4 incrustada, DNS rebinding), bloqueo de login por email/IP,
+  tiempo de respuesta igual para emails inexistentes, cookie `SameSite=Lax; Secure`, CSP/HSTS/Permissions-Policy,
+  JSON con Content-Type exacto, CSV con ``, `npm audit` en 0.
+- Pendiente menor: texto "tenant" en dos mensajes del API; `last_error` muestra el error técnico a administradores.
 
 ## Próximos pasos concretos
 
