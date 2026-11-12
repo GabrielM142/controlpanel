@@ -275,3 +275,6 @@
 .om-ai-test { margin-top: 12px; display: grid; gap: 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); }
 .om-ai-test small { color: var(--text-3); font-family: var(--font-num); font-size: 11px; }
 @media (max-width: 767px) { .om-ai-form { grid-template-columns: 1fr; } }
+
+/* Umbral sin dato publicado: se muestra, nunca alerta */
+.threshold-row.st-nodata { opacity: .72; }

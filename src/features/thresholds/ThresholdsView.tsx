@@ -5,6 +5,7 @@ import {AREA_LABEL,useThresholds,type ThresholdArea,type ThresholdRule} from './
 const areaIcon:Record<ThresholdArea,typeof Store>={comercial:TrendingUp,financiero:Coins,compras:Store,inventarios:Package,soporte:LifeBuoy};
 
 function fmt(v:number,unit:string){
+ if(!Number.isFinite(v))return 'Sin dato';
  if(unit==='USD')return v.toLocaleString('es-EC',{style:'currency',currency:'USD',maximumFractionDigits:0});
  if(unit==='%')return `${v}%`;
  return `${v} ${unit}`;
@@ -12,11 +13,12 @@ function fmt(v:number,unit:string){
 
 function status(r:ThresholdRule){
  if(!r.enabled)return 'off';
+ if(!Number.isFinite(r.current))return 'nodata';
  const tri=(r.operator==='>'&&r.current>r.threshold)||(r.operator==='>='&&r.current>=r.threshold)||(r.operator==='<'&&r.current<r.threshold)||(r.operator==='<='&&r.current<=r.threshold);
  return tri?(r.tone==='r'?'critical':'warning'):'ok';
 }
 
-const statusLabel:Record<string,string>={ok:'Dentro del umbral',warning:'Cerca del límite',critical:'Umbral excedido',off:'Alerta desactivada'};
+const statusLabel:Record<string,string>={nodata:'Sin dato publicado',ok:'Dentro del umbral',warning:'Cerca del límite',critical:'Umbral excedido',off:'Alerta desactivada'};
 
 export default function ThresholdsView(){
  const {rules,updateThreshold,toggleEnabled,resetOne,resetAll,stats}=useThresholds();

@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {decryptSecret, encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
-import {buildReport, METRICS, parseFilters, receivableSummary, warehouseValuation} from '../lib/metrics.mjs';
+import {buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
@@ -457,10 +457,14 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const b = await readJson(req, 8192);
     if (b.status !== undefined && !TASK_STATUS.has(b.status)) throw new HttpError(400, 'Estado inválido');
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const due = b.due_date === null ? 'clear' : /^\d{4}-\d{2}-\d{2}$/.test(b.due_date || '') ? b.due_date : null;
       const row = (await c.query(`UPDATE app.tasks SET title = coalesce($3, title), description = coalesce($4, description),
-                                     status = coalesce($5, status), priority = coalesce($6, priority), updated_at = now()
+                                     status = coalesce($5, status), priority = coalesce($6, priority),
+                                     due_date = CASE WHEN $7::text = 'clear' THEN NULL WHEN $7::text IS NOT NULL THEN $7::date ELSE due_date END,
+                                     view_id = coalesce($8, view_id), updated_at = now()
                                    WHERE id = $1 AND (owner_id = $2 OR assignee_id = $2) RETURNING *`,
-      [match[1], ctx.user.id, str(b.title, 200), str(b.description, 4000), b.status ?? null, PRIORITY.has(b.priority) ? b.priority : null])).rows[0];
+      [match[1], ctx.user.id, str(b.title, 200), str(b.description, 4000), b.status ?? null, PRIORITY.has(b.priority) ? b.priority : null,
+        due, str(b.view_id, 40)])).rows[0];
       if (!row) throw new HttpError(404, 'Tarea inexistente');
       await audit(c, ctx, 'task.update', row.id, {status: b.status});
       return row;
@@ -489,9 +493,99 @@ export function createHandler({pool, config, now = () => new Date()}) {
       'INSERT INTO app.notes(tenant_id, owner_id, body, color, view_id, pinned) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [ctx.tenantId, ctx.user.id, str(b.body, 4000, {required: true, name: 'body'}), str(b.color, 20) || 'amber', str(b.view_id, 40), b.pinned === true])).rows[0]}));
   });
+  route('PATCH', /^\/api\/notes\/([0-9a-f-]{36})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 8192);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const row = (await c.query(`UPDATE app.notes SET body = coalesce($3, body), color = coalesce($4, color), pinned = coalesce($5, pinned),
+                                     view_id = coalesce($6, view_id), updated_at = now() WHERE id = $1 AND owner_id = $2 RETURNING *`,
+      [match[1], ctx.user.id, str(b.body, 4000), str(b.color, 20), typeof b.pinned === 'boolean' ? b.pinned : null, str(b.view_id, 40)])).rows[0];
+      if (!row) throw new HttpError(404, 'Nota inexistente');
+      return row;
+    });
+  });
+  route('DELETE', /^\/api\/notes\/([0-9a-f-]{36})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const n = (await c.query('DELETE FROM app.notes WHERE id = $1 AND owner_id = $2', [match[1], ctx.user.id])).rowCount;
+      if (!n) throw new HttpError(404, 'Nota inexistente');
+      return {deleted: true};
+    });
+  });
+
+  // Thresholds: shared per company (admins edit), evaluated against the latest published close.
   route('GET', /^\/api\/thresholds$/, async ({req}) => {
     const ctx = await tenantContext(req);
-    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => ({rules: (await c.query('SELECT * FROM app.threshold_rules ORDER BY id')).rows}));
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true, isolation: 'REPEATABLE READ'}, async c => {
+      const rules = (await c.query('SELECT id, metric, comparator, warn_value, crit_value, enabled, updated_at FROM app.threshold_rules ORDER BY id')).rows;
+      const pub = (await c.query('SELECT version, business_date::text FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      const values = pub?.business_date ? await thresholdValues(c, pub.business_date, ctx.companies) : {};
+      return {rules, values, published: pub || null, can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin};
+    });
+  });
+  route('PUT', /^\/api\/thresholds\/([a-z0-9-]{1,60})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 2048);
+    const value = Number(b.threshold);
+    if (!Number.isFinite(value)) throw new HttpError(400, 'Umbral inválido');
+    const comparator = b.comparator === 'gt' ? 'gt' : 'lt';
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.threshold_rules(id, tenant_id, metric, comparator, warn_value, crit_value, enabled, owner_id, updated_at)
+        VALUES ($1, $2, $1, $3, $4, $4, $5, $6, now())
+        ON CONFLICT (tenant_id, id) DO UPDATE SET comparator = EXCLUDED.comparator, warn_value = EXCLUDED.warn_value,
+          crit_value = EXCLUDED.crit_value, enabled = EXCLUDED.enabled, owner_id = EXCLUDED.owner_id, updated_at = now()`,
+      [match[1], ctx.tenantId, comparator, value, b.enabled !== false, ctx.user.id]);
+      await audit(c, ctx, 'threshold.update', match[1], {threshold: value, enabled: b.enabled !== false});
+      return {ok: true};
+    });
+  });
+  route('DELETE', /^\/api\/thresholds\/([a-z0-9-]{1,60})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query('DELETE FROM app.threshold_rules WHERE id = $1', [match[1]]);
+      return {ok: true};
+    });
+  });
+
+  // Decisions: shared inbox per company with who decided and when.
+  const DECISION_STATUS = new Set(['pendiente', 'aprobada', 'rechazada', 'escalada', 'reasignada']);
+  route('GET', /^\/api\/decisions$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => ({decisions: (await c.query(
+      `SELECT d.*, u.name AS decided_by_name FROM app.decisions d LEFT JOIN app.users u ON u.id = d.decided_by
+        ORDER BY d.created_at DESC LIMIT 300`)).rows}));
+  });
+  route('POST', /^\/api\/decisions$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 8192);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const row = (await c.query(`INSERT INTO app.decisions(tenant_id, id, kind, title, detail, recommendation, priority, page_id, source, created_by)
+        VALUES ($1, $2, 'omega', $3, $4, $5, 'media', $6, 'Pregúntale a Omega', $7) RETURNING *`,
+      [ctx.tenantId, `omega-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, str(b.title, 300, {required: true, name: 'title'}),
+        str(b.detail, 2000), str(b.recommendation, 1000), str(b.page_id, 40), ctx.user.id])).rows[0];
+      await audit(c, ctx, 'decision.create', row.id);
+      return {status: 201, body: row};
+    });
+  });
+  route('PATCH', /^\/api\/decisions\/([A-Za-z0-9._:-]{1,80})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'analyst');
+    const b = await readJson(req, 4096);
+    if (!DECISION_STATUS.has(b.status)) throw new HttpError(400, 'Estado inválido');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      // Derived decisions (e.g. an exceeded threshold) get a row the first time someone decides them.
+      const row = (await c.query(`INSERT INTO app.decisions(tenant_id, id, kind, title, status, decided_by, decided_at, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, now(), $6)
+        ON CONFLICT (tenant_id, id) DO UPDATE SET status = EXCLUDED.status, decided_by = EXCLUDED.decided_by, decided_at = now()
+        RETURNING *`, [ctx.tenantId, match[1], match[1].startsWith('th-') ? 'umbral' : 'omega', str(b.title, 300), b.status, ctx.user.id])).rows[0];
+      await audit(c, ctx, 'decision.status', row.id, {status: b.status});
+      return row;
+    });
   });
 
   route('POST', /^\/mcp$/, async ({req}) => {

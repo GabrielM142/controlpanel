@@ -1,4 +1,5 @@
 import {useLive} from '../live/LiveData';
+import {api} from '../../data/api';
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 
 export type ThresholdArea='comercial'|'financiero'|'compras'|'inventarios'|'soporte';
@@ -66,7 +67,7 @@ const Ctx=createContext<ThresholdsState|null>(null);
 const KEY='nova.thresholds';
 
 function isTriggered(r:ThresholdRule){
- if(!r.enabled)return false;
+ if(!r.enabled||!Number.isFinite(r.current))return false;
  switch(r.operator){
   case '>':return r.current>r.threshold;
   case '>=':return r.current>=r.threshold;
@@ -86,18 +87,36 @@ function readStore():ThresholdRule[]{
  }catch{return DEFAULTS;}
 }
 
+// Live: thresholds are shared per company (stored in the API, admins edit) and evaluated against
+// the latest published close; a rule without published data has current = NaN and never alerts.
+type ApiRule={id:string;comparator:'lt'|'gt';warn_value:string;enabled:boolean};
+type ApiThresholds={rules:ApiRule[];values:Record<string,number>;can_edit:boolean};
+
 export function ThresholdsProvider({children}:{children:ReactNode}){
- const [rules,setRules]=useState<ThresholdRule[]>(readStore);
- useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(rules.map(r=>({id:r.id,threshold:r.threshold,enabled:r.enabled}))));}catch{}},[rules]);
+ const {live,tenantId,status}=useLive();
+ const [rules,setRules]=useState<ThresholdRule[]>(()=>live?DEFAULTS.map(r=>({...r,current:NaN})):readStore());
+ useEffect(()=>{if(live)return;try{localStorage.setItem(KEY,JSON.stringify(rules.map(r=>({id:r.id,threshold:r.threshold,enabled:r.enabled}))));}catch{}},[rules,live]);
+ const version=status?.published?.version;
+ useEffect(()=>{
+  if(!live||!tenantId)return;let off=false;
+  api<ApiThresholds>('/api/thresholds',{tenant:tenantId}).then(r=>{if(off)return;
+   const saved=new Map(r.rules.map(x=>[x.id,x]));
+   setRules(DEFAULTS.map(def=>{const s=saved.get(def.id);const v=r.values[def.id];
+    return {...def,current:typeof v==='number'?v:NaN,threshold:s?Number(s.warn_value):def.threshold,enabled:s?s.enabled:def.enabled};}));
+  }).catch(()=>{});
+  return()=>{off=true;};
+ },[live,tenantId,version]);
+ const persist=useCallback((r:ThresholdRule)=>{
+  if(!live||!tenantId)return;
+  api(`/api/thresholds/${r.id}`,{tenant:tenantId,method:'PUT',body:{threshold:r.threshold,enabled:r.enabled,comparator:r.operator.startsWith('>')?'gt':'lt'}}).catch(()=>{});
+ },[live,tenantId]);
 
- const updateThreshold=useCallback((id:string,value:number)=>{setRules(prev=>prev.map(r=>r.id===id?{...r,threshold:Number.isFinite(value)?value:r.threshold}:r));},[]);
- const toggleEnabled=useCallback((id:string,enabled:boolean)=>{setRules(prev=>prev.map(r=>r.id===id?{...r,enabled}:r));},[]);
- const resetOne=useCallback((id:string)=>{setRules(prev=>prev.map(r=>r.id===id?{...r,threshold:r.defaultThreshold,enabled:true}:r));},[]);
- const resetAll=useCallback(()=>{setRules(DEFAULTS.map(r=>({...r})));},[]);
+ const updateThreshold=useCallback((id:string,value:number)=>{setRules(prev=>prev.map(r=>{if(r.id!==id)return r;const n={...r,threshold:Number.isFinite(value)?value:r.threshold};persist(n);return n;}));},[persist]);
+ const toggleEnabled=useCallback((id:string,enabled:boolean)=>{setRules(prev=>prev.map(r=>{if(r.id!==id)return r;const n={...r,enabled};persist(n);return n;}));},[persist]);
+ const resetOne=useCallback((id:string)=>{setRules(prev=>prev.map(r=>{if(r.id!==id)return r;const n={...r,threshold:r.defaultThreshold,enabled:true};persist(n);return n;}));},[persist]);
+ const resetAll=useCallback(()=>{setRules(prev=>prev.map(r=>{const n={...r,threshold:r.defaultThreshold,enabled:true};if(n.threshold!==r.threshold||!r.enabled)persist(n);return n;}));},[persist]);
 
- // Live: 'current' values are demo fixtures until the server evaluates rules after each publication.
- const {live}=useLive();
- const activeAlerts=useMemo(()=>live?[]:rules.filter(isTriggered),[rules,live]);
+ const activeAlerts=useMemo(()=>rules.filter(isTriggered),[rules]);
  const stats=useMemo(()=>({
   total:rules.length,
   enabled:rules.filter(r=>r.enabled).length,

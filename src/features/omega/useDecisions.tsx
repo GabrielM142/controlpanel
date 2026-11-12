@@ -2,10 +2,12 @@ import {createContext,useCallback,useContext,useEffect,useMemo,useState,type Rea
 import {useThresholds} from '../thresholds/useThresholds';
 import {demoTickets} from '../tickets/TicketsView';
 import {useLive} from '../live/LiveData';
+import {api} from '../../data/api';
 
 // OMEGA · bandeja única de decisiones. Fuentes: tickets de soporte, umbrales excedidos (useThresholds),
 // solicitudes de aprobación de ejemplo y lo que el gerente lleva desde "Pregúntale a Omega".
-// Estado (aprobado/rechazado/escalado) se guarda en este navegador: es un demo, no firma real en el ERP.
+// En vivo el estado y lo creado se guardan en la API (compartido por empresa, con quién decidió y cuándo);
+// en demo se guardan en este navegador. No es una firma en el ERP.
 export type DecisionKind='compra'|'descuento'|'reclamo'|'umbral'|'omega';
 export type DecisionStatus='pendiente'|'aprobada'|'rechazada'|'escalada'|'reasignada';
 export type Decision={id:string;kind:DecisionKind;title:string;detail:string;recommendation:string;amount?:number;
@@ -25,10 +27,23 @@ const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return {
 
 export function DecisionsProvider({children}:{children:ReactNode}){
  const {activeAlerts}=useThresholds();
- const {live}=useLive();
- const [store,setStore]=useState<{status:Record<string,DecisionStatus>;added:Omit<Decision,'status'>[]}>(read);
+ const {live,tenantId}=useLive();
+ const [store,setStore]=useState<{status:Record<string,DecisionStatus>;added:Omit<Decision,'status'>[]}>(()=>live?{status:{},added:[]}:read());
  const [history,setHistory]=useState<Record<string,DecisionStatus>>({});
- useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}},[store]);
+ useEffect(()=>{if(live)return;try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}},[store,live]);
+ useEffect(()=>{
+  if(!live||!tenantId)return;let off=false;
+  type Row={id:string;kind:DecisionKind;title:string|null;detail:string|null;recommendation:string|null;priority:'alta'|'media'|'baja';page_id:string|null;source:string|null;status:DecisionStatus;created_at:string;decided_by_name:string|null};
+  api<{decisions:Row[]}>('/api/decisions',{tenant:tenantId}).then(r=>{if(off)return;
+   setStore({status:Object.fromEntries(r.decisions.map(d=>[d.id,d.status])),
+    added:r.decisions.filter(d=>d.kind==='omega'&&d.title).map(d=>({id:d.id,kind:'omega' as const,title:d.title!,detail:d.detail||'',recommendation:d.recommendation||'',
+     priority:d.priority,age:new Date(d.created_at).toLocaleDateString('es-EC'),owner:d.decided_by_name||'Gerencia',pageId:d.page_id||undefined,source:d.source||'Pregúntale a Omega'}))});
+  }).catch(()=>{});
+  return()=>{off=true;};
+ },[live,tenantId]);
+ const saveStatus=useCallback((id:string,status:DecisionStatus,title?:string)=>{
+  if(live&&tenantId)api(`/api/decisions/${encodeURIComponent(id)}`,{tenant:tenantId,method:'PATCH',body:{status,title}}).catch(()=>{});
+ },[live,tenantId]);
 
  const base=useMemo<Omit<Decision,'status'>[]>(()=>[
   // Live: only what the manager created; demo approvals and tickets never mix with real data.
@@ -48,14 +63,21 @@ export function DecisionsProvider({children}:{children:ReactNode}){
  const decide=useCallback((id:string,status:DecisionStatus)=>{
   setHistory(h=>({...h,[id]:store.status[id]||'pendiente'}));
   setStore(s=>({...s,status:{...s.status,[id]:status}}));
- },[store.status]);
- const undo=useCallback((id:string)=>{setStore(s=>{const status={...s.status};const prev=history[id];if(!prev||prev==='pendiente')delete status[id];else status[id]=prev;return {...s,status};});},[history]);
+  saveStatus(id,status,base.find(d=>d.id===id)?.title);
+ },[store.status,saveStatus,base]);
+ const undo=useCallback((id:string)=>{
+  const prev=history[id]||'pendiente';
+  setStore(s=>{const status={...s.status};if(prev==='pendiente')delete status[id];else status[id]=prev;return {...s,status};});
+  saveStatus(id,prev);
+ },[history,saveStatus]);
  const addFromOmega=useCallback((d:{title:string;detail:string;recommendation:string;pageId?:string})=>{
   const id=`omega-${Date.now()}`;
   const item:Omit<Decision,'status'>={id,kind:'omega',title:d.title,detail:d.detail,recommendation:d.recommendation,priority:'media',age:'ahora',owner:'Gerencia',pageId:d.pageId,source:'Pregúntale a Omega'};
   setStore(s=>({...s,added:[item,...s.added].slice(0,20)}));
+  if(live&&tenantId)api<{id:string}>('/api/decisions',{tenant:tenantId,method:'POST',body:{title:d.title,detail:d.detail,recommendation:d.recommendation,page_id:d.pageId}})
+   .then(row=>setStore(s=>({...s,added:s.added.map(x=>x.id===id?{...x,id:row.id}:x)}))).catch(()=>{});
   return id;
- },[]);
+ },[live,tenantId]);
  const value=useMemo(()=>({decisions,pending:decisions.filter(d=>d.status==='pendiente').length,decide,undo,addFromOmega}),[decisions,decide,undo,addFromOmega]);
  return <DecisionsCtx.Provider value={value}>{children}</DecisionsCtx.Provider>;
 }

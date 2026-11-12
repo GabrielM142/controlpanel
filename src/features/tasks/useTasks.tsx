@@ -1,4 +1,6 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
+import {api} from '../../data/api';
+import {useLive} from '../live/LiveData';
 
 export type TaskPriority='baja'|'media'|'alta';
 export type TaskStatus='pending'|'in_progress'|'done'|'cancelled';
@@ -41,19 +43,47 @@ const seed:Task[]=[
 
 function readStore():Task[]{try{const raw=localStorage.getItem(KEY);if(!raw){localStorage.setItem(KEY,JSON.stringify(seed));return seed;}const p=JSON.parse(raw);return Array.isArray(p)?p:seed;}catch{return seed;}}
 
+// Live: tasks live in the NOVA API (shared, per company and user); demo keeps the browser store.
+type ApiTask={id:string;title:string;description:string|null;status:string;priority:string;due_date:string|null;view_id:string|null;created_at:string;updated_at:string};
+const FROM_API:Record<string,TaskStatus>={todo:'pending',doing:'in_progress',done:'done',cancelled:'cancelled'};
+const TO_API:Record<TaskStatus,string>={pending:'todo',in_progress:'doing',done:'done',cancelled:'cancelled'};
+const fromApi=(r:ApiTask):Task=>({id:r.id,title:r.title,description:r.description||undefined,createdAt:r.created_at,updatedAt:r.updated_at,
+ dueDate:r.due_date?String(r.due_date).slice(0,10):undefined,priority:(r.priority==='urgente'?'alta':r.priority) as TaskPriority,
+ status:FROM_API[r.status]||'pending',linkedPageId:r.view_id||undefined});
+
 export function TasksProvider({children}:{children:ReactNode}){
- const [tasks,setTasks]=useState<Task[]>(readStore);
- useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(tasks));}catch{}},[tasks]);
+ const {live,tenantId}=useLive();
+ const [tasks,setTasks]=useState<Task[]>(()=>live?[]:readStore());
+ useEffect(()=>{if(live)return;try{localStorage.setItem(KEY,JSON.stringify(tasks));}catch{}},[tasks,live]);
+ useEffect(()=>{
+  if(!live||!tenantId)return;let off=false;
+  api<{tasks:ApiTask[]}>('/api/tasks',{tenant:tenantId}).then(r=>{if(!off)setTasks(r.tasks.map(fromApi));}).catch(()=>{});
+  return()=>{off=true;};
+ },[live,tenantId]);
 
  const add=useCallback((input:{title:string;description?:string;priority?:TaskPriority;dueDate?:string;linkedPageId?:string})=>{
   const now=new Date().toISOString();
   const t:Task={id:'t'+Date.now()+Math.random().toString(36).slice(2,5),title:input.title.trim().slice(0,140),description:input.description?.trim().slice(0,600),createdAt:now,updatedAt:now,priority:input.priority||'media',status:'pending',dueDate:input.dueDate,linkedPageId:input.linkedPageId};
-  setTasks(prev=>[t,...prev]);return t;
- },[]);
- const update=useCallback((id:string,patch:Partial<Task>)=>{setTasks(prev=>prev.map(t=>t.id===id?{...t,...patch,updatedAt:new Date().toISOString()}:t));},[]);
- const remove=useCallback((id:string)=>{setTasks(prev=>prev.filter(t=>t.id!==id));},[]);
+  setTasks(prev=>[t,...prev]);
+  if(live&&tenantId)api<ApiTask>('/api/tasks',{tenant:tenantId,method:'POST',body:{title:t.title,description:t.description,priority:t.priority,due_date:t.dueDate,view_id:t.linkedPageId}})
+   .then(row=>setTasks(prev=>prev.map(x=>x.id===t.id?{...fromApi(row),aiReviewedAt:x.aiReviewedAt,aiSuggestion:x.aiSuggestion}:x)))
+   .catch(()=>setTasks(prev=>prev.filter(x=>x.id!==t.id)));
+  return t;
+ },[live,tenantId]);
+ const update=useCallback((id:string,patch:Partial<Task>)=>{
+  setTasks(prev=>prev.map(t=>t.id===id?{...t,...patch,updatedAt:new Date().toISOString()}:t));
+  const body:Record<string,unknown>={};
+  if(patch.title!==undefined)body.title=patch.title;if(patch.description!==undefined)body.description=patch.description;
+  if(patch.status!==undefined)body.status=TO_API[patch.status];if(patch.priority!==undefined)body.priority=patch.priority;
+  if('dueDate' in patch)body.due_date=patch.dueDate||null;if(patch.linkedPageId!==undefined)body.view_id=patch.linkedPageId;
+  if(live&&tenantId&&Object.keys(body).length&&/^[0-9a-f-]{36}$/.test(id))api(`/api/tasks/${id}`,{tenant:tenantId,method:'PATCH',body}).catch(()=>{});
+ },[live,tenantId]);
+ const remove=useCallback((id:string)=>{
+  setTasks(prev=>prev.filter(t=>t.id!==id));
+  if(live&&tenantId&&/^[0-9a-f-]{36}$/.test(id))api(`/api/tasks/${id}`,{tenant:tenantId,method:'DELETE'}).catch(()=>{});
+ },[live,tenantId]);
  const setStatus=useCallback((id:string,status:TaskStatus)=>{update(id,{status});},[update]);
- const markAiReview=useCallback((id:string,suggestion:string)=>{update(id,{aiReviewedAt:new Date().toISOString(),aiSuggestion:suggestion});},[update]);
+ const markAiReview=useCallback((id:string,suggestion:string)=>{setTasks(prev=>prev.map(t=>t.id===id?{...t,aiReviewedAt:new Date().toISOString(),aiSuggestion:suggestion}:t));},[]);
 
  const counts=useMemo(()=>{const today=new Date().toISOString().slice(0,10);return {
   pending:tasks.filter(t=>t.status==='pending').length,
