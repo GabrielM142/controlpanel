@@ -3,14 +3,16 @@
    Se carga después de theme.css.
    ============================================================ */
 
-/* Tipografía: Geist para la interfaz, Instrument Serif para titulares y cifras */
+/* Tipografía: Geist para la interfaz, Bricolage Grotesque para titulares y cifras, Geist Mono para montos */
 :root, body, button, select, input, textarea { font-family: var(--font-ui); }
 h1, .kpi-value, .metric-value, .visual-score, .score-orbit strong, .omega-brand strong, .omega-mark, .omega-glyph {
-  font-family: var(--font-display); font-weight: 400;
+  font-family: var(--font-display); font-weight: 700;
 }
-h1 { letter-spacing: -.4px; }
-.kpi-value { letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
-.metric-value { letter-spacing: -.2px; }
+h1 { letter-spacing: -1.2px; }
+.kpi-value { letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.metric-value { letter-spacing: -.6px; }
+/* Montos en tablas, códigos y fuentes de datos */
+td.num, .om-dec-amount, .om-sources, .om-ask kbd, .omega-ask kbd, code, kbd { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 
 /* Marca */
 .omega-brand { display: flex; align-items: center; gap: 12px; padding: 26px 22px 18px; }
@@ -18,7 +20,7 @@ h1 { letter-spacing: -.4px; }
   width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px;
   border: 1px solid var(--gold-line); background: var(--gold-soft); color: var(--omega-gold); font-size: 28px; line-height: 1;
 }
-.omega-brand strong { display: block; font-family: var(--font-ui); font-weight: 600; font-size: 15px; letter-spacing: 4px; color: var(--text); }
+.omega-brand strong { display: block; font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: 3px; color: var(--text); }
 .omega-brand small { display: block; margin-top: 3px; font-size: 11px; color: var(--text-3); letter-spacing: 0; }
 :root:not([data-theme=dark]) .omega-brand strong { color: var(--c-ffffff, white); }
 
