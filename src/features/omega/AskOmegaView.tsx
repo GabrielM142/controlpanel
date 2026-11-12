@@ -89,12 +89,13 @@ export default function AskOmegaView(){
     <label htmlFor="om-q" className="om-sr">Pregúntale a Omega</label>
     <OmegaGlyph className="om-ask-glyph"/>
     <input id="om-q" value={q} onChange={e=>setQ(e.target.value)} placeholder="Pregúntale a Omega: “¿dónde estoy perdiendo margen?”" autoComplete="off"/>
-    <button type="submit" className="om-btn om-btn--gold" disabled={busy||!q.trim()}><Send size={14}/>Preguntar</button>
+    <button type="submit" className="om-btn om-btn--gold" disabled={busy||!q.trim()} aria-busy={busy}><Send size={14} className={busy?'om-spin':''}/>{busy?'Pensando…':'Preguntar'}</button>
    </form>
    <div className="om-suggest">{SUGGESTED.map(s=><button key={s} type="button" className="om-pill" onClick={()=>ask(s)}>{s}</button>)}</div>
    {error&&<p className="legend-note" role="alert">{error}</p>}
+   {busy&&<div className="om-card om-answer" aria-live="polite"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Omega está pensando…</span><span className="om-skel" style={{height:28,width:'70%'}}/><span className="om-skel" style={{height:14,width:'100%'}}/><span className="om-skel" style={{height:14,width:'55%'}}/></div>}
 
-   {current?<article className="om-card om-answer" aria-live="polite">
+   {!busy&&current?<article className="om-card om-answer om-rise" aria-live="polite">
     <header className="om-answer-head"><Eyebrow><OmegaGlyph/> Omega responde · {current.q}</Eyebrow>
      <button type="button" className="om-btn om-btn--ghost" onClick={()=>setSaved(s=>isSaved?s.filter(x=>x.q!==current.q):[current,...s])}>{isSaved?<BookmarkCheck size={14}/>:<Bookmark size={14}/>}{isSaved?'Guardada':'Guardar consulta'}</button></header>
     <h2 className="om-headline om-headline--sm">{current.conclusion}</h2>
@@ -108,7 +109,7 @@ export default function AskOmegaView(){
     <footer className="om-sources"><Eyebrow><Database size={12}/> Fuentes</Eyebrow><ul>{current.sources.map(s=><li key={s}>{s}</li>)}</ul>
      <p className="om-muted">Solo lectura · {current.cut} · <button type="button" className="om-link" onClick={()=>navigate(current.pageId)}>Abrir el reporte<ArrowUpRight size={12}/></button></p>
      {!live.live&&<Chip tone="warn">Demo: consulta guiada sobre los datos de ejemplo; el modelo de lenguaje se conecta en una fase posterior.</Chip>}</footer>
-   </article>:<div className="om-card om-empty-state"><OmegaGlyph className="om-big-glyph"/><h2 className="om-headline om-headline--sm">La última palabra en tus datos.</h2><p>Pregunta como hablas. Omega responde con las cifras del último cierre y te dice de dónde salen.</p></div>}
+   </article>:!busy&&<div className="om-card om-empty-state"><OmegaGlyph className="om-big-glyph"/><h2 className="om-headline om-headline--sm">La última palabra en tus datos.</h2><p>Pregunta como hablas. Omega responde con las cifras del último cierre y te dice de dónde salen.</p></div>}
   </section>
  </div>;
 }

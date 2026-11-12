@@ -13,7 +13,7 @@ function Pulse({score,status}:{score:number|null;status:string}){
  return <div className="om-pulse">
   <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label={score===null?'Pulso pendiente':`Índice de salud empresarial ${score} de 100`}>
    <circle cx="70" cy="70" r={r} className="om-pulse-track"/>
-   <circle cx="70" cy="70" r={r} className="om-pulse-value" strokeDasharray={`${c*frac} ${c}`} transform="rotate(-90 70 70)"/>
+   <circle cx="70" cy="70" r={r} className="om-pulse-value om-ring" strokeDasharray={`${c*frac} ${c}`} style={{['--ring-len' as string]:c*frac}} transform="rotate(-90 70 70)"/>
    <text x="70" y="76" textAnchor="middle" className="om-pulse-num">{score===null?'—':score}</text>
    <text x="70" y="98" textAnchor="middle" className="om-pulse-of">DE 100</text>
   </svg>
@@ -31,9 +31,9 @@ function UnitsChart({rows}:{rows:string[][]}){
  return <figure className="om-chart">
   <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Ventas reales, presupuesto y año anterior por unidad de negocio">
    {data.map((d,i)=>{const x=i*gw+gw/2;return <g key={d.n}>
-    <rect x={x-bw*1.6} y={y(d.real)} width={bw} height={H-30-y(d.real)} rx="4" className={d===best?'om-bar-real om-bar-best':'om-bar-real'}><title>{`${d.n} real ${fmtMoney(d.real||0)}`}</title></rect>
-    {d.ppto!==null&&<rect x={x-bw*0.5} y={y(d.ppto)} width={bw} height={H-30-y(d.ppto)} rx="4" className="om-bar-ppto"><title>{`${d.n} presupuesto ${fmtMoney(d.ppto)}`}</title></rect>}
-    {d.prev!==null&&<rect x={x+bw*0.6} y={y(d.prev)} width={bw} height={H-30-y(d.prev)} rx="4" className="om-bar-prev"><title>{`${d.n} año anterior ${fmtMoney(d.prev)}`}</title></rect>}
+    <rect x={x-bw*1.6} y={y(d.real)} width={bw} height={H-30-y(d.real)} rx="4" className={d===best?'om-bar-real om-bar-best om-grow':'om-bar-real om-grow'}><title>{`${d.n} real ${fmtMoney(d.real||0)}`}</title></rect>
+    {d.ppto!==null&&<rect x={x-bw*0.5} y={y(d.ppto)} width={bw} height={H-30-y(d.ppto)} rx="4" className="om-bar-ppto om-grow"><title>{`${d.n} presupuesto ${fmtMoney(d.ppto)}`}</title></rect>}
+    {d.prev!==null&&<rect x={x+bw*0.6} y={y(d.prev)} width={bw} height={H-30-y(d.prev)} rx="4" className="om-bar-prev om-grow"><title>{`${d.n} año anterior ${fmtMoney(d.prev)}`}</title></rect>}
     <text x={x} y={H-10} textAnchor="middle" className="om-axis">{d.n}</text>
    </g>;})}
   </svg>
@@ -98,7 +98,7 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
  ];
 
  return <div className="om-dir">
-  <section className="om-card om-briefing" aria-label="Briefing">
+  <section className="om-card om-briefing om-rise" aria-label="Briefing">
    <div className="om-briefing-text">
     <Eyebrow>Briefing · {today()}</Eyebrow>
     <h2 className="om-headline">{head1} <em className={u!==null&&u<0?'om-bad':'om-good'}>{head2}</em></h2>
@@ -112,7 +112,7 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
   </section>
 
   <section className="om-kpis" aria-label="Indicadores clave">
-   {big.map(({k,label,note,fin})=><article key={label} className={`om-card om-kpi om-kpi--${fin}`}>
+   {big.map(({k,label,note,fin})=><article key={label} className={`om-card om-kpi om-kpi--${fin} om-rise`}>
     <Eyebrow>{label}</Eyebrow>
     <strong className={`om-figure${k&&parseNumber(k.value)!==null&&parseNumber(k.value)!<0?' om-bad':''}`}>{k?.value||'—'}</strong>
     <div className="om-kpi-foot">{k&&<Chip tone={toneChip(k.tone)}>{k.tone==='g'?'A favor':k.tone==='r'?'En contra':'Revisar'}</Chip>}<span>{note}</span></div>

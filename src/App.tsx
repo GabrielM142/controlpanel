@@ -165,11 +165,19 @@ function AppShell(){
   window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[navigate]);
  const toggleKey=useCallback((k:string)=>{setExpanded(prev=>{const next=new Set(prev);if(next.has(k))next.delete(k);else next.add(k);return next;});},[]);
 
+ const [syncing,setSyncing]=useState(false);
+ const [refreshedAt,setRefreshedAt]=useState<number|null>(null);
  const refresh=useCallback(async()=>{
-  if(!live.live){setNotice('Vista de demostración. La conexión a Odoo se realizará en la siguiente etapa.');return;}
-  await live.refreshStatus();
-  setNotice('Se consultó la última publicación de NOVA. Los datos se cargan cada noche desde Odoo; este botón no lanza extracciones al ERP.');
- },[live]);
+  if(syncing)return;
+  setSyncing(true);
+  const minVisual=new Promise(r=>setTimeout(r,700)); // visual only: the existing refresh is unchanged
+  try{
+   if(live.live)await live.refreshStatus();
+   await minVisual;
+   setRefreshedAt(Date.now());
+   setNotice(live.live?'Se consultó la última publicación de NOVA. Los datos se cargan cada noche desde Odoo; este botón no lanza extracciones al ERP.':'Vista de demostración. La conexión a Odoo se realizará en la siguiente etapa.');
+  }finally{setSyncing(false);}
+ },[live,syncing]);
  const exportCsv=useCallback(async()=>{
   if(!live.tenantId||!reportPage)return;
   const q=new URLSearchParams(Object.entries(filterQuery).filter(([,v])=>v)).toString();
@@ -311,13 +319,14 @@ function AppShell(){
       <p>{pageQuestion}</p>
      </div>
      <div className="header-actions">
+      {(syncing||refreshedAt)&&<div className="om-sync-chip" role="status">{syncing?<><RefreshCw size={12} className="om-spin" aria-hidden="true"/>Consultando la última publicación…</>:<><span className="odoo-dot om-dot-income" aria-hidden="true" style={{width:7,height:7,borderRadius:999,display:'inline-block'}}/>Actualizado hace un momento</>}</div>}
       <div className="updated-time"><Clock3 size={13}/><span>{live.live
        ?(published?`Corte de negocio ${published.business_date} · capturado ${new Date(Object.values(published.sources)[0]?.observed_to||published.published_at).toLocaleString('es-EC',{dateStyle:'short',timeStyle:'short'})} · publicado ${new Date(published.published_at).toLocaleString('es-EC',{dateStyle:'short',timeStyle:'short'})}`:'Sin datos publicados todavía')
        :'Datos de demostración · sin conexión a Odoo'}</span></div>
       <div className="action-buttons">
        <button className="button secondary" onClick={()=>window.print()}><ArrowDownToLine size={15}/>Exportar</button>
        {live.live&&reportPage&&<button className="button secondary" onClick={exportCsv}><FileSpreadsheet size={15}/>CSV</button>}
-       <button className="button primary" onClick={refresh}><RefreshCw size={14}/>Actualizar</button>
+       <button className="button primary" onClick={refresh} aria-busy={syncing} disabled={syncing}><RefreshCw size={14} className={syncing?'om-spin':''}/>{syncing?'Consultando…':'Actualizar'}</button>
       </div>
      </div>
     </header>
@@ -325,7 +334,7 @@ function AppShell(){
      <div className="filter-label"><SlidersHorizontal size={14}/><span>Filtros</span></div>
      <div className="filter-controls">{shownFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>setFilters({...filters,[key]:e.target.value})}>{optionsFor(key).map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
     </section>}
-    <div className="report-content" key={pageId}>
+    <div className={`report-content${syncing||(live.live&&reportState.loading)?' is-syncing':''}`} key={pageId}>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
      {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configurá la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
      {reportPage&&reportPage.id==='nivel1'&&<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>}
