@@ -18,7 +18,12 @@ class TestNovaSales(NovaFunctionalCase):
             "order_line": [(0, 0, {"product_id": product.id, "product_uom_qty": 2, "price_unit": 10.0}),
                            (0, 0, {"product_id": product.id, "product_uom_qty": 1, "price_unit": 5.0})]})
         _r, _m, records = self.full_cycle()
-        self.assertEqual(len(self.records_of(records, "sale_order", order.id)), 1)
+        # At-least-once by design: backfill, change events and the safety scan may each emit
+        # the same order inside one batch; the central apply keeps the last copy by seq.
+        copies = self.records_of(records, "sale_order", order.id)
+        self.assertTrue(copies)
+        self.assertTrue(all(c["op"] == "upsert" for c in copies))
+        self.assertEqual(copies[-1]["data"]["state"], order.state)
         self.assertEqual(len({r["id"] for r in self.records_of(records, "sale_order_line")
                               if r["data"].get("order_id") == order.id}), 2)
         removed = order.order_line[1]

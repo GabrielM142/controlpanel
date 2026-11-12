@@ -12,6 +12,15 @@ class TestNovaAccount(NovaFunctionalCase):
     def test_datasets(self):
         self.assert_datasets_valid()
 
+    def test_increase_rank_is_captured(self):
+        # account bumps customer_rank with raw SQL (no write()): it must still emit an event.
+        partner = self.env["res.partner"].create({"name": "Rango", "company_id": self.env.company.id})
+        Event = self.env["nova.change.event"]
+        domain = [("model_name", "=", "res.partner"), ("res_id", "=", partner.id)]
+        before = Event.search_count(domain)
+        partner._increase_rank("customer_rank")
+        self.assertEqual(Event.search_count(domain), before + 1)
+
     def _invoice(self, amount=100.0):
         journal = self.env["account.journal"].search([("type", "=", "sale"), ("company_id", "=", self.company.id)], limit=1)
         if not journal:

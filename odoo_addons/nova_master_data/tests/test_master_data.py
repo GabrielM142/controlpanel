@@ -124,12 +124,6 @@ class TestNovaMasterData(NovaCase):
         self.assertTrue(self.conn.integrity_report)
         self.assertIn("Checksum", self.conn.integrity_report)
 
-    def test_increase_rank_is_captured(self):
-        partner = self.env["res.partner"].create({"name": "Rango", "company_id": self.company.id})
-        before = len(self._events("res.partner", partner.id))
-        partner._increase_rank("customer_rank")  # raw SQL in Odoo: no write()
-        self.assertEqual(len(self._events("res.partner", partner.id)), before + 1)
-
     def test_private_addresses_and_portal_users_not_exported(self):
         private = self.env["res.partner"].create({"name": "Domicilio empleado", "type": "private"})
         public = self.env["res.partner"].create({"name": "Cliente visible", "company_id": self.company.id})

@@ -43,7 +43,10 @@ class TestNovaConnector(NovaCase):
     def test_clone_detection_suspends_sync(self):
         self.conn.sudo().write({"db_fingerprint": "f" * 64})
         with self.assertRaises(UserError):
-            self.api().list_ready_runs(self.source)
+            self.api().list_ready_runs(self.source)  # every API call refuses the copied database
+        # The refused RPC rolls back its own transaction, so the 'suspended' state is
+        # persisted by the next preparation (cron), which checks without raising.
+        self.assertFalse(self.env["nova.sync.run"]._nova_prepare(self.conn, force=True))
         self.assertEqual(self.conn.state, "suspended")
         generation = self.conn.source_generation
         self.conn.action_relink_after_clone()

@@ -10,14 +10,8 @@ class ResCompany(models.Model):
 class ResPartner(models.Model):
     _name = "res.partner"
     _inherit = ["res.partner", "nova.capture.mixin"]
-
-    def _increase_rank(self, field, n=1):
-        # Odoo bumps customer_rank/supplier_rank with raw SQL (no write, no write_date):
-        # without this the partner would keep rank 0 in NOVA forever.
-        res = super()._increase_rank(field, n)
-        if self.ids and field in ("customer_rank", "supplier_rank"):
-            self.env["nova.change.event"]._nova_record(self, "upsert", dataset_keys=["res_partner"])
-        return res
+    # customer_rank/supplier_rank bumps (raw SQL in the account module) are captured
+    # in nova_account, which loads after account and can extend _increase_rank.
 
 
 class ResCountryState(models.Model):
