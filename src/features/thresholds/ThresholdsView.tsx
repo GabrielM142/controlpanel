@@ -1,6 +1,7 @@
 import {useMemo} from 'react';
 import {AlertTriangle,ArrowRight,CheckCircle2,Coins,LifeBuoy,Package,RotateCcw,SlidersHorizontal,Sparkles,Store,TrendingUp} from 'lucide-react';
 import {AREA_LABEL,useThresholds,type ThresholdArea,type ThresholdRule} from './useThresholds';
+import TelegramCard from './TelegramCard';
 
 const areaIcon:Record<ThresholdArea,typeof Store>={comercial:TrendingUp,financiero:Coins,compras:Store,inventarios:Package,soporte:LifeBuoy};
 
@@ -26,6 +27,7 @@ export default function ThresholdsView(){
  const cumplimiento=stats.enabled?Math.round(((stats.enabled-stats.triggered)/stats.enabled)*100):100;
 
  return <>
+  <TelegramCard/>
   <h2 className="section-label"><span>Estado global de umbrales</span><i/></h2>
   <div className="grid g-4">
    <article className="panel kpi tone-a"><div className="kpi-label"><span>Umbrales activos</span><span className="status-dot a"/></div><div className="kpi-value">{stats.enabled}</div><div className="kpi-deltas"><div><span>Total configurados</span><strong>{stats.total}</strong></div><div><span>Desactivados</span><strong>{stats.total-stats.enabled}</strong></div></div></article>

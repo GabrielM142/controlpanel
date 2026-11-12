@@ -50,7 +50,7 @@ const virtualPages:VirtualPage[]=[
  {id:'decisiones',group:'Gestión',label:'Decisiones',question:'¿Qué espera tu decisión hoy?',component:DecisionsView,icon:Signature},
  {id:'omega',group:'Omega',label:'Pregúntale a Omega',question:'Pregunta como hablas: Omega responde con las cifras del último cierre y cita sus fuentes.',component:AskOmegaView,icon:Sparkles},
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
- {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configura los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
+ {id:'control',group:'Ajustes',label:'Umbrales y alertas',question:'Configura los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'tema',group:'Ajustes',label:'Tema de la empresa',question:'¿Cómo se ve OMEGA para tu empresa? Elige tu color de marca; los colores financieros no cambian.',component:ThemeView,icon:Palette},
  {id:'omega-ia',group:'Ajustes',label:'Omega IA',question:'¿Con qué inteligencia artificial responde Omega en tu empresa?',component:AISettingsView,icon:Sparkles},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
@@ -170,6 +170,14 @@ function AppShell(){
   setFilters(f=>({...f,...(touched.current.has('anio')?{}:{anio:y}),...(touched.current.has('mes')?{}:{mes:'Todos'})}));},[live.live,cutDate]);
  const loc=locate(pageId);
  const currentSub=loc.sub;
+ // Breadcrumb targets: first view of the section and of the group; siblings = views of the same group
+ // (or of the section when the view has no group), so the current crumb can switch between them.
+ const navLabel=(id:string)=>report.pages.find(p=>p.id===id)?.label||virtualById.get(id)?.label||id;
+ const secDef=NAV.find(s=>s.label===loc.section);
+ const subDef=secDef?.subs.find(s=>s.ids.includes(pageId));
+ const sectionFirst=secDef?.subs[0]?.ids[0];
+ const subFirst=subDef&&subDef.ids.length>1?subDef.ids[0]:undefined;
+ const siblings=(subDef&&subDef.ids.length>1?subDef.ids:secDef?secDef.subs.flatMap(s=>s.ids):[pageId]).map(id=>({id,label:navLabel(id)}));
 
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
 
@@ -298,10 +306,17 @@ function AppShell(){
     <div className="utility-bar">
      <div className="breadcrumbs">
       <button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(true)}><Menu size={21}/></button>
-      <span>OMEGA</span>
-      {loc.section!==pageLabel&&<><ChevronRight size={12}/><span>{loc.section}</span></>}
-      {currentSub&&<><ChevronRight size={12}/><span className="crumb-sub">{currentSub}</span></>}
-      <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
+      <nav className="om-crumbs" aria-label="Ruta">
+       <button type="button" className="om-crumb" onClick={()=>navigate('nivel1')}>OMEGA</button>
+       {loc.section!==pageLabel&&sectionFirst&&<><ChevronRight size={12} aria-hidden="true"/><button type="button" className="om-crumb" onClick={()=>navigate(sectionFirst)}>{loc.section}</button></>}
+       {currentSub&&subFirst&&<><ChevronRight size={12} aria-hidden="true"/><button type="button" className="om-crumb crumb-sub" onClick={()=>navigate(subFirst)}>{currentSub}</button></>}
+       <ChevronRight size={12} aria-hidden="true"/>
+       {siblings.length>1
+        ?<label className="om-crumb-current"><span className="sr-only">Cambiar a otra vista de {loc.section}</span>
+          <select value={pageId} onChange={e=>navigate(e.target.value)} aria-label={`Vistas de ${loc.section}`}>
+           {siblings.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+        :<span className="crumb-current" aria-current="page">{pageLabel}</span>}
+      </nav>
      </div>
      <div className="utility-right">
       {live.live

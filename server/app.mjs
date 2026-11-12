@@ -4,6 +4,7 @@ import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
 import {aiFacts, buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
+import {alertMessage, evaluateAlerts, sendTelegram} from '../lib/alerts.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -552,6 +553,52 @@ export function createHandler({pool, config, now = () => new Date()}) {
       await c.query('DELETE FROM app.threshold_rules WHERE id = $1', [match[1]]);
       return {ok: true};
     });
+  });
+
+  // Alert notifications (Telegram) per company; admins configure, the cron sends after each close.
+  route('GET', /^\/api\/notify\/settings$/, async ({req}) => {
+    const ctx = await tenantContext(req, 'admin');
+    const row = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
+      `SELECT telegram_chat_id, enabled, telegram_token_ciphertext IS NOT NULL AS has_token, last_version, last_sent_at, last_error
+         FROM app.notify_settings WHERE tenant_id = $1`, [ctx.tenantId])).rows[0]);
+    return {chat_id: row?.telegram_chat_id || null, enabled: Boolean(row?.enabled), has_token: Boolean(row?.has_token),
+      last_version: row?.last_version || null, last_sent_at: row?.last_sent_at || null, last_error: row?.last_error || null};
+  });
+  route('PUT', /^\/api\/notify\/settings$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    if (!config.secretKey) throw new HttpError(503, 'Cifrado de secretos no configurado en el servidor');
+    const b = await readJson(req, 4096);
+    const token = str(b.telegram_token, 120);
+    const chat = str(b.chat_id, 64);
+    if (token && !/^\d{5,}:[A-Za-z0-9_-]{20,}$/.test(token)) throw new HttpError(400, 'Token de bot inválido (formato 123456:ABC…)');
+    if (chat && !/^-?\d{3,20}$|^@[A-Za-z0-9_]{4,64}$/.test(chat)) throw new HttpError(400, 'Chat inválido: usa el número del chat o @canal');
+    await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.notify_settings(tenant_id, telegram_token_ciphertext, telegram_chat_id, enabled, updated_at, updated_by)
+        VALUES ($1, $2, $3, $4, now(), $5)
+        ON CONFLICT (tenant_id) DO UPDATE SET telegram_token_ciphertext = coalesce(EXCLUDED.telegram_token_ciphertext, app.notify_settings.telegram_token_ciphertext),
+          telegram_chat_id = coalesce(EXCLUDED.telegram_chat_id, app.notify_settings.telegram_chat_id), enabled = EXCLUDED.enabled,
+          updated_at = now(), updated_by = EXCLUDED.updated_by`,
+      [ctx.tenantId, token ? encryptSecret(token, config.secretKey) : null, chat, b.enabled === true, ctx.user.id]);
+      await audit(c, ctx, 'notify.settings', null, {enabled: b.enabled === true});
+    });
+    return {ok: true};
+  });
+  route('POST', /^\/api\/notify\/test$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const data = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const n = (await c.query('SELECT telegram_token_ciphertext, telegram_chat_id FROM app.notify_settings WHERE tenant_id = $1', [ctx.tenantId])).rows[0];
+      const pub = (await c.query('SELECT business_date::text FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      const alerts = pub ? await evaluateAlerts(c, pub.business_date, ctx.companies) : [];
+      return {n, pub, alerts};
+    });
+    if (!data.n?.telegram_token_ciphertext || !data.n.telegram_chat_id) throw new HttpError(400, 'Guarda primero el token del bot y el chat');
+    const text = data.alerts.length ? alertMessage(ctx.membership.name, data.pub.business_date, data.alerts, process.env.NOVA_PANEL_URL || '')
+      : `OMEGA · ${ctx.membership.name}\nMensaje de prueba: la conexión con Telegram funciona. Hoy no hay umbrales excedidos.`;
+    try { await sendTelegram(decryptSecret(data.n.telegram_token_ciphertext, config.secretKey), data.n.telegram_chat_id, text); }
+    catch (e) { throw new HttpError(502, e.message); }
+    return {ok: true, alerts: data.alerts.length};
   });
 
   // Decisions: shared inbox per company with who decided and when.
