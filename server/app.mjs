@@ -1,9 +1,9 @@
 import {readFileSync} from 'node:fs';
-import {encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
+import {decryptSecret, encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
 import {buildReport, METRICS, parseFilters, receivableSummary, warehouseValuation} from '../lib/metrics.mjs';
-import {aiConfigured, answerQuestion, reportDigest} from '../lib/ai.mjs';
+import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -219,10 +219,57 @@ export function createHandler({pool, config, now = () => new Date()}) {
   // browser's numbers are never trusted) and asks Claude. General questions (page "omega")
   // read the main reports together. Max 60 questions per user per hour.
   const AI_SCOPE = ['nivel1', 'comercial', 'clientes', 'inventarios', 'financiero', 'compras'];
+  /** The company's provider and decrypted key, else the server-wide Anthropic key, else null. */
+  async function aiFor(ctx) {
+    const row = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c =>
+      (await c.query('SELECT provider, model, secret_ciphertext FROM app.ai_settings WHERE tenant_id = $1', [ctx.tenantId])).rows[0]);
+    if (row?.secret_ciphertext) return {provider: row.provider, model: row.model, apiKey: decryptSecret(row.secret_ciphertext, config.secretKey), scope: 'empresa'};
+    if (aiConfigured()) return {provider: 'anthropic', model: AI_MODEL, apiKey: null, scope: 'servidor'};
+    return null;
+  }
+  route('GET', /^\/api\/ai\/settings$/, async ({req}) => {
+    const ctx = await tenantContext(req, 'admin');
+    const row = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
+      'SELECT provider, model, secret_ciphertext IS NOT NULL AS has_key, updated_at FROM app.ai_settings WHERE tenant_id = $1', [ctx.tenantId])).rows[0]);
+    return {providers: Object.entries(PROVIDERS).map(([id, p]) => ({id, label: p.label, default_model: p.defaultModel})),
+      provider: row?.provider || null, model: row?.model || null, configured: Boolean(row?.has_key), updated_at: row?.updated_at || null,
+      server_fallback: aiConfigured()};
+  });
+  route('PUT', /^\/api\/ai\/settings$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    if (!config.secretKey) throw new HttpError(503, 'Cifrado de secretos no configurado en el servidor');
+    const b = await readJson(req, 4096);
+    const provider = str(b.provider, 20, {required: true, name: 'proveedor'});
+    if (!PROVIDERS[provider]) throw new HttpError(400, 'Proveedor no soportado');
+    const model = str(b.model, 80) || PROVIDERS[provider].defaultModel;
+    if (!/^[A-Za-z0-9._:\-/]{1,80}$/.test(model)) throw new HttpError(400, 'Modelo inválido');
+    const apiKey = str(b.api_key, 300);
+    await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.ai_settings(tenant_id, provider, model, secret_ciphertext, updated_at, updated_by)
+        VALUES ($1, $2, $3, $4, now(), $5)
+        ON CONFLICT (tenant_id) DO UPDATE SET provider = EXCLUDED.provider, model = EXCLUDED.model,
+          secret_ciphertext = coalesce(EXCLUDED.secret_ciphertext, CASE WHEN app.ai_settings.provider = EXCLUDED.provider THEN app.ai_settings.secret_ciphertext END),
+          updated_at = now(), updated_by = EXCLUDED.updated_by`,
+      [ctx.tenantId, provider, model, apiKey ? encryptSecret(apiKey, config.secretKey) : null, ctx.user.id]);
+      await audit(c, ctx, 'ai.settings', provider);
+    });
+    return {ok: true};
+  });
+  route('DELETE', /^\/api\/ai\/settings$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query('DELETE FROM app.ai_settings WHERE tenant_id = $1', [ctx.tenantId]);
+      await audit(c, ctx, 'ai.settings.delete', null);
+    });
+    return {ok: true};
+  });
   route('POST', /^\/api\/ai\/report$/, async ({req}) => {
     requireCsrf(req);
     const ctx = await tenantContext(req);
-    if (!aiConfigured()) throw new HttpError(503, 'Omega IA no está configurada en el servidor');
+    const ai = await aiFor(ctx);
+    if (!ai) throw new HttpError(503, 'Omega IA no está configurada: un administrador debe elegir el proveedor y cargar su clave en Configuración · Omega IA.');
     const body = await readJson(req, 16 * 1024);
     const question = str(body.question, 500, {required: true, name: 'pregunta'});
     const pageId = String(body.page_id || 'omega');
@@ -247,9 +294,9 @@ export function createHandler({pool, config, now = () => new Date()}) {
     }
     if (cut === 'sin datos publicados') throw new HttpError(409, 'Aún no hay datos publicados para esta empresa.');
     try {
-      const a = await answerQuestion({question, cut, filters, digests});
+      const a = await answerQuestion({provider: ai.provider, apiKey: ai.apiKey, model: ai.model, question, cut, filters, digests});
       return {headline: a.headline, points: a.points, suggestion: a.suggestion || null, missing_data: a.missing_data || [],
-        sources: [`Omega IA (${a.model}) · cierre ${cut}`, ...pages.map(id => `Reporte «${PAGES.get(id).page.label}»`)]};
+        sources: [`Omega IA (${PROVIDERS[ai.provider].label} · ${a.model}) · cierre ${cut}`, ...pages.map(id => `Reporte «${PAGES.get(id).page.label}»`)]};
     } catch (error) {
       if (error instanceof HttpError) throw error;
       throw new HttpError(error.status === 422 ? 422 : 502, error.status === 422 ? error.message : 'Omega IA no respondió. Usa la lectura calculada mientras tanto.');

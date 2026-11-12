@@ -5,6 +5,7 @@ import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
 import {LiveProvider,useLive,useReportData,versionKey,WidgetsContext} from './features/live/LiveData';
 import WarehouseView from './features/inventory/WarehouseView';
+import AISettingsView from './features/omega/AISettingsView';
 import {cachedGet} from './features/live/cache';
 import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
@@ -51,6 +52,7 @@ const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configura los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'tema',group:'Ajustes',label:'Tema de la empresa',question:'¿Cómo se ve OMEGA para tu empresa? Elige tu color de marca; los colores financieros no cambian.',component:ThemeView,icon:Palette},
+ {id:'omega-ia',group:'Ajustes',label:'Omega IA',question:'¿Con qué inteligencia artificial responde Omega en tu empresa?',component:AISettingsView,icon:Sparkles},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
  {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de OMEGA — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
  {id:'market-odoo',group:'Market',subgroup:'Catálogo',label:'Módulos Odoo',question:'Extensiones certificadas para tu instancia de Odoo. Precio de referencia o “a cotizar”.',component:MarketOdoo,icon:Package},
@@ -65,7 +67,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
@@ -96,6 +98,7 @@ const NAV:NavSection[]=[
  ]},
  {label:'Configuración',subs:[
   {label:'Fuentes de datos',ids:['sources']},
+  {label:'Omega IA',ids:['omega-ia']},
   {label:'Umbrales',ids:['control']},
   {label:'Tema de la empresa',ids:['tema']},
   {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},

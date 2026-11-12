@@ -18,12 +18,18 @@ test.before(async () => {
     req.on('end', () => {
       lastBody = {path: req.url, headers: req.headers, body: JSON.parse(raw)};
       res.setHeader('content-type', 'application/json');
+      if (req.url.includes('/chat/completions')) {
+        return res.end(JSON.stringify({id: 'chatcmpl_test', object: 'chat.completion', created: 1, model: 'gpt-5.5',
+          choices: [{index: 0, finish_reason: 'stop', message: {role: 'assistant', content: JSON.stringify(answer), refusal: null}}],
+          usage: {prompt_tokens: 10, completion_tokens: 5, total_tokens: 15}}));
+      }
       res.end(JSON.stringify({id: 'msg_test', type: 'message', role: 'assistant', model: 'claude-opus-5-5',
         content: [{type: 'text', text: JSON.stringify(answer)}], stop_reason: 'end_turn', stop_sequence: null,
         usage: {input_tokens: 10, output_tokens: 5}}));
     });
   }).listen(0);
   process.env.ANTHROPIC_BASE_URL = `http://127.0.0.1:${mock.address().port}`;
+  process.env.OPENAI_BASE_URL = `http://127.0.0.1:${mock.address().port}/v1`;
   w = await createWorld();
   w.transports.juj.setVisible(3);
   await w.ingest('juj');
@@ -33,7 +39,7 @@ test.before(async () => {
   cookieA = await login('ana@fixture.test');
   cookieB = await login('beto@fixture.test');
 });
-test.after(async () => { await w.pool.end(); mock.close(); delete process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_BASE_URL; });
+test.after(async () => { await w.pool.end(); mock.close(); delete process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_BASE_URL; delete process.env.OPENAI_BASE_URL; });
 
 test('Omega IA without a key answers 503 (the panel falls back to its local reading)', async () => {
   delete process.env.ANTHROPIC_API_KEY;
@@ -65,4 +71,32 @@ test('Omega IA is tenant-isolated and CSRF-protected', async () => {
   assert.equal(noCsrf.status, 403);
   const bad = await call(api, 'POST', '/api/ai/report', {headers: H(cookieA, w.tenantA), body: {question: 'x', page_id: 'no-existe'}});
   assert.equal(bad.status, 400);
+});
+
+test('Omega IA per company: admin sets OpenAI + key (never returned) and questions use it', async () => {
+  delete process.env.ANTHROPIC_API_KEY;
+  const viewer = await login('vera@fixture.test');
+  const denied = await call(api, 'PUT', '/api/ai/settings', {headers: H(viewer, w.tenantA), body: {provider: 'openai', api_key: 'sk-x'}});
+  assert.equal(denied.status, 403);
+  const bad = await call(api, 'PUT', '/api/ai/settings', {headers: H(cookieA, w.tenantA), body: {provider: 'otro', api_key: 'sk-x'}});
+  assert.equal(bad.status, 400);
+  const put = await call(api, 'PUT', '/api/ai/settings', {headers: H(cookieA, w.tenantA), body: {provider: 'openai', api_key: 'sk-secreta-123'}});
+  assert.equal(put.status, 200, JSON.stringify(put.body));
+  const get = await call(api, 'GET', '/api/ai/settings', {headers: H(cookieA, w.tenantA)});
+  assert.equal(get.body.provider, 'openai');
+  assert.equal(get.body.model, 'gpt-5.5');
+  assert.equal(get.body.configured, true);
+  assert.doesNotMatch(JSON.stringify(get.body), /sk-secreta/);
+  const stored = await w.one('SELECT secret_ciphertext FROM app.ai_settings WHERE tenant_id = $1', [w.tenantA]);
+  assert.doesNotMatch(stored.secret_ciphertext, /sk-secreta/);
+  const r = await call(api, 'POST', '/api/ai/report', {headers: H(cookieA, w.tenantA), body: {question: '¿Cómo van las ventas?', page_id: 'comercial'}});
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.match(lastBody.path, /chat\/completions/);
+  assert.equal(lastBody.headers.authorization, 'Bearer sk-secreta-123');
+  assert.equal(lastBody.body.response_format.type, 'json_schema');
+  assert.match(r.body.sources[0], /OpenAI/);
+  const other = await call(api, 'POST', '/api/ai/report', {headers: H(cookieB, w.tenantB), body: {question: 'ventas'}});
+  assert.equal(other.status, 503, 'the other company has no key of its own');
+  const del = await call(api, 'DELETE', '/api/ai/settings', {headers: H(cookieA, w.tenantA)});
+  assert.equal(del.status, 200);
 });
