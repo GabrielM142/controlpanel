@@ -1,10 +1,16 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {Activity,ArrowDownToLine,Signature,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
 import {LiveProvider,useLive,useReportData,WidgetsContext} from './features/live/LiveData';
 import DataSourcesView from './features/live/DataSourcesView';
+import DireccionHero from './features/omega/DireccionHero';
+import DecisionsView from './features/omega/DecisionsView';
+import AskOmegaView from './features/omega/AskOmegaView';
+import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
+import {pageReading} from './features/omega/data';
+import {demoTickets} from './features/tickets/TicketsView';
 import LoginView from './features/live/LoginView';
 import {api,download} from './data/api';
 import {TokensProvider} from './features/tokens/useTokens';
@@ -32,6 +38,8 @@ const LIVE_FILTERS=new Set(['anio','mes','canal','unidad','marca','categoria','p
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
 const virtualPages:VirtualPage[]=[
+ {id:'decisiones',group:'Gestión',label:'Decisiones',question:'¿Qué espera tu decisión hoy?',component:DecisionsView,icon:Signature},
+ {id:'omega',group:'Omega',label:'Pregúntale a Omega',question:'Pregunta como hablas: Omega responde con las cifras del último cierre y cita sus fuentes.',component:AskOmegaView,icon:Sparkles},
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
@@ -48,7 +56,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
@@ -66,6 +74,7 @@ const NAV:NavSection[]=[
   {label:'Retail',ids:['retailjuj','retailintorno']},
  ]},
  {label:'Gestión',subs:[
+  {label:'Decisiones',ids:['decisiones']},
   {label:'Tickets de soporte',ids:['tickets']},
   {label:'Tareas y notas',ids:['tasks','notes']},
  ]},
@@ -75,6 +84,7 @@ const NAV:NavSection[]=[
  ]},
 ];
 function locate(id:string):{section:string;sub?:string}{
+ if(id==='omega')return {section:'Pregúntale a Omega'};
  for(const sec of NAV)for(const sub of sec.subs)if(sub.ids.includes(id))return {section:sec.label,sub:sub.ids.length>1?sub.label:undefined};
  return {section:'Factory'};
 }
@@ -93,8 +103,7 @@ function AppShell(){
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
  const [theme,setTheme]=useState<'light'|'dark'>(()=>{
-  if(ls.get('nova.theme.omega','')!=='1'){ls.set('nova.theme.omega','1');return 'dark';}
-  return ls.get('nova.theme','dark')==='light'?'light':'dark';
+  return document.documentElement.dataset.theme==='light'?'light':'dark';
  });
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
@@ -149,6 +158,11 @@ function AppShell(){
  // Ctrl/Cmd+K opens the command palette.
  useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPaletteOpen(v=>!v);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);
 
+ const askOmega=useCallback((q:string)=>{try{sessionStorage.setItem('nova.omega.prefill',q);}catch{}navigate('omega');},[navigate]);
+ useEffect(()=>{const onKey=(e:KeyboardEvent)=>{const t=e.target as HTMLElement|null;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='Escape'){setPresentation(false);return;}
+  if(e.key==='d'||e.key==='D'){navigate('decisiones');}else if(e.key==='p'||e.key==='P'){setPresentation(v=>!v);}else if(e.key==='?'){setNotice('Atajos: Ctrl K buscar o preguntar · D decisiones · P presentar al directorio · Esc salir de presentación.');}};
+  window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[navigate]);
  const toggleKey=useCallback((k:string)=>{setExpanded(prev=>{const next=new Set(prev);if(next.has(k))next.delete(k);else next.add(k);return next;});},[]);
 
  const refresh=useCallback(async()=>{
@@ -176,7 +190,10 @@ function AppShell(){
  const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=globalAlerts.filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts]);
  const bellTotal=useMemo(()=>globalAlerts.length+activeAlerts.length,[activeAlerts]);
 
- function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.65}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:p.id===pageId?<ChevronRight size={13}/>:null}</button>;}
+ const {pending:pendingDecisions}=useDecisions();
+ const openTickets=demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
+ const badgeFor=(id:string)=>id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
+ function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Factory');
@@ -191,7 +208,7 @@ function AppShell(){
     {NAV.map((sec,si)=>{
      const secKey=`sec:${sec.label}`;const open=expanded.has(secKey);
      return <div key={sec.label}>
-      {si===3&&<button type="button" className="omega-ask-nav" onClick={()=>{setAiOpen(true);setMenuOpen(false);}}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>}
+      {si===3&&<button type="button" className="omega-ask-nav" aria-current={pageId==='omega'?'page':undefined} onClick={()=>navigate('omega')}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>}
       <div className={`nav-group omega-section ${open?'open':'closed'}${loc.section===sec.label?' is-active':''}`}>
        <button type="button" className="nav-group-header omega-section-head" aria-expanded={open} onClick={()=>toggleKey(secKey)}><span>{sec.label}</span><ChevronDown size={12} className={open?'':'rotate-neg90'}/></button>
        {open&&<div className="nav-group-body">{sec.subs.map(sub=>{
@@ -236,7 +253,7 @@ function AppShell(){
      <div className="breadcrumbs">
       <button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(true)}><Menu size={21}/></button>
       <span>OMEGA</span>
-      <ChevronRight size={12}/><span>{loc.section}</span>
+      {loc.section!==pageLabel&&<><ChevronRight size={12}/><span>{loc.section}</span></>}
       {currentSub&&<><ChevronRight size={12}/><span className="crumb-sub">{currentSub}</span></>}
       <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
      </div>
@@ -307,11 +324,19 @@ function AppShell(){
     <div className="report-content" key={pageId}>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
      {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configurá la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
+     {reportPage&&reportPage.id==='nivel1'&&<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>}
+     {reportPage&&reportPage.id!=='nivel1'&&<section className="om-lead" aria-label="Lectura de Omega">
+      <span className="omega-glyph" aria-hidden="true">Ω</span>
+      <div><span className="om-eyebrow">Lectura de Omega</span><p>{live.live&&reportState.loading?'Leyendo el último cierre…':pageReading(reportPage.id,live.live?reportState.data?.widgets||null:null)}</p></div>
+      <button type="button" className="om-btn om-btn--ai" onClick={()=>askOmega(`¿Qué está pasando en ${reportPage.label}?`)}>Preguntar a Omega</button>
+     </section>}
+     {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:'José Ugalde Jerves · Control Empresarial'}</span></div>
     </div>
    </main>
   </div>
+  {presentation&&<button type="button" className="om-present-exit" onClick={()=>setPresentation(false)}>Salir de presentación · Esc</button>}
   {rulerOn&&<div className="reading-ruler" aria-hidden="true" style={{top:rulerY}}/>}
   {!aiOpen&&<button type="button" className="ai-bubble" onClick={()=>setAiOpen(true)} aria-label="Pregúntale a Omega sobre esta vista" title="Pregúntale a Omega">
    <span className="ai-bubble-glow" aria-hidden="true"/>
@@ -330,7 +355,7 @@ function Gate(){
  const live=useLive();
  if(live.live&&live.loading)return <main className="login-shell"><p className="legend-note">Cargando sesión…</p></main>;
  if(live.live&&!live.user)return <LoginView/>;
- return <TenantsProvider><ThresholdsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></ThresholdsProvider></TenantsProvider>;
+ return <TenantsProvider><ThresholdsProvider><DecisionsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></DecisionsProvider></ThresholdsProvider></TenantsProvider>;
 }
 
 export default function App(){return <LiveProvider><Gate/></LiveProvider>;}

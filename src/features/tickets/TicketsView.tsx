@@ -4,7 +4,7 @@ import {AlertTriangle,Clock3,Filter,LifeBuoy,MessageSquare,Star,Timer,TrendingDo
 type Priority='alta'|'media'|'baja';
 type Status='abierto'|'en_proceso'|'esperando_cliente'|'resuelto'|'cerrado';
 
-type Ticket={id:string;cliente:string;asunto:string;prioridad:Priority;agente:string;status:Status;abierto:string;sla:number;cola:string;canal:'Email'|'Teléfono'|'WhatsApp'|'Portal'};
+export type Ticket={id:string;cliente:string;asunto:string;prioridad:Priority;agente:string;status:Status;abierto:string;sla:number;cola:string;canal:'Email'|'Teléfono'|'WhatsApp'|'Portal'};
 
 const tickets:Ticket[]=[
  {id:'JUJ-1042',cliente:'Comercial Andes',asunto:'Factura duplicada en Odoo — abril',prioridad:'alta',agente:'Andrea M.',status:'en_proceso',abierto:'hoy 09:12',sla:82,cola:'3h 40m',canal:'Email'},
@@ -155,3 +155,6 @@ export default function TicketsView(){
   </div>
  </>;
 }
+
+// Fixture de tickets (demo) reutilizado por la bandeja OMEGA "Lo que espera tu decisión".
+export {tickets as demoTickets};

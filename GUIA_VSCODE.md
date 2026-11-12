@@ -33,7 +33,9 @@ Lee CLAUDE.md, REDISENO_OMEGA.md, docs/STATUS.md y docs/ARCHITECTURE.md.
 Repo controlpanel (OMEGA), rama main. Solo cambia el diseño: conserva todos los menús, reportes, filtros y opciones.
 Ejecuta la FASE F0 de REDISENO_OMEGA.md:
 1. Crea src/styles/omega-tokens.css con los tokens de la sección 3 e impórtalo antes de theme.css.
-2. Añade las fuentes Geist e Instrument Serif con @fontsource (verifica que existan y la versión).
+2. Añade las fuentes Bricolage Grotesque, Geist y Geist Mono con @fontsource (verifica que existan y la versión).
+   Crea también src/features/theme/useBrandTheme.ts, que lea el tema de la empresa activa (localStorage nova.theme.<tenantId>)
+   y aplique --brand y --on-brand en :root, con on-brand calculado por contraste WCAG.
 3. Reemplaza los hex sueltos de src/theme.css por variables de omega-tokens.css, por secciones.
    Puedes des-minificar theme.css para trabajar, pero no cambies nombres de clases.
 4. No toques server/, api/, worker/, lib/, sql/, contracts/, odoo_addons/, infra/ ni src/data/api.ts.
@@ -43,8 +45,9 @@ Espera mi aprobación antes de hacer commit.
 ```
 
 ## 4. Prompts siguientes (uno por fase, tras aprobar la anterior)
-- **F1:** "Ejecuta la FASE F1: marca OMEGA con logo Ω dorado y el lema, menú en 3 grupos (Ejecutivo, Unidades, Gestión) más Pregúntale a Omega, header con chip de frescura de datos, barra Ctrl K (reutiliza CommandPalette) y botón oro Presentar al directorio. El tour solo se abre a pedido. Mantén todas las vistas y la clave nova.nav."
-- **F2:** "Ejecuta la FASE F2: vista Dirección igual al mockup (briefing en serif, Pulso ISE, 4 KPIs con comparación y nota, gráfica real/presupuesto/año anterior, Tu firma, unidades, riesgos) con los datos actuales, sin cambiar su forma."
+- **F1:** "Ejecuta la FASE F1: marca OMEGA con logo Ω en el color de la empresa y el lema; menú en 3 grupos (Ejecutivo, Unidades, Gestión) más Pregúntale a Omega; leyenda Código de color; header con chip de frescura y botón de recarga que gira con skeleton en los KPIs; barra Ctrl K (reutiliza CommandPalette) y botón Presentar en --brand. El tour solo se abre a pedido. Mantén todas las vistas y la clave nova.nav."
+- **F1b · Tema por empresa:** "Crea la vista Configuración › Tema de la empresa igual al mockup: 8 colores sugeridos, revisión de contraste y de choque con colores financieros, modo oscuro/claro/automático, logo y vista previa en vivo. Guarda en nova.theme.<tenantId> y no toques el backend."
+- **F2:** "Ejecuta la FASE F2: vista Dirección igual al mockup (briefing en Bricolage, Pulso ISE, 4 KPIs con comparación y nota, gráfica real/presupuesto/año anterior, Tu firma, unidades, riesgos) con los datos actuales, sin cambiar su forma."
 - **F3:** "Ejecuta la FASE F3: bandeja Lo que espera tu decisión, reutilizando TicketsView y useThresholds, con Omega recomienda y confirmación para montos mayores a $10 k."
 - **F4:** "Ejecuta la FASE F4: convierte AIDrawer en la vista Pregúntale a Omega, con historial, fuentes citadas, Decisión sugerida y Llevar a decisiones. Solo lectura."
 - **F5 y F6:** según `REDISENO_OMEGA.md` §6.

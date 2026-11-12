@@ -43,3 +43,22 @@ test('frontend live mode: same 166 block ids as server, values from API, never d
     assert.match(createHash('sha256').update(termsCanonical(terms)).digest('hex'), /^[0-9a-f]{64}$/);
   } finally { await server.close(); }
 });
+
+test('OMEGA: Dirección y lecturas salen del dato; en modo real nunca usan cifras demo', async () => {
+  const server = await createServer({server: {middlewareMode: true}, appType: 'custom', logLevel: 'error'});
+  try {
+    const {kpisOf, pageReading, tableRows, parseNumber} = await server.ssrLoadModule('/src/features/omega/data.ts');
+    const demo = kpisOf('nivel1', null);
+    assert.equal(demo.find(k => k.label === 'Ventas').value, '$2.276.387');
+    assert.equal(parseNumber('−$63.707'), -63707);
+    assert.equal(parseNumber('104.2%'), 104.2);
+    assert.equal(tableRows('nivel1', 'nivel1-07', null).length, 5);
+    const reading = pageReading('comercial', null);
+    assert.match(reading, /^Ventas: \$1\.945\.618/);
+    assert.equal((reading.match(/1\.945\.618/g) || []).length, 1, 'sin repetir la cifra principal');
+    const live = kpisOf('nivel1', {'nivel1-01': {kind: 'kpi', value: '$370', raw: '370.00', deltas: []}});
+    assert.equal(live.find(k => k.label === 'Ventas').value, '$370');
+    assert.ok(live.filter(k => k.label !== 'Ventas').every(k => k.value === '—'), 'sin respaldo demo en modo real');
+    assert.match(pageReading('nivel1', {}), /no inventa/);
+  } finally { await server.close(); }
+});

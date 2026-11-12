@@ -80,3 +80,15 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 3. Taller con JUJ: campos personalizados, unidades, fuente de ventas, presupuesto; aprobar métricas v1.
 4. Desplegar API + worker + PostgreSQL 15 en el servidor central (TLS) y configurar `VITE_NOVA_API_URL`.
 5. Conectar UI de tareas/notas a la API; detalle de solicitudes Factory; backend LLM para el copiloto.
+
+## Rediseño OMEGA (frontend, REDISENO_OMEGA.md)
+
+| Fase | Estado | Notas |
+|---|---|---|
+| F0 Tokens | Publicado | `omega-tokens.css`, Geist + Instrument Serif, `theme.css` sin hex (paleta puente verificada equivalente) |
+| F1 Shell y marca | Publicado | Tema obsidiana por defecto, Ω, menú Ejecutivo/Unidades/Gestión/Configuración, header con Ctrl K y "Presentar al directorio", tour a pedido |
+| F2 Dirección | Publicado | Briefing, Pulso ISE, 4 KPIs, real vs presupuesto vs año anterior por unidad, Tu firma, unidades, riesgos. Demo: `report.json`; real: widgets API, sin respaldo demo |
+| F3 Decisiones | Publicado (demo) | Bandeja única: tickets + umbrales + aprobaciones de ejemplo; confirmación > $10 k con monto; Deshacer. Estado en el navegador, no firma en el ERP |
+| F4 Pregúntale a Omega | Publicado (consulta guiada) | Respuestas deterministas sobre el reporte del tema, con fuentes, solo lectura, guardar consulta y "Llevar a decisiones". Modelo de lenguaje: pendiente |
+| F5 Reportes | Publicado | "Lectura de Omega" en los 12 reportes restantes (Dirección tiene el briefing); modo presentación (sin chrome, Esc) e impresión en claro |
+| F6 Pulido | Parcial | Responsive (verificado en 390 px), foco dorado, estados vacíos, atajos D/P/?. Lighthouse de accesibilidad: no medido |

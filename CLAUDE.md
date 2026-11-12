@@ -25,24 +25,23 @@ Los datos son **diferidos al cierre anterior** (lote nocturno desde las 03:00). 
 
 ## Sistema de diseño OMEGA (obligatorio)
 - Tokens únicos en `src/styles/omega-tokens.css` (variables CSS). **Prohibido** escribir hex sueltos en componentes o en `theme.css`: siempre `var(--…)`.
-- Tema base **oscuro obsidiana**. Cada color tiene un solo trabajo:
-  - **oro** `--omega-gold`: marca, lo prioritario, "Presentar al directorio" (texto oscuro encima);
-  - **esmeralda** `--good`: a favor, aprobar;
-  - **bermellón** `--bad`: pérdida, urgente, vencido;
-  - **ámbar** `--warn`: revisar, riesgo medio;
-  - **zafiro** `--info`: datos neutros y series de gráficas;
-  - **amatista** `--ai`: todo lo que dice o hace Omega IA.
-- Los colores vivos se usan como texto sobre obsidiana o como chip (fondo `-soft` + texto `-text`). Nada de gradientes decorativos.
-- Tipografía: **Instrument Serif** para titulares y cifras grandes (`tabular-nums`), **Geist** para la interfaz.
-- Iconos: `lucide-react` (ya instalado), con trazo de 1.7. La Ω es el logotipo y el símbolo de la IA. Sin emojis.
+- Estilo "nueva era": fondo oscuro profundo `#070816` con halo del color de la empresa, tarjetas de cristal y brillos sutiles. Detalle completo en `REDISENO_OMEGA.md` §3.
+- **Dos capas de color:**
+  1. **Financieros fijos**, iguales en todas las empresas: `--fin-income` verde (ingresos, a favor), `--fin-loss` rojo (costos, pérdidas, urgente), `--fin-goal` dorado (meta, presupuesto), `--fin-cash` cian (caja, liquidez), `--fin-risk` naranja (riesgo, por vencer), `--fin-ai` lila (Omega IA).
+  2. **Marca por empresa**: `--brand` y `--on-brand`, que salen del tema de cada empresa. Solo pintan logo, menú activo, botones principales, anillo del Pulso y halo. **Nunca pintan datos.**
+- `--on-brand` se calcula por contraste WCAG (≥ 4.5:1). Si el color de marca está a menos de 18° de tono de un color financiero, se avisa y no se acepta sin confirmar.
+- Tipografía: **Bricolage Grotesque** para titulares y cifras grandes, **Geist** para la interfaz y **Geist Mono** para montos, códigos y fuentes.
+- Efectos obligatorios: recarga con icono que gira y skeleton con shimmer mientras sincroniza, anillo y líneas que se dibujan al entrar, elevación al pasar el cursor y spinner en los botones que ejecutan acciones. Todo se apaga con `prefers-reduced-motion`.
+- Iconos: `lucide-react` (ya instalado), con trazo de 1.8. La Ω es el logotipo y el símbolo de la IA. Sin emojis.
 - Cada número importante lleva comparación (vs presupuesto o vs año anterior) y una lectura en una frase.
 - Cada vista responde una pregunta gerencial en su encabezado ("¿Dónde estoy perdiendo margen?").
 - Copy en español, tuteo, directo y ejecutivo: "Tu firma", "Lo que podría salir mal", "Decisión sugerida".
 
 ## Accesibilidad y calidad
-- Contraste AA sobre obsidiana: texto secundario como mínimo `--text-3` (#8c8e9b sobre #111319).
+- Contraste AA sobre el fondo oscuro: texto secundario como mínimo `--text-3` (#8d8fb0 sobre #070816).
+- La recarga nunca consulta Odoo en vivo: vuelve a pedir a la API NOVA la última publicación.
 - Colores que se deben distinguir (bien/mal) también difieren en claridad, no solo en tono.
-- Elementos reales (`button`, `a`, `label` + `input`), `aria-label` en botones de solo icono y foco visible con anillo dorado.
+- Elementos reales (`button`, `a`, `label` + `input`), `aria-label` en botones de solo icono y foco visible con anillo del color de marca.
 - Animaciones de 150–250 ms y respetar `prefers-reduced-motion`.
 - Responsive: menos de 768 px → menú en cajón; tablas con scroll horizontal propio.
 - Modo presentación: tipografía más grande y sin chrome. Modo impresión: fondo claro.

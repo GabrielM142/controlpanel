@@ -6,6 +6,13 @@ import './styles/omega-tokens.css';
 import './styles/legacy-palette.css';
 import './theme.css';
 import './styles/omega-shell.css';
+import './styles/omega-views.css';
+
+// OMEGA es oscuro por defecto: se fija antes del primer render (login incluido). Respeta la elección guardada.
+try{
+ if(localStorage.getItem('nova.theme.omega')!=='1'){localStorage.setItem('nova.theme.omega','1');localStorage.setItem('nova.theme','dark');}
+ document.documentElement.dataset.theme=localStorage.getItem('nova.theme')==='light'?'light':'dark';
+}catch{document.documentElement.dataset.theme='dark';}
 
 // One-shot migration for boceto users that used the previous side.* localStorage namespace.
 try{

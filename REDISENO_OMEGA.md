@@ -26,59 +26,93 @@ Tres promesas que guían cada pantalla:
 | 6 | KPIs sin lectura | El gerente tiene que interpretarlos | Cada cifra trae comparación más una frase |
 | 7 | Tickets y umbrales separados | Las decisiones quedan dispersas | Bandeja única "Lo que espera tu decisión" |
 
-## 3. Psicología del color
+## 3. Color, tipografía y efectos (versión "nueva era")
 
-| Token | Hex | Qué comunica | Uso exclusivo |
+### 3.1 Dos capas de color
+1. **Colores financieros FIJOS**: iguales para todas las empresas. Verde siempre es ingreso y rojo siempre es pérdida, para que ningún gerente lea mal un número.
+2. **Color de marca POR EMPRESA**: lo elige cada empresa en *Configuración › Tema de la empresa*. Solo pinta el "envase": logo, menú activo, botones principales, anillo del Pulso y halo del fondo. Nunca pinta datos.
+
+### 3.2 Psicología del color financiero (fijo)
+| Token | Hex | Significado | Uso |
 |---|---|---|---|
-| `--bg` obsidiana | `#0a0b10` | Seriedad, foco | Fondo general |
-| `--surface` | `#111319` | Profundidad | Tarjetas |
-| `--omega-gold` | `#d9b46c` | Prestigio, prioridad | Logo Ω, CTA "Presentar al directorio", anillo del Pulso, foco |
-| `--good` esmeralda | `#3ecf8e` | Avanza, a favor | Aprobar, variaciones positivas |
-| `--bad` bermellón | `#ff7a59` | Pérdida, urgencia | Utilidad negativa, urgente, SLA vencido |
-| `--warn` ámbar | `#f2c14e` | Revisar | Riesgo medio, descuentos |
-| `--info` zafiro | `#6ea8ff` | Dato neutro y confiable | Series de gráficas, áreas |
-| `--ai` amatista | `#b49cff` | Inteligencia | Todo lo de Omega IA |
+| `--fin-income` | `#2ee6a8` | Dinero que entra, crecimiento | Ingresos, variaciones a favor, Aprobar |
+| `--fin-loss` | `#ff5a6e` (texto `#ff8a99`) | Dinero que sale, pérdida | Costos, utilidad negativa, urgente |
+| `--fin-goal` | `#ffc94d` | Meta, logro | Presupuesto, % de meta, badge de decisiones |
+| `--fin-cash` | `#38d9ff` | Flujo, disponibilidad | Caja, liquidez, información neutra |
+| `--fin-risk` | `#ff9f43` (texto `#ffb470`) | Atención | Riesgo medio, SLA por vencer |
+| `--fin-ai` | `#c4a1ff` | Inteligencia | Todo lo que dice Omega (siempre con la Ω) |
 
 Reglas:
-- El **oro es escaso**: como máximo un CTA dorado por pantalla. Si todo brilla, nada es importante.
-- El bermellón solo marca pérdidas reales o vencimientos; no se usa como decoración.
-- Lo que dice la IA siempre va en amatista con la Ω: el gerente sabe qué es dato y qué es recomendación.
+- Una gráfica de ingresos contra costos siempre es verde contra rojo, y el presupuesto siempre va en dorado punteado.
+- Los chips de estado usan el color al 13% de opacidad de fondo y el color pleno como texto.
+- La barra lateral muestra una leyenda fija, "Código de color", para que nadie tenga que adivinar.
 
-### Tokens (`src/styles/omega-tokens.css`)
+### 3.3 Tema por empresa (parametrizable)
+- Guardar en la configuración de cada empresa (tenant): `brandColor`, `logoUrl` y `mode` (`dark` | `light` | `auto`). Se aplica en el arranque como `--brand` y `--on-brand` sobre `:root`.
+- `--on-brand` se calcula solo: texto blanco u oscuro según el contraste WCAG (como mínimo 4.5:1).
+- **Validación al guardar**:
+  - si el contraste no llega a AA, la marca se usa solo en bordes y fondos suaves;
+  - si el tono está a menos de 18° de un color financiero (por ejemplo una marca verde o roja), se avisa: *"Se parece al color de Ingresos"*.
+- Vista previa en vivo antes de guardar y botón Restablecer.
+- Hasta que exista el campo en la API, el tema se guarda en `localStorage` con la clave `nova.theme.<tenantId>`, siguiendo el prefijo `nova.*`. **No cambiar el backend sin aprobación.**
+- Ejemplos del mockup: Grupo JUJ Índigo `#6c63ff`, Distribuidora Andes Azul real `#2f7bff`, Ferremax Magenta `#ff3ea5`.
+
+### 3.4 Tokens (`src/styles/omega-tokens.css`)
 ```css
 :root {
-  --bg:#0a0b10; --bg-2:#0d0e14; --surface:#111319; --surface-2:#171a22;
-  --line:#1e2129; --line-2:#23262f; --line-3:#2e323d;
-  --text:#f1efe9; --text-2:#b4b3bb; --text-3:#8c8e9b; --text-4:#6f7280;
-  --omega-gold:#d9b46c; --gold-text:#e8c98a; --gold-soft:#2a2418; --gold-line:#5c4b2a; --on-gold:#15110a;
-  --good:#3ecf8e; --good-text:#6ee3ad; --good-soft:#11261d; --on-good:#06170f;
-  --bad:#ff7a59;  --bad-text:#ff9d84;  --bad-soft:#2b1712;
-  --warn:#f2c14e; --warn-text:#f5d27c; --warn-soft:#2a2312;
-  --info:#6ea8ff; --info-text:#9cc2ff; --info-soft:#121d30; --info-muted:#2b4a7d;
-  --ai:#b49cff;   --ai-text:#cbbaff;   --ai-soft:#1e1830;   --ai-line:#3a3150;
-  --radius-sm:10px; --radius:14px; --radius-lg:20px; --radius-xl:24px;
-  --font-ui:"Geist Variable", Geist, Inter, system-ui, sans-serif;
-  --font-display:"Instrument Serif", Georgia, serif;
+  --brand:#6c63ff; --on-brand:#ffffff;           /* los sobrescribe el tema de la empresa */
+  --bg:#070816; --surface:rgba(255,255,255,.045); --surface-solid:#11132a;
+  --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.18);
+  --text:#f4f4ff; --text-2:#b9bad6; --text-3:#8d8fb0;
+  --fin-income:#2ee6a8; --fin-loss:#ff5a6e; --fin-loss-text:#ff8a99;
+  --fin-goal:#ffc94d;   --fin-cash:#38d9ff; --fin-risk:#ff9f43; --fin-risk-text:#ffb470;
+  --fin-ai:#c4a1ff;
+  --radius:14px; --radius-lg:22px; --radius-xl:26px;
+  --font-display:"Bricolage Grotesque", system-ui, sans-serif;
+  --font-ui:"Geist", Inter, system-ui, sans-serif;
+  --font-num:"Geist Mono", ui-monospace, monospace;
+  --glow-brand:0 10px 26px color-mix(in srgb, var(--brand) 35%, transparent);
 }
-/* Impresión y PDF para el directorio: fondo claro */
-@media print { :root { --bg:#ffffff; --surface:#ffffff; --text:#0a0b10; --text-2:#3a3d47; --line:#e3e5ea; } }
+:root[data-mode="light"] { --bg:#f6f6fb; --surface:#ffffff; --line:#e3e4ef; --text:#12132a; --text-2:#454766; --text-3:#6b6d8c; }
+@media print { :root { --bg:#ffffff; --surface:#ffffff; --text:#12132a; } }
 ```
-Fuentes: añadir `@fontsource-variable/geist` y `@fontsource/instrument-serif`, verificando antes que existan y sean compatibles. Se puede retirar Manrope cuando ya no se use.
+- Fondo: halo suave del color de marca arriba a la izquierda y otro cian a la derecha (`radial-gradient`) sobre `--bg`.
+- Tarjetas tipo cristal: `--surface` con borde `--line` y, en las tarjetas KPI, una línea de 3 px arriba con brillo del color financiero.
+
+### 3.5 Tipografía
+- **Bricolage Grotesque** (700–800): titulares, briefing y cifras grandes, con mucho carácter y aire 2026.
+- **Geist**: interfaz y textos.
+- **Geist Mono**: montos en tablas, códigos y fuentes de datos (alineación perfecta).
+- Instalar con `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/geist` y `@fontsource-variable/geist-mono`, verificando antes que existan.
+
+### 3.6 Efectos y estados de carga
+| Efecto | Dónde | Detalle |
+|---|---|---|
+| **Recarga con giro** | Chip "Cierre 11 nov · 03:00" con botón ↻ | Al pulsarlo, el icono gira (0,9 s por vuelta), el chip dice "Sincronizando…" y los KPIs muestran skeleton con brillo; al terminar dice "Actualizado hace un momento" |
+| Skeleton con shimmer | KPIs, tablas y respuestas de Omega | En lugar de pantallas en blanco |
+| Anillo animado | Pulso | Se dibuja al entrar (1,6 s, ease-out) |
+| Líneas que se dibujan | Sparklines y gráficas | `stroke-dashoffset` al montar |
+| Elevación al pasar el cursor | Tarjetas | `translateY(-3px)` más una sombra |
+| "Omega está pensando" | Chat IA | Spinner, 3 puntos y "cruzando 48.210 registros de 3 fuentes" |
+| Botón con spinner | Aprobar y Guardar tema | Evita el doble clic y confirma la acción |
+| Punto vivo | Datos sincronizados y SLA | Pulso de opacidad |
+- Duración de 150–250 ms en interacciones y hasta 1,8 s en animaciones de entrada. Todo se desactiva con `prefers-reduced-motion`.
+- **Importante:** la recarga no consulta Odoo en vivo. Vuelve a pedir a la API NOVA la última publicación del lote nocturno.
 
 ## 4. Arquitectura de información
 **Ejecutivo:** Dirección · Ventas · Compras · Finanzas y riesgo
 **Unidades:** Mayorista · Retail (y las que existan por empresa)
-**Gestión:** Decisiones (badge dorado) · Tickets de soporte (badge bermellón) · Tareas y notas
+**Gestión:** Decisiones (badge dorado de meta) · Tickets de soporte (badge rojo de pérdida) · Tareas y notas
 **Pregúntale a Omega** (vista propia)
-**Configuración** (abajo): Fuentes de datos · Umbrales · Mercado/Catálogo · Empresas
+**Configuración** (abajo): Fuentes de datos · Umbrales · Mercado/Catálogo · Empresas · **Tema de la empresa**
 
 - Mantener todas las vistas y rutas actuales; solo se reagrupa el menú. Conservar la clave `nova.nav` del estado expandido.
-- Header fijo: breadcrumb · chip de frescura "Cierre 11 nov · sincronizado 03:00" · barra "Pregúntale a Omega" (Ctrl K, reutilizar `CommandPalette`) · notificaciones (`AlertsDrawer`) · botón oro "Presentar al directorio" (modo presentación existente).
+- Header fijo: breadcrumb · chip de frescura "Cierre 11 nov · sincronizado 03:00" · barra "Pregúntale a Omega" (Ctrl K, reutilizar `CommandPalette`) · notificaciones (`AlertsDrawer`) · botón "Presentar" en color de marca (modo presentación existente).
 - Selector de empresa (`TenantSwitcher`) arriba del menú, con nombre legible.
 
 ## 5. Pantallas
 1. **Dirección:**
-   - **Briefing**: titular en serif de 1 frase, más 1 párrafo y 2 CTAs.
+   - **Briefing**: titular en Bricolage de 1 frase, más 1 párrafo y 2 CTAs.
    - **Pulso OMEGA**: anillo con el ISE /100 y su variación.
    - 4 KPIs grandes (ventas, utilidad, margen, caja), cada uno con chip de comparación, sparkline y nota.
    - Gráfica real vs presupuesto vs año anterior, con el mes récord resaltado.
@@ -86,12 +120,13 @@ Fuentes: añadir `@fontsource-variable/geist` y `@fontsource/instrument-serif`, 
    - Unidades de negocio con barra de Pulso.
    - "Lo que podría salir mal" (riesgos).
 2. **Decisiones y tickets:** título "Lo que espera tu decisión"; KPIs (abiertos, SLA en riesgo, solución promedio, dinero en juego); pestañas; filas con prioridad, barra de SLA y monto; detalle con "Omega recomienda" y una acción de un clic más Reasignar o Escalar. Reutilizar `TicketsView` y `useThresholds`.
-3. **Pregúntale a Omega:** evolución de `AIDrawer` a vista completa. Historial y consultas guardadas; cada respuesta lleva conclusión en serif, 3 cifras, porqué numerado, **Decisión sugerida** (botón "Llevar a decisiones") y **fuentes** (datasets). Indicar que es de solo lectura y la fecha de los datos. Respetar `useTokens` (consumo de tokens) ya existente.
+3. **Pregúntale a Omega:** evolución de `AIDrawer` a vista completa. Historial y consultas guardadas; cada respuesta lleva conclusión en titular grande, 3 cifras, porqué numerado, **Decisión sugerida** (botón "Llevar a decisiones") y **fuentes** (datasets). Indicar que es de solo lectura y la fecha de los datos. Respetar `useTokens` (consumo de tokens) ya existente.
 4. **Reportes (los 13):** misma plantilla en `components/Report.tsx`: pregunta gerencial, lectura de Omega, KPIs, gráfica principal, tabla y exportar.
-5. **Login:** obsidiana con la Ω dorada, "La última palabra en tus datos", formulario sobrio.
+5. **Tema de la empresa:** lista de empresas del grupo, 8 colores sugeridos, revisión automática (contraste y choque con colores financieros), modo oscuro/claro/automático, logo y vista previa en vivo.
+6. **Login:** fondo oscuro con halo del color de la empresa y la Ω, "La última palabra en tus datos", formulario sobrio.
 
 ### Patrones UX
-- Una idea por tarjeta; etiquetas en versalitas pequeñas (11 px, `letter-spacing: 2px`) y cifras en serif.
+- Una idea por tarjeta; etiquetas en versalitas pequeñas (11 px, `letter-spacing: 2px`) y cifras en Bricolage (montos de tablas en Geist Mono).
 - Drawer lateral para el detalle; Dialog para confirmar decisiones de más de $10 k, con el monto visible.
 - Estados vacíos con acción ("Todo firmado. Omega te avisará si algo cambia.").
 - Toast con "Deshacer" tras aprobar o rechazar.
