@@ -436,6 +436,7 @@ Capas de valoración y ajustes de valor. Alcance compañía: `strict`. Modo: `de
 | `invoice_status` | selection |  |  |
 | `receipt_status` | selection | sí |  |
 | `picking_type_id` | m2o |  |  |
+| `effective_date` | datetime | sí |  |
 
 ## `purchase_order_line` v1 · `purchase.order.line` (nova_purchase)
 

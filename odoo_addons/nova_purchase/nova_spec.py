@@ -8,7 +8,9 @@ DATASETS = [
                 "user_id": "m2o", "company_id": "m2o", "currency_id": "m2o",
                 "amount_untaxed": "decimal,cost", "amount_total": "decimal,cost",
                 "invoice_status": "selection", "receipt_status": "selection,opt",
-                "picking_type_id": "m2o"},
+                "picking_type_id": "m2o",
+                # purchase_stock: date of the first receipt (supplier lead time).
+                "effective_date": "datetime,opt"},
      "capture": {"fields": None, "refs": ["company_id", "partner_id"]},
      "children": [{"dataset": "purchase_order_line", "fk": "order_id"}]},
     {"key": "purchase_order_line", "version": 1, "model": "purchase.order.line", "company_scope": "strict",

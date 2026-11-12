@@ -1935,6 +1935,11 @@
           "type": "m2o",
           "optional": false,
           "sensitivity": []
+        },
+        "effective_date": {
+          "type": "datetime",
+          "optional": true,
+          "sensitivity": []
         }
       },
       "capture": {
