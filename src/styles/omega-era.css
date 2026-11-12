@@ -151,3 +151,8 @@
 .om-pv-kpi strong { font-size: 13px; color: var(--fin); }
 @media (max-width: 1100px) { .om-theme-grid { grid-template-columns: minmax(0, 1fr); } .om-theme-preview { position: static; } }
 @media (max-width: 520px) { .om-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } .om-pv-kpis { grid-template-columns: minmax(0, 1fr); } }
+
+/* D5 · ajustes de revisión visual */
+.utility-bar .mobile-menu { flex: none; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; color: var(--text); }
+.utility-bar .mobile-menu svg { display: block !important; width: 21px; height: 21px; }
+.report-content { padding-bottom: 96px !important; }
