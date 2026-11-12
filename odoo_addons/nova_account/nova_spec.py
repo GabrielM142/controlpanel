@@ -21,9 +21,18 @@ DATASETS = [
                 "payment_state": "selection", "reversed_entry_id": "m2o", "invoice_origin": "string",
                 "team_id": "m2o,opt"},
      "capture": {"fields": None, "refs": ["company_id", "partner_id", "invoice_date", "date", "move_type"]},
+     # Only what OMEGA reads: customer invoices and credit notes. Inventory valuation,
+     # bank and vendor entries (~95% of the moves in a real database) are not exported;
+     # receivable lines of payments carry their own partner and parent_state.
+     "domain": [["move_type", "in", ["out_invoice", "out_refund"]]],
      "children": [{"dataset": "account_move_line", "fk": "move_id"}]},
     {"key": "account_move_line", "version": 1, "model": "account.move.line", "company_scope": "strict",
-     "description": "Apuntes: líneas de factura, impuestos, costo (cogs) y cartera",
+     "description": "Apuntes que lee OMEGA: ingresos de factura, costo de ventas (cogs) y cartera",
+     # Sales use income + direct-cost lines of customer invoices; receivables use the
+     # asset_receivable lines of any move (invoices and payments). Bank, tax, payable,
+     # stock-interim and expense lines (~78% of a real ledger) are not exported.
+     "domain": [["account_id.account_type", "in",
+                 ["asset_receivable", "income", "income_other", "expense_direct_cost"]]],
      "fields": {"move_id": "m2o", "account_id": "m2o", "partner_id": "m2o", "product_id": "m2o",
                 "product_uom_id": "m2o", "quantity": "decimal", "price_unit": "decimal,price",
                 "discount": "decimal", "price_subtotal": "decimal,price", "price_total": "decimal,price",

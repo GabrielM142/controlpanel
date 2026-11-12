@@ -1094,7 +1094,16 @@
         }
       ],
       "description": "Asientos/facturas (encabezado)",
-      "domain": []
+      "domain": [
+        [
+          "move_type",
+          "in",
+          [
+            "out_invoice",
+            "out_refund"
+          ]
+        ]
+      ]
     },
     {
       "addon": "nova_account",
@@ -1254,8 +1263,19 @@
         ]
       },
       "children": [],
-      "description": "Apuntes: líneas de factura, impuestos, costo (cogs) y cartera",
-      "domain": []
+      "description": "Apuntes que lee OMEGA: ingresos de factura, costo de ventas (cogs) y cartera",
+      "domain": [
+        [
+          "account_id.account_type",
+          "in",
+          [
+            "asset_receivable",
+            "income",
+            "income_other",
+            "expense_direct_cost"
+          ]
+        ]
+      ]
     },
     {
       "addon": "nova_account",
