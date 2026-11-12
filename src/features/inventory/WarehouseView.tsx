@@ -42,13 +42,14 @@ export default function WarehouseView(){
  const [bodega,setBodegaRaw]=useState('');const [ubicacion,setUbicacion]=useState('');
  const setBodega=(v:string)=>{setBodegaRaw(v);setUbicacion('');};const [categoria,setCategoria]=useState('Todas');
  const [orden,setOrden]=useState<'valor'|'cantidad'>('valor');const [q,setQ]=useState('');const [draft,setDraft]=useState('');
+ const [shown,setShown]=useState(25);
  const [data,setData]=useState<Payload|null>(live?null:DEMO);const [error,setError]=useState<string|null>(null);const [loading,setLoading]=useState(live);
  const query=new URLSearchParams(Object.entries({bodega,ubicacion,categoria:categoria==='Todas'?'':categoria,q,orden}).filter(([,v])=>v)).toString();
 
  useEffect(()=>{
   if(!live){setData(DEMO);setLoading(false);return;}
   if(!tenantId||version===null)return;
-  let off=false;setLoading(true);setError(null);
+  let off=false;setLoading(true);setError(null);setShown(25);
   cachedGet<Payload>(tenantId,`/api/inventory/warehouses?${query}`,version)
    .then(d=>{if(!off)setData(d);}).catch(e=>{if(!off)setError((e as Error).message);}).finally(()=>{if(!off)setLoading(false);});
   return()=>{off=true;};
@@ -145,10 +146,14 @@ export default function WarehouseView(){
       <button type="button" className="button secondary" onClick={()=>csv(view.products)} disabled={!view.products.length}><Download size={14}/>CSV</button></header>
      <div className="panel-body"><div className="table-scroll"><table>
       <thead><tr><th>Producto</th><th>Referencia</th><th>Categoría</th><th className="num">Costo unitario</th><th className="num">Cantidad</th><th className="num">Valor</th><th className="num">Bodegas</th></tr></thead>
-      <tbody>{view.products.length?view.products.map((p,i)=><tr key={`${p.code}-${i}`}><td>{p.name}</td><td className="om-mono">{p.code||'—'}</td><td>{p.category}</td>
+      <tbody>{view.products.length?view.products.slice(0,shown).map((p,i)=><tr key={`${p.code}-${i}`}><td>{p.name}</td><td className="om-mono">{p.code||'—'}</td><td>{p.category}</td>
        <td className="num">{p.unit_cost===null?'Sin costo':money2(num(p.unit_cost))}</td><td className="num">{units(num(p.qty))}</td><td className="num"><b>{money(num(p.value))}</b></td><td className="num">{p.warehouses}</td></tr>)
        :<tr><td colSpan={7}><span className="block-missing"><CircleSlash size={13}/>Sin productos para los filtros seleccionados.</span></td></tr>}</tbody>
-     </table></div></div>
+     </table></div>
+     {view.products.length>shown&&<div className="om-wh-more"><span>Mostrando {shown} de {view.products.length}</span>
+      <button type="button" className="button secondary" onClick={()=>setShown(n=>n+25)}>Mostrar 25 más</button>
+      <button type="button" className="button secondary" onClick={()=>setShown(view.products.length)}>Ver todos</button></div>}
+     </div>
     </section>
     <p className="legend-note om-wh-source"><span>Fuente: existencias en ubicaciones internas × costo unitario de las capas de valoración de Odoo · {live&&data?.published?`Cierre ${data.published.business_date} · versión ${data.published.version}`:'Demostración'}</span></p>
    </>}
