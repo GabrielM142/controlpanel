@@ -42,7 +42,7 @@ def _nova_parse_ts(text):
     fmt = "%Y-%m-%d %H:%M:%S.%f" if "." in text else "%Y-%m-%d %H:%M:%S"
     return datetime.strptime(text, fmt)
 
-CONNECTOR_VERSION = "16.0.1.1.0"
+CONNECTOR_VERSION = "16.0.1.1.1"
 RUN_STATES = [("pending", "Pendiente"), ("preparing", "Preparando"), ("ready", "Listo"),
               ("acknowledged", "Confirmado"), ("failed", "Fallido"), ("cancelled", "Cancelado")]
 
@@ -129,6 +129,8 @@ class NovaSyncRun(models.Model):
     records_count = fields.Integer(readonly=True)
     bytes_total = fields.Integer(readonly=True)
     error = fields.Char(readonly=True, help="Mensaje seguro, sin datos de negocio.")
+    forced = fields.Boolean(readonly=True, help="Lanzado a pedido (\"Preparar lote ahora\"): "
+                            "la ventana nocturna no lo corta; termina cuando acaban sus trabajos.")
     part_ids = fields.One2many("nova.sync.part", "run_id", readonly=True)
 
     _sql_constraints = [("uuid_uniq", "unique(run_uuid)", "UUID de lote duplicado")]
@@ -172,11 +174,13 @@ class NovaSyncRun(models.Model):
                                       ("state", "in", ["ready", "acknowledged"])])
             if done and not force:
                 return False
-            run = self._nova_create_run(conn, window)
+            run = self._nova_create_run(conn, window, forced=force and not window["in_window"])
             run._nova_enqueue_initial()
         elif not run.job_ids:
             run._nova_enqueue_initial()  # run created before the job queue existed (upgrade)
-        if not (window["in_window"] or force):
+        # A run launched on demand outside the window keeps going when the cron (force=False)
+        # picks it up again: only nightly runs are cut when their window closes.
+        if not (window["in_window"] or force or run.forced):
             # Window closed: publish what is prepared (partial, flagged), drop the rest.
             run._nova_cancel_jobs(_("Ventana cerrada"))
             run._nova_finalize(conn)
@@ -198,11 +202,11 @@ class NovaSyncRun(models.Model):
         return True
 
     @api.model
-    def _nova_create_run(self, conn, window):
+    def _nova_create_run(self, conn, window, forced=False):
         seq = conn.next_run_seq
         conn.sudo().write({"next_run_seq": seq + 1})
         return self.sudo().create({
-            "connection_id": conn.id, "run_seq": seq, "state": "preparing",
+            "connection_id": conn.id, "run_seq": seq, "state": "preparing", "forced": bool(forced),
             "business_date": window["business_date"], "timezone": conn.timezone,
             "requested_cutoff_at": window["requested_cutoff_at"].replace("T", " ").rstrip("Z"),
             "observed_from": fields.Datetime.now(),

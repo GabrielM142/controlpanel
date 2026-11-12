@@ -1,6 +1,6 @@
 {
     "name": "NOVA Connector",
-    "version": "16.0.1.1.0",
+    "version": "16.0.1.1.1",
     "category": "Technical",
     "summary": "Night batch export of authorized Odoo data to NOVA (core, outbox, runs, ACK)",
     "description": """

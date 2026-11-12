@@ -82,6 +82,27 @@ class TestNovaConnector(NovaCase):
             with self.assertRaises(UserError):
                 run.part_ids[0].write({"sha256": "x"})
 
+    def test_forced_run_outside_window_is_not_cut_by_the_cron(self):
+        # "Preparar lote ahora" outside the night window: the cron (force=False) continues it
+        # until every job is done instead of closing it as "Ventana cerrada".
+        import pytz
+        from odoo import fields
+        hour = fields.Datetime.now().replace(tzinfo=pytz.utc).astimezone(
+            pytz.timezone(self.conn.timezone or "UTC")).hour
+        start = 0 if hour == 23 else hour + 1
+        self.conn.write({"window_start_hour": start, "window_end_hour": start + 1,
+                         "max_parts_per_invocation": 1})
+        Run = self.env["nova.sync.run"]
+        Run._nova_prepare(self.conn, force=True)
+        run = Run.search([("connection_id", "=", self.conn.id)], order="run_seq desc", limit=1)
+        self.assertTrue(run.forced)
+        for _i in range(400):
+            if run.state != "preparing":
+                break
+            Run._nova_prepare(self.conn, force=False)
+        self.assertEqual(run.state, "ready")
+        self.assertFalse(run.job_ids.filtered(lambda j: j.state == "cancelled"))
+
     def test_quota_stops_preparation(self):
         self.full_cycle()
         self.conn.sudo().write({"max_pending_bytes": -1})
