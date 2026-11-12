@@ -153,11 +153,12 @@ export async function askReportAI(c:ReportContext,question:string,tenant:string|
  const local=interpretReport(c,question);
  if(!AI_BACKEND||c.mode!=='live'||!tenant)return local;
  try{
-  const r=await api<{headline:string;points?:{text:string;tone?:string;source?:string}[];suggestion?:string|null;sources?:string[]}>('/api/ai/report',
+  const r=await api<{headline:string;points?:{text:string;tone?:string;source?:string}[];suggestion?:string|null;sources?:string[];missing_data?:string[]}>('/api/ai/report',
    {tenant,method:'POST',body:{page_id:c.pageId,question,filters:Object.fromEntries(c.filters.map(f=>[f.key,f.value])),cut:c.cut,context:contextDigest(c)}});
   return {...local,engine:'llm',headline:r.headline||local.headline,
    points:(r.points||[]).map(p=>({text:p.text,tone:(['g','a','r'].includes(p.tone||'')?p.tone:'n') as 'g'|'a'|'r'|'n',source:p.source||'Omega IA'})),
-   suggestion:r.suggestion??local.suggestion,sources:r.sources?.length?r.sources:local.sources};
+   suggestion:r.suggestion??local.suggestion,sources:r.sources?.length?r.sources:local.sources,
+   caveats:[...(r.missing_data?.length?[`Para responder mejor falta: ${r.missing_data.join('; ')}.`]:[]),...local.caveats.filter(x=>!/^Modo demo/.test(x))]};
  }catch{return {...local,caveats:[...local.caveats,'El modelo de lenguaje no respondió: lectura calculada con las cifras de la pantalla.']};}
 }
 

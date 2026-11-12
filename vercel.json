@@ -4,7 +4,7 @@
   "framework": "vite",
   "functions": {
     "api/index.mjs": {
-      "maxDuration": 30,
+      "maxDuration": 60,
       "includeFiles": "{contracts/**,src/data/report.json,package.json}"
     },
     "api/cron.mjs": {

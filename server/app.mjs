@@ -3,6 +3,7 @@ import {encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
 import {buildReport, METRICS, parseFilters, receivableSummary, warehouseValuation} from '../lib/metrics.mjs';
+import {aiConfigured, answerQuestion, reportDigest} from '../lib/ai.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -213,6 +214,46 @@ export function createHandler({pool, config, now = () => new Date()}) {
     }
     return {status: 200, raw: toCsv(rows), headers: {'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="nova-${match[1]}-v${data.published?.version ?? 0}.csv"`}};
+  });
+  // Omega IA. The server re-reads the published reports for this tenant and filters (the
+  // browser's numbers are never trusted) and asks Claude. General questions (page "omega")
+  // read the main reports together. Max 60 questions per user per hour.
+  const AI_SCOPE = ['nivel1', 'comercial', 'clientes', 'inventarios', 'financiero', 'compras'];
+  route('POST', /^\/api\/ai\/report$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    if (!aiConfigured()) throw new HttpError(503, 'Omega IA no está configurada en el servidor');
+    const body = await readJson(req, 16 * 1024);
+    const question = str(body.question, 500, {required: true, name: 'pregunta'});
+    const pageId = String(body.page_id || 'omega');
+    if (pageId !== 'omega' && !PAGES.has(pageId)) throw new HttpError(400, 'Reporte inexistente');
+    const filters = {};
+    for (const [k, v] of Object.entries(body.filters || {})) {
+      if (/^[a-z_]{1,20}$/.test(k) && typeof v === 'string' && v.length <= 80) filters[k] = v;
+    }
+    const key = `ai:${ctx.user.id}`;
+    const used = await tx({}, async c => (await c.query(`INSERT INTO app.auth_throttle AS t(key, failures, updated_at) VALUES ($1, 1, now())
+      ON CONFLICT (key) DO UPDATE SET failures = CASE WHEN t.updated_at < now() - interval '1 hour' THEN 1 ELSE t.failures + 1 END,
+        updated_at = CASE WHEN t.updated_at < now() - interval '1 hour' THEN now() ELSE t.updated_at END
+      RETURNING failures`, [key])).rows[0].failures);
+    if (used > 60) throw new HttpError(429, 'Alcanzaste el límite de 60 preguntas por hora a Omega IA. Vuelve a intentar más tarde.');
+    const pages = pageId === 'omega' ? AI_SCOPE : [pageId, ...(pageId === 'nivel1' ? ['comercial'] : [])];
+    const digests = [];
+    let cut = 'sin datos publicados';
+    for (const id of pages) {
+      const payload = await reportFor(ctx, id, filters);
+      if (payload.published) cut = `${payload.published.business_date} · versión ${payload.published.version}`;
+      digests.push(reportDigest(PAGES.get(id).page, payload));
+    }
+    if (cut === 'sin datos publicados') throw new HttpError(409, 'Aún no hay datos publicados para esta empresa.');
+    try {
+      const a = await answerQuestion({question, cut, filters, digests});
+      return {headline: a.headline, points: a.points, suggestion: a.suggestion || null, missing_data: a.missing_data || [],
+        sources: [`Omega IA (${a.model}) · cierre ${cut}`, ...pages.map(id => `Reporte «${PAGES.get(id).page.label}»`)]};
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      throw new HttpError(error.status === 422 ? 422 : 502, error.status === 422 ? error.message : 'Omega IA no respondió. Usa la lectura calculada mientras tanto.');
+    }
   });
   route('GET', /^\/api\/inventory\/warehouses$/, async ({req, query}) => {
     const ctx = await tenantContext(req);

@@ -4,6 +4,8 @@ import {NavigateContext} from '../../components/Report';
 import {type ReportPayload,type Widget} from '../../data/api';
 import {useLive,versionKey} from '../live/LiveData';
 import {cachedGet} from '../live/cache';
+import {api} from '../../data/api';
+import {AI_BACKEND} from './reportAI';
 import {useTokens} from '../tokens/useTokens';
 import {blocksOf,kpisOf,pageById,pageReading} from './data';
 import {useDecisions} from './useDecisions';
@@ -34,7 +36,12 @@ function buildAnswer(q:string,pageId:string,widgets:Record<string,Widget>|null,c
  const red=lists.find(i=>/red/.test(i.c))||null;
  const worstKpi=kpis.find(k=>k.tone==='r');
  const suggestion=red?`Asignar responsable y plan para: ${red.t}.`:worstKpi?`Revisar ${worstKpi.label.toLowerCase()} con el responsable del área esta semana.`:null;
- return {id:`a-${Date.now()}`,q,at:new Date().toISOString(),pageId,conclusion:pageReading(pageId,widgets),
+ const askedMargin=/margen|utilidad|rentab|ganancia|p[eé]rdid/i.test(q);
+ const hasMargin=kpis.some(k=>/margen|rentab|utilidad/i.test(k.label));
+ const conclusion=widgets&&askedMargin&&!hasMargin
+  ?'Todavía no puedo calcular margen: tu Odoo no registra el costo de ventas en contabilidad y falta el mapeo contable. Te muestro las ventas, que sí están publicadas.'
+  :pageReading(pageId,widgets);
+ return {id:`a-${Date.now()}`,q,at:new Date().toISOString(),pageId,conclusion,
   figures:kpis.slice(0,3).map(k=>({label:k.label,value:k.value,note:k.delta?`${k.delta} ${k.deltaLabel}`.trim():k.deltaLabel})),
   why:why.length?why:['No hay hallazgos registrados para esta vista.'],suggestion,
   sources:[`Reporte «${page.label}» (${widgets?`API NOVA · versión publicada ${version??'—'}`:'datos de demostración · report.json'})`,...kpis.slice(0,3).map(k=>`Bloque ${k.id} · ${k.label}`)],cut};
@@ -67,7 +74,16 @@ export default function AskOmegaView(){
     const r=await cachedGet<ReportPayload>(live.tenantId,`/api/reports/${pageId}`,versionKey(live.status));
     widgets=r.widgets;version=r.published?.version;cut=r.published?`Cierre ${r.published.business_date} · versión ${r.published.version}`:'Sin datos publicados';
    }
-   const a=buildAnswer(text,pageId,widgets,cut,version);
+   let a=buildAnswer(text,pageId,widgets,cut,version);
+   if(AI_BACKEND&&live.live&&live.tenantId){
+    try{ // Omega IA: the server re-reads the published reports and asks the model.
+     const r=await api<{headline:string;points:{text:string;tone:string;source:string}[];suggestion:string|null;missing_data:string[];sources:string[]}>(
+      '/api/ai/report',{tenant:live.tenantId,method:'POST',body:{page_id:'omega',question:text,filters:{}}});
+     a={...a,conclusion:r.headline,figures:[],
+      why:[...r.points.map(p=>`${p.text} (${p.source})`),...(r.missing_data.length?[`Para responder mejor falta: ${r.missing_data.join('; ')}.`]:[])],
+      suggestion:r.suggestion||null,sources:r.sources};
+    }catch(e){a={...a,why:[...a.why,`Omega IA no respondió (${(e as Error).message}); lectura calculada con las cifras publicadas.`]};}
+   }
    setCurrent(a);setHistory(h=>[a,...h].slice(0,20));setQ('');setSent(null);
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  },[busy,live.live,live.tenantId,live.status,tokens]);
