@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
-import {buildReport, METRICS, parseFilters, receivableSummary} from '../lib/metrics.mjs';
+import {buildReport, METRICS, parseFilters, receivableSummary, warehouseValuation} from '../lib/metrics.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -213,6 +213,15 @@ export function createHandler({pool, config, now = () => new Date()}) {
     }
     return {status: 200, raw: toCsv(rows), headers: {'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="nova-${match[1]}-v${data.published?.version ?? 0}.csv"`}};
+  });
+  route('GET', /^\/api\/inventory\/warehouses$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    // One REPEATABLE READ snapshot, like the reports: totals, warehouses and products agree.
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true, isolation: 'REPEATABLE READ'}, async c => {
+      const pub = (await c.query('SELECT version, business_date::text, published_at FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      if (!pub) return {mode: 'live', published: null};
+      return {mode: 'live', published: pub, ...(await warehouseValuation(c, query, ctx.companies))};
+    });
   });
   route('GET', /^\/api\/receivables$/, async ({req}) => {
     const ctx = await tenantContext(req);

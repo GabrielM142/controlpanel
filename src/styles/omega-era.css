@@ -233,3 +233,28 @@
 .tenant-brand strong { font-family: var(--font-display); font-size: 17px; letter-spacing: 0; line-height: 1.25;
   max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tenant-brand .brand-symbol { width: 36px; height: 36px; }
+
+/* Valorización por bodega */
+.om-wh-filters { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 16px; flex-wrap: wrap; }
+.om-wh-search { gap: 6px; }
+.om-wh-search label { display: contents; }
+.om-wh-search label span { font-size: 11px; font-weight: 400; color: var(--text-2); white-space: nowrap; }
+.om-wh-search input { background: transparent; border: 0; color: var(--text); font: inherit; font-size: 12px; min-width: 150px; padding: 2px 0; }
+.om-wh-search input::placeholder { color: var(--text-3); }
+.om-wh-search input:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px; }
+.om-wh-clear { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; background: transparent; border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 12px; color: var(--text-2); font-size: 12px; }
+.om-wh-clear:hover { color: var(--text); border-color: var(--brand); }
+.om-wh-loading { display: flex; align-items: center; gap: 8px; color: var(--text-2); padding: 18px 0; }
+.om-wh-grid { margin-top: 14px; }
+.om-wh-row strong small, .om-wh .bar-row strong small { display: block; font-weight: 500; font-size: 11px; color: var(--text-3); }
+.om-wh .bar-row { grid-template-columns: minmax(90px, 1fr) minmax(40px, 1.2fr) minmax(90px, auto); }
+.om-wh .bar-name.row-link { text-align: left; color: var(--text-2); }
+.om-wh .bar-name.row-link[aria-pressed=true], .om-wh .row-link[aria-pressed=true] { color: var(--brand); font-weight: 650; }
+.om-wh .bar-fill { background: var(--fin-cash); }
+.om-wh-locs, .om-wh-table { margin-top: 14px; }
+.om-wh-table .panel-heading .button { padding: 6px 10px; }
+.om-wh .om-mono { font-family: var(--font-num); font-size: 12px; color: var(--text-2); }
+.om-wh-source { margin-top: 16px; }
+.om-wh-kpis .kpi { min-height: 120px; }
+@media (max-width: 1080px) { .om-wh-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
