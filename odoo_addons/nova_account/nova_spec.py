@@ -49,6 +49,11 @@ DATASETS = [
                 "debit_amount_currency": "decimal", "credit_amount_currency": "decimal",
                 "max_date": "date", "company_id": "m2o", "full_reconcile_id": "m2o"},
      "capture": {"fields": None, "refs": ["debit_move_id", "credit_move_id", "company_id", "max_date"]}},
+    {"key": "account_balance_month", "version": 1, "model": "nova.account.balance.month",
+     "company_scope": "strict", "mode": "snapshot_replace",
+     "description": "Saldo mensual por cuenta (balance de comprobación): estado de resultados y balance",
+     "fields": {"company_id": "m2o", "account_id": "m2o", "code": "string", "name": "string", "account_type": "string",
+                "month": "date", "debit": "decimal", "credit": "decimal", "balance": "decimal"}},
 ]
 
 # A reconciliation changes residuals of both lines without writing them through

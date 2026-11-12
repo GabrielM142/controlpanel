@@ -299,6 +299,22 @@ Conciliaciones parciales (pagos aplicados). Alcance compañía: `strict`. Modo: 
 | `company_id` | m2o |  |  |
 | `full_reconcile_id` | m2o |  |  |
 
+## `account_balance_month` v1 · `nova.account.balance.month` (nova_account)
+
+Saldo mensual por cuenta (balance de comprobación): estado de resultados y balance. Alcance compañía: `strict`. Modo: `snapshot_replace`.
+
+| Campo | Tipo | Opcional | Sensibilidad |
+|---|---|---|---|
+| `company_id` | m2o |  |  |
+| `account_id` | m2o |  |  |
+| `code` | string |  |  |
+| `name` | string |  |  |
+| `account_type` | string |  |  |
+| `month` | date |  |  |
+| `debit` | decimal |  |  |
+| `credit` | decimal |  |  |
+| `balance` | decimal |  |  |
+
 ## `stock_warehouse` v1 · `stock.warehouse` (nova_stock)
 
 Bodegas. Alcance compañía: `strict`. Modo: `delta`.

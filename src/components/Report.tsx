@@ -66,8 +66,21 @@ export function ReportNodes({nodes}:{nodes:Rich}){return nodes.map((node,i)=><Re
 
 function titleOf(node:ReportNode){return 'label' in node?node.label:'title' in node?node.title:node.kind==='ise'?'Índice de Salud Empresarial':node.kind==='geo'?'Cobertura Comercial — Provincia → Cantón → Zona':node.kind==='matrix'?'Matriz Comercial — mejor resultado / mayor riesgo':'';}
 
+// Insight widgets computed by the API from the published close (lists, summaries, matrix, ISE).
+type Tone='g'|'a'|'r';
+type InsightWidget=
+ |{kind:'list';items:{t:string;d?:string;tone:Tone}[]}
+ |{kind:'text';paragraphs:string[]}
+ |{kind:'matrix';rows:string[][];note?:string}
+ |{kind:'ise';score:number;status:string;tone:Tone;components:[string,number,number|null][];formula:string};
+const TONE_VAR:Record<Tone,string>={g:'var(--fin-income)',a:'var(--fin-risk)',r:'var(--fin-loss)'};
+function LiveIse({w,title}:{w:Extract<InsightWidget,{kind:'ise'}>;title:string}){
+ const [open,setOpen]=useState(false);const fid=useId();const color=TONE_VAR[w.tone]||TONE_VAR.a;
+ return <section className="panel ise-card" aria-label={title}><div className="ise-top"><div className="score-orbit" style={{'--score-color':color,'--score-angle':`${w.score*3.6}deg`} as CSSProperties}><div><strong>{w.score}</strong><span>/100</span></div></div><div><span className="eyebrow">ISE · propuesta OMEGA</span><strong className="ise-status" style={{color}}>{w.status}</strong></div></div><div className="ise-components">{w.components.map(([label,weight,score])=><div key={label}><span>{label} ({weight}%) · {score===null?'sin dato':`${score}/100`}</span><div className="weight-track"><span style={{width:`${score??0}%`,background:color}}/></div></div>)}</div><button type="button" className="text-button" aria-expanded={open} aria-controls={fid} onClick={()=>setOpen(!open)}><Info size={13}/>¿Cómo se calcula?<ChevronDown size={13} className={open?'rotate':''}/></button>{open&&<p className="formula" id={fid}>{w.formula}</p>}</section>;
+}
+
 /** Live rendering of one block. Never falls back to the demo numbers. */
-function LiveBlock({node,id,w,loading}:{node:ReportNode;id:string;w?:Widget;loading:boolean}){
+function LiveBlock({node,id,w,loading}:{node:ReportNode;id:string;w?:Widget|InsightWidget;loading:boolean}){
  const reason=loading?'Cargando…':w&&w.kind==='missing'?w.reason:'Sin dato publicado.';
  if(!w||w.kind==='missing'){
   if(node.kind==='kpi'||node.kind==='metric')return <article className={`panel ${node.kind} tone-a is-missing`} data-block={id} aria-busy={loading}><div className="kpi-label"><span>{node.label}</span></div><div className={node.kind==='kpi'?'kpi-value':'metric-value'}>—</div><p className="block-missing"><CircleSlash size={12}/>{reason}</p></article>;
@@ -83,6 +96,10 @@ function LiveBlock({node,id,w,loading}:{node:ReportNode;id:string;w?:Widget;load
  if(node.kind==='bars'&&w.kind==='bars')return <Panel title={node.title} blockId={id}><Bars rows={w.rows}/></Panel>;
  if(node.kind==='toggle'&&w.kind==='toggle')return <ToggleChart node={node} data={w.data} note={w.note}/>;
  if(node.kind==='geo'&&w.kind==='geo')return <Geography tree={w.rows} note={w.note}/>;
+ if(node.kind==='list'&&w.kind==='list')return <Panel title={node.title} blockId={id}><div className="insight-list">{w.items.map((item,i)=><div className="insight" key={i}><span className="insight-accent" style={{background:TONE_VAR[item.tone]||TONE_VAR.a}}/><div><strong>{item.t}</strong>{item.d&&<p>{item.d}</p>}</div></div>)}</div></Panel>;
+ if(node.kind==='panel'&&w.kind==='text')return <Panel title={node.title} span={node.span} blockId={id}><div className="live-summary">{w.paragraphs.map((p,i)=><p key={i}>{p}</p>)}</div></Panel>;
+ if((node.kind==='ise'||node.kind==='panel')&&w.kind==='ise')return <LiveIse w={w} title={titleOf(node)}/>;
+ if(node.kind==='matrix'&&w.kind==='matrix')return <Panel title={titleOf(node)} blockId={id}><div className="table-scroll"><table className="matrix"><thead><tr><th>Dimensión</th><th>Mejor resultado</th><th>Mayor riesgo</th></tr></thead><tbody>{w.rows.map((r,i)=><tr key={i}><td><b>{r[0]}</b></td><td>{r[1]!=='—'?<span className="tag g">{r[1]}</span>:'—'}</td><td>{r[2]!=='—'?<span className="tag r">{r[2]}</span>:'—'}</td></tr>)}</tbody></table></div>{w.note&&<p className="legend-note">{w.note}</p>}</Panel>;
  return <Panel title={titleOf(node)} blockId={id} className="is-missing"><p className="block-missing"><CircleSlash size={13}/>Formato de dato no soportado.</p></Panel>;
 }
 

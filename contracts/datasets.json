@@ -1347,6 +1347,70 @@
       "domain": []
     },
     {
+      "addon": "nova_account",
+      "key": "account_balance_month",
+      "version": 1,
+      "min_version": 1,
+      "model": "nova.account.balance.month",
+      "company_scope": "strict",
+      "mode": "snapshot_replace",
+      "business_date": null,
+      "fields": {
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_type": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "month": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "debit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "credit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "balance": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": []
+      },
+      "children": [],
+      "description": "Saldo mensual por cuenta (balance de comprobación): estado de resultados y balance",
+      "domain": []
+    },
+    {
       "addon": "nova_stock",
       "key": "stock_warehouse",
       "version": 1,
