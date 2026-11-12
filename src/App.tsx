@@ -57,7 +57,7 @@ const virtualPages:VirtualPage[]=[
  {id:'market-services',group:'Market',subgroup:'Catálogo',label:'Servicios',question:'Retainers, auditorías y paquetes de acompañamiento continuo.',component:MarketServices,icon:Wrench},
  {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
  {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
- {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Omega IA para describir el módulo que necesitas. Al finalizar lo enviamos al equipo OMEGA.',component:TruequeChat,icon:Wand2},
+ {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chatea con Omega IA para describir el módulo que necesitas. Al finalizar lo enviamos al equipo OMEGA.',component:TruequeChat,icon:Wand2},
  {id:'trueque-list',group:'Factory',label:'Mis Solicitudes',question:'Historial de módulos solicitados a OMEGA con su estado actual.',component:TruequeList,icon:ListChecks},
 ];
 const virtualIds=new Set(virtualPages.map(p=>p.id));
@@ -69,12 +69,18 @@ const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoA
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
 type NavSub={label:string;ids:string[]};
 type NavSection={label:string;subs:NavSub[]};
+// Grouped by the question a manager asks (results -> operation -> units -> action -> setup).
+// The 13 reports and every auxiliary view stay; only their grouping changes.
 const NAV:NavSection[]=[
  {label:'Ejecutivo',subs:[
   {label:'Dirección',ids:['nivel1']},
   {label:'Ventas',ids:['comercial','clientes','marketing']},
-  {label:'Compras',ids:['compras','inventarios','logistica']},
   {label:'Finanzas y riesgo',ids:['financiero','riesgos']},
+ ]},
+ {label:'Operación',subs:[
+  {label:'Compras',ids:['compras']},
+  {label:'Inventarios',ids:['inventarios']},
+  {label:'Logística',ids:['logistica']},
  ]},
  {label:'Unidades',subs:[
   {label:'Mayorista',ids:['mayoristahogar','mayoristaintorno']},
@@ -86,11 +92,13 @@ const NAV:NavSection[]=[
   {label:'Tareas y notas',ids:['tasks','notes']},
  ]},
  {label:'Configuración',subs:[
-  {label:'Datos y umbrales',ids:['sources','control']},
+  {label:'Fuentes de datos',ids:['sources']},
+  {label:'Umbrales',ids:['control']},
   {label:'Tema de la empresa',ids:['tema']},
   {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},
  ]},
 ];
+const ROLE_LABEL:Record<string,string>={owner:'Propietario',admin:'Administrador',analyst:'Analista',viewer:'Lectura'};
 function locate(id:string):{section:string;sub?:string}{
  if(id==='omega')return {section:'Pregúntale a Omega'};
  for(const sec of NAV)for(const sub of sec.subs)if(sub.ids.includes(id))return {section:sec.label,sub:sub.ids.length>1?sub.label:undefined};
@@ -237,10 +245,10 @@ function AppShell(){
    </div>
    <TenantSwitcher/>
    <nav aria-label="Menú principal" className="omega-nav">
-    {NAV.map((sec,si)=>{
+    <button type="button" className="omega-ask-nav" aria-current={pageId==='omega'?'page':undefined} onClick={()=>navigate('omega')}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>
+    {NAV.map(sec=>{
      const secKey=`sec:${sec.label}`;const open=expanded.has(secKey);
      return <div key={sec.label}>
-      {si===3&&<button type="button" className="omega-ask-nav" aria-current={pageId==='omega'?'page':undefined} onClick={()=>navigate('omega')}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>}
       <div className={`nav-group omega-section ${open?'open':'closed'}${loc.section===sec.label?' is-active':''}`}>
        <button type="button" className="nav-group-header omega-section-head" aria-expanded={open} onClick={()=>toggleKey(secKey)}><span>{sec.label}</span><ChevronDown size={12} className={open?'':'rotate-neg90'}/></button>
        {open&&<div className="nav-group-body">{sec.subs.map(sub=>{
@@ -261,18 +269,14 @@ function AppShell(){
      <div className="nav-trueque-foot">Módulos a medida para tu ERP</div>
     </div>
    </nav>
-   <div className="om-legend-box" aria-label="Código de color">
-    <span className="om-eyebrow">Código de color</span>
-    {[['income','Ingresos · a favor'],['loss','Costos y pérdidas'],['goal','Meta y presupuesto'],['cash','Caja y liquidez'],['risk','Riesgo · por vencer'],['ai','Omega IA']].map(([k,l])=><span key={k} className="om-legend-item"><i className={`om-dot-${k}`} aria-hidden="true"/>{l}</span>)}
-   </div>
    <SidebarFoot/>
   </>;
  }
 
  function SidebarFoot(){
   return <div className="sidebar-foot nova-foot omega-foot">
-   <span className="omega-avatar" aria-hidden="true">{activeTenant.monogram}</span>
-   <div><strong>{activeTenant.name}</strong><span>{live.live?(live.membership?.role||''):'Demo · datos de ejemplo'}</span></div>
+   <span className="omega-avatar" aria-hidden="true">{live.live&&live.user?live.user.name.trim().slice(0,2).toUpperCase():activeTenant.monogram}</span>
+   <div><strong>{live.live&&live.user?live.user.name:activeTenant.name}</strong><span>{live.live?(ROLE_LABEL[live.membership?.role||'']||''):'Demo · datos de ejemplo'}</span></div>
   </div>;
  }
 

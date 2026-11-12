@@ -46,7 +46,7 @@ export default function DataSourcesView(){
  useEffect(()=>{load();},[load]);
 
  if(!live)return <DemoExplainer/>;
- if(!admin)return <section className="panel"><div className="panel-body"><p className="legend-note">Solo administradores del tenant gestionan fuentes. El estado de la última publicación aparece en la barra superior.</p></div></section>;
+ if(!admin)return <section className="panel"><div className="panel-body"><p className="legend-note">Solo los administradores de la empresa gestionan las fuentes. El estado de la última publicación aparece en la barra superior.</p></div></section>;
 
  const act=async(id:string,action:string,body:unknown={})=>{
   setBusy(true);setError(null);

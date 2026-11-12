@@ -223,3 +223,13 @@
 :root[data-mode="light"] .ai-action { color: var(--text) !important; }
 :root[data-mode="light"] .ai-action { background: var(--ai-soft) !important; border-color: var(--ai-line) !important; }
 .report-footer span i { color: var(--text-3) !important; }
+
+/* Leyenda de colores en Tema de la empresa (ya no ocupa el menú lateral) */
+.om-legend-box--theme { margin: 16px 0 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 767px) { .om-legend-box--theme { grid-template-columns: 1fr 1fr; } }
+
+/* Nombre de la empresa en el menú: legible sin ocupar el espacio del menú */
+.sidebar .tenant-brand, .mobile-drawer .tenant-brand { padding-top: 14px; padding-bottom: 14px; }
+.tenant-brand strong { font-family: var(--font-display); font-size: 17px; letter-spacing: 0; line-height: 1.25;
+  max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tenant-brand .brand-symbol { width: 36px; height: 36px; }

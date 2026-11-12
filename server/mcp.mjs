@@ -52,6 +52,6 @@ export async function handleMcp(body, ctx) {
         return fail(id, -32602, 'Herramienta desconocida');
     }
   } catch (error) {
-    return ok(id, {isError: true, content: [{type: 'text', text: error.status === 403 ? 'Sin acceso a este tenant' : 'Error al consultar NOVA'}]});
+    return ok(id, {isError: true, content: [{type: 'text', text: error.status === 403 ? 'Sin acceso a esta empresa' : 'Error al consultar NOVA'}]});
   }
 }

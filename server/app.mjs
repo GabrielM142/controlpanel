@@ -44,7 +44,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
   async function contextFor(user, tenantId, minRole = 'viewer') {
     if (!isUuid(tenantId)) throw new HttpError(400, 'Tenant inválido');
     const m = (await memberships(user.id)).find(x => x.tenant_id === tenantId);
-    if (!m) throw new HttpError(403, 'Sin acceso a este tenant');
+    if (!m) throw new HttpError(403, 'Sin acceso a esta empresa');
     if (ROLE_RANK[m.role] < ROLE_RANK[minRole]) throw new HttpError(403, 'Rol insuficiente');
     const companies = await tx({tenantId, userId: user.id}, async c => {
       const rows = (await c.query('SELECT source_id, company_id FROM app.membership_companies WHERE tenant_id = $1 AND user_id = $2',
@@ -88,7 +88,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     // One REPEATABLE READ snapshot: every widget of the response reads the same published state.
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true, isolation: 'REPEATABLE READ'}, async c => {
       const pub = (await c.query('SELECT version, business_date::text, published_at, sources, consistency FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
-      if (!pub) return {mode: 'live', published: null, widgets: Object.fromEntries(entry.blocks.map(b => [b.id, {kind: 'missing', reason: 'Aún no hay datos publicados para este tenant.'}]))};
+      if (!pub) return {mode: 'live', published: null, widgets: Object.fromEntries(entry.blocks.map(b => [b.id, {kind: 'missing', reason: 'Aún no hay datos publicados para esta empresa.'}]))};
       const filters = parseFilters(query, pageId, pub.business_date);
       const widgets = await buildReport(c, pageId, filters, {companies: ctx.companies, blocks: entry.blocks});
       return {mode: 'live', published: pub, filters, widgets};

@@ -97,6 +97,10 @@ export default function ThemeView(){
       <p className="om-muted">La marca solo pinta el envase; los datos siempre usan los colores financieros.</p>
      </div>
     </div>
+    <div className="om-legend-box om-legend-box--theme" aria-label="Código de color">
+     <span className="om-eyebrow">Código de color de los datos</span>
+     {[['income','Ingresos · a favor'],['loss','Costos y pérdidas'],['goal','Meta y presupuesto'],['cash','Caja y liquidez'],['risk','Riesgo · por vencer'],['ai','Omega IA']].map(([k,l])=><span key={k} className="om-legend-item"><i className={`om-dot-${k}`} aria-hidden="true"/>{l}</span>)}
+    </div>
    </section>
   </div>
   <ConfirmDialog open={confirmClash} title="¿Guardar un color parecido a un dato?" body={`Tu color de marca se parece al de ${check.clash||''}. Los gerentes podrían confundirlo con una cifra financiera.`}
