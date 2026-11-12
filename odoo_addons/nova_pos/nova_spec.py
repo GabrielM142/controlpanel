@@ -7,7 +7,7 @@ DATASETS = [
      "fields": {"name": "string", "company_id": "m2o", "active": "bool", "journal_id": "m2o",
                 "picking_type_id": "m2o"},
      "capture": {"fields": None, "refs": ["company_id"]}},
-    {"key": "pos_session", "version": 1, "model": "pos.session", "company_scope": "none",
+    {"key": "pos_session", "version": 1, "model": "pos.session", "company_scope": "strict",
      "description": "Sesiones POS",
      "fields": {"name": "string", "config_id": "m2o", "user_id": "m2o", "start_at": "datetime",
                 "stop_at": "datetime", "state": "selection", "move_id": "m2o,opt"},
@@ -25,7 +25,7 @@ DATASETS = [
      "description": "Líneas POS (devoluciones con cantidad negativa)",
      "fields": {"order_id": "m2o", "product_id": "m2o", "qty": "decimal", "price_unit": "decimal,price",
                 "discount": "decimal", "price_subtotal": "decimal,price",
-                "price_subtotal_incl": "decimal,price", "total_cost": "decimal,cost,opt",
+                "price_subtotal_incl": "decimal,price", "total_cost": "decimal,cost,opt", "is_total_cost_computed": "bool,opt",
                 "refunded_orderline_id": "m2o,opt", "company_id": "m2o", "full_product_name": "string"},
      "capture": {"fields": None, "refs": ["order_id", "company_id", "product_id"]}},
 ]

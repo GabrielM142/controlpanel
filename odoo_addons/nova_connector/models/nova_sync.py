@@ -1,9 +1,10 @@
 import base64
+import copy
 import json
 import logging
 import time
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytz
 
@@ -15,7 +16,33 @@ from ..nova_lib.schedule import night_window, utc_iso
 
 _logger = logging.getLogger(__name__)
 
-CONNECTOR_VERSION = "16.0.1.0.0"
+
+def _nova_ts_precise(value):
+    """Naive UTC datetime -> 'YYYY-MM-DDTHH:MM:SS.ffffffZ' (keeps microseconds)."""
+    if value.tzinfo is not None:
+        value = value.astimezone(pytz.utc).replace(tzinfo=None)
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _nova_effective_budget(seconds):
+    """Keep each invocation below the worker's real-time limit: if the cron worker
+    is killed the whole invocation rolls back and no progress is ever made."""
+    from odoo.tools import config
+    limit = config.get("limit_time_real_cron") or 0
+    if limit <= 0:
+        limit = config.get("limit_time_real") or 0
+    if limit and limit > 0:
+        return max(10, min(seconds, limit - 30))
+    return seconds
+
+
+def _nova_parse_ts(text):
+    """Inverse of _nova_ts_precise; also accepts the second-precision utc_iso format."""
+    text = text.replace("T", " ").rstrip("Z")
+    fmt = "%Y-%m-%d %H:%M:%S.%f" if "." in text else "%Y-%m-%d %H:%M:%S"
+    return datetime.strptime(text, fmt)
+
+CONNECTOR_VERSION = "16.0.1.1.0"
 RUN_STATES = [("pending", "Pendiente"), ("preparing", "Preparando"), ("ready", "Listo"),
               ("acknowledged", "Confirmado"), ("failed", "Fallido"), ("cancelled", "Cancelado")]
 
@@ -127,6 +154,16 @@ class NovaSyncRun(models.Model):
         tz = pytz.timezone(conn.timezone or "UTC")
         window = night_window(fields.Datetime.now(), tz, conn.window_start_hour, conn.window_end_hour)
         run = self.search([("connection_id", "=", conn.id), ("state", "=", "preparing")], limit=1)
+        over_quota = conn.pending_bytes > conn.max_pending_bytes
+        if over_quota:
+            conn.sudo().write({"last_error": _("Cuota de partes sin confirmar alcanzada: preparación detenida.")})
+            _logger.warning("NOVA: pending bytes quota reached, preparation stopped")
+            if run:
+                # Publish what is already prepared (partial, flagged in the manifest)
+                # instead of leaving a 'preparing' run blocked until retention.
+                run._nova_finalize(conn)
+                return True
+            return False  # check before creating a run: never leave an empty 'preparing' run
         if not run:
             if not (window["in_window"] or force):
                 return False
@@ -136,16 +173,29 @@ class NovaSyncRun(models.Model):
             if done and not force:
                 return False
             run = self._nova_create_run(conn, window)
-        if conn.pending_bytes > conn.max_pending_bytes:
-            conn.sudo().write({"last_error": _("Cuota de partes sin confirmar alcanzada: preparación detenida.")})
-            _logger.warning("NOVA: pending bytes quota reached, preparation stopped")
-            return False
-        finished = run._nova_work(conn)
-        if finished or not (window["in_window"] or force):
+            run._nova_enqueue_initial()
+        elif not run.job_ids:
+            run._nova_enqueue_initial()  # run created before the job queue existed (upgrade)
+        if not (window["in_window"] or force):
+            # Window closed: publish what is prepared (partial, flagged), drop the rest.
+            run._nova_cancel_jobs(_("Ventana cerrada"))
             run._nova_finalize(conn)
             return True
-        self.env.ref("nova_connector.ir_cron_nova_prepare")._trigger()
-        return False
+        run._nova_requeue_stale_jobs(conn)
+        job = run._nova_next_job(force=force)
+        if job:
+            # ONE job per invocation; the cron commits it and comes back after a pause.
+            run._nova_run_job(conn, job, _nova_effective_budget(conn.time_budget_seconds))
+        if run._nova_has_pending_jobs():
+            cron = self.env.ref("nova_connector.ir_cron_nova_prepare")
+            nxt = run._nova_next_job(force=True)
+            at = fields.Datetime.now() + timedelta(seconds=max(0, conn.job_pause_seconds))
+            if nxt and nxt.scheduled_at and nxt.scheduled_at > at:
+                at = nxt.scheduled_at  # backoff of a retried job
+            cron._trigger(at=at)
+            return False
+        run._nova_finalize(conn)
+        return True
 
     @api.model
     def _nova_create_run(self, conn, window):
@@ -166,22 +216,33 @@ class NovaSyncRun(models.Model):
     def _nova_work(self, conn):
         """Bounded work; returns True when every dataset reached phase 'done'."""
         self.ensure_one()
-        deadline = time.monotonic() + conn.time_budget_seconds
+        deadline = time.monotonic() + _nova_effective_budget(conn.time_budget_seconds)
         budget = {"parts": conn.max_parts_per_invocation}
         progress = self._nova_progress()
         datasets = self.env["nova.export.dataset"].sudo().search([])._nova_usable()
         company_ids = conn.company_ids.ids
         all_done = True
         for dataset in datasets:
-            state = progress["datasets"].setdefault(dataset.key, self._nova_initial_state(dataset))
+            if dataset.key not in progress["datasets"]:
+                progress["datasets"][dataset.key] = self._nova_initial_state(dataset)
+            state = progress["datasets"][dataset.key]
             while state["phase"] != "done":
                 if time.monotonic() > deadline or budget["parts"] <= 0:
                     all_done = False
                     break
+                snap = (copy.deepcopy(state), progress["next_part_no"], progress["next_seq"], budget["parts"])
                 try:
-                    self._nova_step(conn, dataset, state, progress, company_ids, budget)
+                    # One savepoint per step: on failure the claimed events go back to
+                    # 'pending' and the stored parts disappear, so nothing is ACKed
+                    # without being exported and the transaction stays usable.
+                    with self.env.cr.savepoint():
+                        self._nova_step(conn, dataset, state, progress, company_ids, budget)
                 except Exception as exc:  # noqa: BLE001
                     _logger.exception("NOVA: dataset %s failed", dataset.key)
+                    self.env.invalidate_all()  # drop cache of rows rolled back with the savepoint
+                    saved, progress["next_part_no"], progress["next_seq"], budget["parts"] = snap
+                    state.clear()
+                    state.update(saved)
                     state["phase"] = "done"
                     state["error"] = type(exc).__name__
                     dataset.sudo().write({"last_error": _("Error de exportación (%s)") % type(exc).__name__})
@@ -265,30 +326,50 @@ class NovaSyncRun(models.Model):
                             self._nova_records_from_events(dataset, Model, domain, rows), budget)
             return
         if state["phase"] == "scan":
-            records = self._nova_scan_page(conn, Model, domain, state, page)
+            records, last_ts = self._nova_scan_page(conn, Model, domain, state, page)
             if not records:
                 state["phase"] = "done"
                 return
+            last_key = (last_ts, records[-1].id)
+            prev_key = (_nova_parse_ts(state["scan_ts"]), state["scan_id"])
+            if last_key <= prev_key:
+                # Defensive stop: a page that does not advance would loop until the time budget.
+                _logger.warning("NOVA: scan of %s did not advance; dataset closed for this run", dataset.key)
+                state["phase"] = "done"
+                state["error"] = "ScanNotAdvancing"  # manifest marks the dataset incomplete
+                return
             self._nova_emit(builder, state, progress, dataset._nova_serialize(records, "scan"), budget)
-            last = records[-1]
-            state["scan_ts"] = utc_iso(last.write_date)
-            state["scan_id"] = last.id
+            state["scan_ts"] = _nova_ts_precise(last_ts)
+            state["scan_id"] = records[-1].id
             return
 
     def _nova_scan_page(self, conn, Model, domain, state, page):
-        """Keyset pagination on (write_date, id) with a configurable overlap."""
+        """Keyset pagination on (write_date, id) with a configurable overlap.
+
+        The keyset is compared in SQL with full (microsecond) precision: Odoo stores
+        write_date with microseconds, so a cursor rounded to seconds would return the
+        same page again and again (infinite scan). Returns (records, last write_date).
+        """
         if not state.get("scan_ts"):
-            return Model.browse()
+            return Model.browse(), None
         if not state.get("scan_started"):
-            start = fields.Datetime.from_string(state["scan_ts"].replace("T", " ").rstrip("Z"))
-            start -= timedelta(minutes=conn.scan_overlap_minutes)
-            state["scan_ts"] = utc_iso(start)
+            start = _nova_parse_ts(state["scan_ts"]) - timedelta(minutes=conn.scan_overlap_minutes)
+            state["scan_ts"] = _nova_ts_precise(start)
             state["scan_id"] = 0
             state["scan_started"] = True
-        ts = state["scan_ts"].replace("T", " ").rstrip("Z")
         upper = fields.Datetime.to_string(self.observed_from)
-        keyset = ["|", ("write_date", ">", ts), "&", ("write_date", "=", ts), ("id", ">", state["scan_id"])]
-        return Model.search(domain + keyset + [("write_date", "<=", upper)], order="write_date, id", limit=page)
+        Model.flush_model(["write_date"])
+        query = Model._search(domain + [("write_date", "<=", upper)])
+        sub_sql, sub_params = query.subselect()
+        self.env.cr.execute(
+            'SELECT "id", "write_date" FROM "{table}" WHERE "id" IN ({sub}) '
+            'AND ("write_date", "id") > (%s, %s) ORDER BY "write_date", "id" LIMIT %s'.format(
+                table=Model._table, sub=sub_sql),
+            list(sub_params) + [_nova_parse_ts(state["scan_ts"]), state["scan_id"], page])
+        rows = self.env.cr.fetchall()
+        if not rows:
+            return Model.browse(), None
+        return Model.browse([r[0] for r in rows]), rows[-1][1]
 
     def _nova_records_from_events(self, dataset, Model, domain, rows):
         ids = sorted({r[1] for r in rows})
@@ -334,7 +415,16 @@ class NovaSyncRun(models.Model):
                 warnings.append({"code": "dataset_error", "dataset": dataset.key, "error": st["error"]})
             datasets.append(entry)
             if dataset.reconcile_enabled and st["backfill_done"] and not st["snapshot"]:
-                reconciliation.extend(dataset._nova_reconcile(conn.company_ids.ids))
+                # A full-table aggregate can hit statement_timeout on large ERPs: it must
+                # not abort the finalization (the run would never become 'ready').
+                try:
+                    with self.env.cr.savepoint(flush=False):
+                        reconciliation.extend(dataset._nova_reconcile(conn.company_ids.ids))
+                except Exception as exc:  # noqa: BLE001
+                    _logger.warning("NOVA: reconciliation skipped for %s (%s)", dataset.key, type(exc).__name__)
+                    self.env.invalidate_all()
+                    warnings.append({"code": "reconcile_skipped", "dataset": dataset.key,
+                                     "error": type(exc).__name__})
         if conn.resync_required:
             warnings.append({"code": "resync_required", "reason": conn.resync_reason or ""})
         if conn.pending_events > conn.max_pending_events:
@@ -384,12 +474,15 @@ class NovaSyncRun(models.Model):
             cursor = self.env["nova.sync.cursor"]._nova_for(dataset)
             if cursor.resync_epoch != st["epoch"]:
                 continue  # a resync started meanwhile: keep the new cursor
+            if cursor.acked_run_id and cursor.acked_run_id.run_seq > self.run_seq:
+                continue  # an older run ACKed late must not move the cursor backwards
             vals = {"backfill_last_id": st["backfill_last_id"], "backfill_done": st["backfill_done"],
                     "acked_run_id": self.id}
             if not cursor.backfill_started_at:
                 vals["backfill_started_at"] = st["backfill_started_at"].replace("T", " ").rstrip("Z")
             if st.get("scan_ts"):
-                vals["scan_ts"] = st["scan_ts"].replace("T", " ").rstrip("Z")
+                # The stored cursor keeps second precision; the next run re-reads with overlap.
+                vals["scan_ts"] = fields.Datetime.to_string(_nova_parse_ts(st["scan_ts"]))
                 vals["scan_id"] = st.get("scan_id", 0)
             cursor.write(vals)
         self.env.cr.execute("UPDATE nova_change_event SET state = 'acked' WHERE run_id = %s", (self.id,))
@@ -397,7 +490,10 @@ class NovaSyncRun(models.Model):
         self.sudo().write({"state": "acknowledged", "acked_at": fields.Datetime.now(),
                            "receipt_uuid": receipt_uuid})
         conn = self.connection_id
-        if conn.resync_required and all(c.backfill_done for c in self.env["nova.sync.cursor"].sudo().search([])):
+        usable = self.env["nova.export.dataset"].sudo().search([])._nova_usable().filtered(
+            lambda d: d.mode == "delta")
+        pending_cursors = self.env["nova.sync.cursor"].sudo().search([("dataset_id", "in", usable.ids)])
+        if conn.resync_required and all(c.backfill_done for c in pending_cursors):
             conn.sudo().write({"resync_required": False, "resync_reason": False})
         return {"status": "acknowledged", "receipt_uuid": receipt_uuid}
 
@@ -406,6 +502,7 @@ class NovaSyncRun(models.Model):
             self.env.cr.execute("UPDATE nova_change_event SET state = 'pending', run_id = NULL "
                                 "WHERE run_id = %s AND state = 'exported'", (run.id,))
             run.sudo().write({"state": "cancelled", "error": (reason or "")[:200]})
+            run._nova_cancel_jobs(reason)
         self.env["nova.change.event"].invalidate_model(["state", "run_id"])
 
     def action_cancel(self):
@@ -434,3 +531,4 @@ class NovaSyncRun(models.Model):
         parts.mapped("attachment_id").sudo().unlink()
         parts.with_context(nova_internal=True).sudo().write({"purged": True})
         self.env.cr.execute("DELETE FROM nova_change_event WHERE state = 'acked' AND captured_at < %s", (limit,))
+        self._nova_purge_jobs(limit)

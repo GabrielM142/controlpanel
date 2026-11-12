@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(ADDONS, "nova_connector"))
 from nova_lib.spec import normalize_dataset, normalize_dependencies  # noqa: E402
 
 ORDER = ["nova_master_data", "nova_sales", "nova_account", "nova_stock", "nova_stock_account",
-         "nova_purchase", "nova_pos"]
+         "nova_purchase", "nova_pos", "nova_website_sale"]
 DEC = "^-?[0-9]+(\\.[0-9]+)?$"
 DT = "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
 DATE = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"

@@ -471,7 +471,7 @@ Puntos de venta. Alcance compañía: `strict`. Modo: `delta`.
 
 ## `pos_session` v1 · `pos.session` (nova_pos)
 
-Sesiones POS. Alcance compañía: `none`. Modo: `delta`.
+Sesiones POS. Alcance compañía: `strict`. Modo: `delta`.
 
 | Campo | Tipo | Opcional | Sensibilidad |
 |---|---|---|---|
@@ -519,9 +519,31 @@ Líneas POS (devoluciones con cantidad negativa). Alcance compañía: `strict`. 
 | `price_subtotal` | decimal |  | price |
 | `price_subtotal_incl` | decimal |  | price |
 | `total_cost` | decimal | sí | cost |
+| `is_total_cost_computed` | bool | sí |  |
 | `refunded_orderline_id` | m2o | sí |  |
 | `company_id` | m2o |  |  |
 | `full_product_name` | string |  |  |
+
+## `website` v1 · `website` (nova_website_sale)
+
+Sitios web (tiendas en línea). Alcance compañía: `strict`. Modo: `delta`.
+
+| Campo | Tipo | Opcional | Sensibilidad |
+|---|---|---|---|
+| `name` | string |  |  |
+| `company_id` | m2o |  |  |
+| `domain` | string | sí |  |
+
+## `website_sale_order` v1 · `sale.order` (nova_website_sale)
+
+Canal web de los pedidos (incluye carritos en borrador). Alcance compañía: `strict`. Modo: `delta`.
+
+| Campo | Tipo | Opcional | Sensibilidad |
+|---|---|---|---|
+| `website_id` | m2o |  |  |
+| `company_id` | m2o |  |  |
+| `state` | selection |  |  |
+| `date_order` | datetime |  |  |
 
 ## Dependencias de captura
 

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================== Trabajos de la cola ============================== -->
+    <record id="view_nova_sync_job_tree" model="ir.ui.view">
+        <field name="name">nova.sync.job.tree</field>
+        <field name="model">nova.sync.job</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false" decoration-success="state == 'done'"
+                  decoration-info="state == 'running'" decoration-muted="state == 'cancelled'"
+                  decoration-danger="state == 'failed'" decoration-warning="state == 'queued' and attempts &gt; 0">
+                <field name="run_seq" string="Lote"/>
+                <field name="addon" string="Módulo"/>
+                <field name="dataset_key"/>
+                <field name="chunk"/>
+                <field name="state" widget="badge" decoration-success="state == 'done'"
+                       decoration-info="state == 'running'" decoration-danger="state == 'failed'"/>
+                <field name="phase_start"/>
+                <field name="phase_end"/>
+                <field name="records" sum="Registros"/>
+                <field name="parts" sum="Partes"/>
+                <field name="events" sum="Eventos"/>
+                <field name="duration_s" sum="Duración"/>
+                <field name="attempts"/>
+                <field name="scheduled_at"/>
+                <field name="finished_at"/>
+                <field name="error"/>
+                <button name="action_retry" type="object" string="Reintentar" icon="fa-repeat"
+                        groups="nova_connector.group_nova_admin"
+                        attrs="{'invisible': [('state', '!=', 'failed')]}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_nova_sync_job_search" model="ir.ui.view">
+        <field name="name">nova.sync.job.search</field>
+        <field name="model">nova.sync.job</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="dataset_key"/>
+                <field name="addon"/>
+                <field name="run_id"/>
+                <filter name="queued" string="En cola" domain="[('state', '=', 'queued')]"/>
+                <filter name="running" string="En ejecución" domain="[('state', '=', 'running')]"/>
+                <filter name="failed" string="Fallidos" domain="[('state', '=', 'failed')]"/>
+                <filter name="retried" string="Reintentados" domain="[('attempts', '&gt;', 1)]"/>
+                <separator/>
+                <filter name="today" string="Últimas 24 h"
+                        domain="[('scheduled_at', '&gt;=', (context_today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="by_run" string="Lote" context="{'group_by': 'run_id'}"/>
+                    <filter name="by_addon" string="Módulo" context="{'group_by': 'addon'}"/>
+                    <filter name="by_dataset" string="Dataset" context="{'group_by': 'dataset_key'}"/>
+                    <filter name="by_state" string="Estado" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_nova_sync_job_graph" model="ir.ui.view">
+        <field name="name">nova.sync.job.graph</field>
+        <field name="model">nova.sync.job</field>
+        <field name="arch" type="xml">
+            <graph string="Duración por módulo" type="bar" stacked="1">
+                <field name="addon"/>
+                <field name="state"/>
+                <field name="duration_ms" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_nova_sync_job_pivot" model="ir.ui.view">
+        <field name="name">nova.sync.job.pivot</field>
+        <field name="model">nova.sync.job</field>
+        <field name="arch" type="xml">
+            <pivot string="Trabajos">
+                <field name="addon" type="row"/>
+                <field name="dataset_key" type="row"/>
+                <field name="state" type="col"/>
+                <field name="records" type="measure"/>
+                <field name="duration_ms" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_nova_sync_job" model="ir.actions.act_window">
+        <field name="name">Trabajos en segundo plano</field>
+        <field name="res_model">nova.sync.job</field>
+        <field name="view_mode">tree,pivot,graph</field>
+        <field name="search_view_id" ref="view_nova_sync_job_search"/>
+        <field name="context">{'search_default_by_run': 1}</field>
+    </record>
+
+    <!-- ============================== Panel de control ============================== -->
+    <record id="view_nova_dashboard_form" model="ir.ui.view">
+        <field name="name">nova.connection.dashboard</field>
+        <field name="model">nova.connection</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <form string="Panel de control NOVA" create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_check_integrity" type="object" string="Verificar integridad"
+                            class="btn-primary"/>
+                    <button name="%(nova_connector.action_nova_prepare_now)d" type="action"
+                            string="Preparar lote ahora (staging)" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', '!=', 'linked')]}"
+                            confirm="Prepara un lote fuera de ventana. Úselo en staging o con autorización."/>
+                    <button name="action_retry_failed_jobs" type="object" string="Reintentar fallidos"
+                            groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('dash_jobs_failed', '=', 0)]}"/>
+                    <button name="action_pause" type="object" string="Pausar" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', '!=', 'linked')]}"/>
+                    <button name="action_resume" type="object" string="Reanudar" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', '!=', 'paused')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,linking,linked"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_jobs" type="object" class="oe_stat_button" icon="fa-tasks">
+                            <field name="dash_jobs_total" widget="statinfo" string="Trabajos"/>
+                        </button>
+                        <button name="action_open_jobs" type="object" class="oe_stat_button" icon="fa-hourglass-half">
+                            <field name="dash_jobs_queued" widget="statinfo" string="En cola"/>
+                        </button>
+                        <button name="action_open_failed_jobs" type="object" class="oe_stat_button"
+                                icon="fa-exclamation-triangle">
+                            <field name="dash_jobs_failed" widget="statinfo" string="Fallidos"/>
+                        </button>
+                    </div>
+                    <div class="alert alert-warning" role="alert" attrs="{'invisible': [('state', '!=', 'suspended')]}">
+                        Copia o restauración detectada: la sincronización está suspendida hasta re-vincular.
+                    </div>
+                    <div class="alert alert-warning" role="alert" attrs="{'invisible': [('resync_required', '=', False)]}">
+                        Resincronización requerida: <field name="resync_reason" readonly="1" nolabel="1"/>
+                    </div>
+                    <h1><field name="name" readonly="1"/></h1>
+                    <group>
+                        <group string="Lote actual">
+                            <field name="dash_run_id"/>
+                            <field name="dash_run_state"/>
+                            <field name="dash_progress" widget="progressbar"/>
+                            <field name="dash_jobs_done"/>
+                            <field name="dash_records"/>
+                            <field name="dash_avg_job_s"/>
+                        </group>
+                        <group string="Salud">
+                            <field name="integrity_status" widget="badge" decoration-success="integrity_status == 'ok'"
+                                   decoration-warning="integrity_status == 'warn'"
+                                   decoration-danger="integrity_status == 'fail'"/>
+                            <field name="integrity_checked_at"/>
+                            <field name="dash_last_ready_at"/>
+                            <field name="dash_datasets_usable"/>
+                            <field name="dash_datasets_error"/>
+                            <field name="pending_events"/>
+                            <field name="pending_bytes"/>
+                            <field name="resync_required" invisible="1"/>
+                            <field name="capture_enabled" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Cola en segundo plano">
+                        <group>
+                            <field name="time_budget_seconds" string="Duración máxima por trabajo (s)"/>
+                            <field name="job_pause_seconds"/>
+                            <field name="job_max_attempts"/>
+                        </group>
+                        <group>
+                            <field name="window_start_hour"/>
+                            <field name="window_end_hour"/>
+                            <field name="timezone"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Integridad" name="integrity">
+                            <field name="integrity_report" nolabel="1"/>
+                        </page>
+                        <page string="Último error" name="error">
+                            <field name="last_error" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_nova_dashboard" model="ir.actions.server">
+        <field name="name">Panel de control</field>
+        <field name="model_id" ref="model_nova_connection"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_dashboard()</field>
+        <field name="groups_id" eval="[(4, ref('nova_connector.group_nova_operator'))]"/>
+    </record>
+</odoo>

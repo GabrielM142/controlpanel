@@ -66,6 +66,10 @@ def normalize_dataset(addon, raw):
         if ref not in fields:
             raise SpecError("%s: ref desconocida %s" % (key, ref))
     children = raw.get("children", [])
+    domain = raw.get("domain") or []
+    for term in domain:
+        if not (isinstance(term, (list, tuple)) and len(term) == 3 and isinstance(term[0], str)):
+            raise SpecError("%s: domain inválido %r (solo condiciones (campo, op, valor) unidas por AND)" % (key, term))
     return {
         "addon": addon,
         "key": key,
@@ -79,6 +83,7 @@ def normalize_dataset(addon, raw):
         "capture": {"fields": list(trigger) if trigger is not None else None, "refs": list(refs)},
         "children": [{"dataset": c["dataset"], "fk": c["fk"]} for c in children],
         "description": raw.get("description", ""),
+        "domain": [list(t) for t in domain],
     }
 
 

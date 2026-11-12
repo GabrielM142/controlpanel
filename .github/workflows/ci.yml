@@ -28,6 +28,7 @@ jobs:
   odoo16:
     # Real install + tests of the addons on a disposable Odoo 16 Community database.
     runs-on: ubuntu-22.04
+    timeout-minutes: 30  # a hung install/test must not burn 6 h of Actions
     services:
       db:
         image: postgres:12.20
@@ -41,7 +42,7 @@ jobs:
       run: {shell: bash}
     env:
       ODOO: su odoo -s /bin/bash -c
-      ALL: nova_connector,nova_master_data,nova_sales,nova_account,nova_stock,nova_stock_account,nova_purchase,nova_pos,nova_juj
+      ALL: nova_connector,nova_master_data,nova_sales,nova_account,nova_stock,nova_stock_account,nova_purchase,nova_pos,nova_website_sale,nova_juj
     steps:
       - uses: actions/checkout@v4
       - name: addons path readable by the odoo user (Odoo refuses to run as root)

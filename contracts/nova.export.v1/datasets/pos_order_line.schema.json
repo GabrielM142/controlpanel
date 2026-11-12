@@ -110,6 +110,9 @@
         }
       ]
     },
+    "is_total_cost_computed": {
+      "type": "boolean"
+    },
     "refunded_orderline_id": {
       "anyOf": [
         {

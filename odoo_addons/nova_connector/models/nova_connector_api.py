@@ -144,7 +144,13 @@ class NovaConnectorApi(models.AbstractModel):
         run = self._get_run(conn, run_uuid)
         if run.state not in ("ready", "acknowledged"):
             raise UserError(_("El lote aún no está listo."))
-        part = run.part_ids.filtered(lambda p: p.part_no == int(part_no))
+        try:
+            part_no = int(part_no)
+        except (TypeError, ValueError):
+            raise UserError(_("part_no inválido."))
+        # Direct lookup: filtering run.part_ids loaded every part on each call (O(n²) per run).
+        part = self.env["nova.sync.part"].sudo().search(
+            [("run_id", "=", run.id), ("part_no", "=", part_no)], limit=1)
         if not part:
             raise UserError(_("Parte inexistente."))
         return {"run_uuid": run.run_uuid, "part_no": part.part_no, "dataset": part.dataset_key,

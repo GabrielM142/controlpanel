@@ -104,14 +104,18 @@ class NovaExportDataset(models.Model):
         return spec, read, extras
 
     def _nova_company_domain(self, spec, company_ids):
+        """Export scope: company scope AND the spec's fixed domain (e.g. exclude
+        private addresses). Used by backfill, events (out of scope => delete), scan
+        and reconciliation, so all phases agree on what is exported."""
+        extra = [tuple(t) for t in spec.get("domain") or []]
         scope = spec["company_scope"]
         if scope == "strict":
-            return [("company_id", "in", company_ids)]
+            return extra + [("company_id", "in", company_ids)]
         if scope == "shared":
-            return ["|", ("company_id", "=", False), ("company_id", "in", company_ids)]
+            return extra + ["|", ("company_id", "=", False), ("company_id", "in", company_ids)]
         if scope == "self":
-            return [("id", "in", company_ids)]
-        return []
+            return extra + [("id", "in", company_ids)]
+        return extra
 
     def _nova_model(self):
         self.ensure_one()
@@ -163,7 +167,10 @@ class NovaExportDataset(models.Model):
         spec = self._nova_spec()
         Model = self._nova_model()
         domain = self._nova_company_domain(spec, company_ids)
-        groupby = ["company_id"] if "company_id" in Model._fields and spec["company_scope"] != "self" else []
+        field = Model._fields.get("company_id")
+        # read_group can only group by stored fields (e.g. pos.session.company_id is a
+        # non-stored related in Odoo 16): grouping by it would break the finalization.
+        groupby = ["company_id"] if field and field.store and spec["company_scope"] != "self" else []
         result = []
         for group in Model.read_group(domain, ["id:sum"], groupby, lazy=False):
             company = group.get("company_id")

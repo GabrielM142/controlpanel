@@ -37,8 +37,7 @@ DATASETS = [
      "description": "Existencias por ubicación (estado actual)",
      "fields": {"product_id": "m2o", "location_id": "m2o", "lot_id": "m2o", "quantity": "decimal",
                 "reserved_quantity": "decimal", "company_id": "m2o", "in_date": "datetime"},
-     "capture": {"fields": ["product_id", "location_id", "lot_id", "quantity", "reserved_quantity",
-                            "company_id"],
+     "capture": {"fields": ["product_id", "location_id", "lot_id", "quantity", "company_id"],
                  "refs": ["company_id", "product_id", "location_id"]}},
 ]
 

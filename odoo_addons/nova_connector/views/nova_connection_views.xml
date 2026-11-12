@@ -70,6 +70,8 @@
                             <field name="max_bytes_per_part"/>
                             <field name="max_parts_per_invocation"/>
                             <field name="time_budget_seconds"/>
+                            <field name="job_pause_seconds"/>
+                            <field name="job_max_attempts"/>
                         </group>
                         <group>
                             <field name="query_timeout_ms"/>

@@ -45,23 +45,28 @@ class NovaChangeEvent(models.Model):
                  if dataset_keys is None or s["key"] in dataset_keys]
         if not specs:
             return
-        has_company = "company_id" in records._fields
-        vals_list = []
-        for rec in records:
-            company = False
-            if has_company:
-                company = rec.company_id.id
-            elif records._name == "res.company":
-                company = rec.id
-            refs = (refs_by_id or {}).get(rec.id)
-            for spec in specs:
-                vals_list.append({
-                    "dataset_key": spec["key"], "model_name": records._name, "res_id": rec.id,
-                    "company_id": company or False, "op": op,
-                    "refs": json.dumps(refs, default=str, sort_keys=True) if refs else False,
-                })
         try:
-            with self.env.cr.savepoint():
+            # sudo: reading company_id of related records (other company, restricted
+            # groups) must never raise AccessError into the user's business operation.
+            records = records.sudo()
+            has_company = "company_id" in records._fields
+            vals_list = []
+            for rec in records:
+                company = False
+                if has_company:
+                    company = rec.company_id.id
+                elif records._name == "res.company":
+                    company = rec.id
+                refs = (refs_by_id or {}).get(rec.id)
+                for spec in specs:
+                    vals_list.append({
+                        "dataset_key": spec["key"], "model_name": records._name, "res_id": rec.id,
+                        "company_id": company or False, "op": op,
+                        "refs": json.dumps(refs, default=str, sort_keys=True) if refs else False,
+                    })
+            # flush=False: a flushing savepoint would flush/recompute the whole business
+            # transaction on every captured write (and fail before the SAVEPOINT exists).
+            with self.env.cr.savepoint(flush=False):
                 self.sudo().create(vals_list)
         except Exception:  # noqa: BLE001 - ERP continuity has priority
             _logger.exception("NOVA: change capture failed for %s", records._name)

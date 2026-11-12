@@ -56,6 +56,100 @@ class TestNovaMasterData(NovaCase):
         self.assertFalse(self.env["nova.change.event"].search([("state", "!=", "acked"), ("res_id", "=", partner.id),
                                                                ("model_name", "=", "res.partner")]))
 
+    def test_scan_terminates_with_same_write_date(self):
+        """Regression: rows created in one transaction share write_date (with
+        microseconds); a second-precision keyset used to return the same page forever."""
+        import time
+        self.conn.write({"max_rows_per_part": 2, "time_budget_seconds": 20})
+        partners = self.env["res.partner"].create(
+            [{"name": "Mismo instante %s" % i, "company_id": self.company.id} for i in range(7)])
+        started = time.monotonic()
+        run = self.prepare()
+        self.assertEqual(run.state, "ready")
+        self.assertLess(time.monotonic() - started, 60, "scan did not terminate quickly")
+        manifest, records = self.read_run(run)
+        ids = {r["id"] for r in records if r["dataset"] == "res_partner"}
+        self.assertTrue(set(partners.ids) <= ids)
+        self.ack(run, manifest)
+        run2 = self.prepare()  # next run: scan with overlap re-reads them
+        self.assertEqual(run2.state, "ready")
+        ds = {d["key"]: d for d in self.read_run(run2)[0]["datasets"]}
+        self.assertTrue(ds["res_partner"]["complete"])
+
+    def test_run_is_split_in_background_jobs(self):
+        run = self.prepare()
+        self.assertEqual(run.state, "ready")
+        usable = self.env["nova.export.dataset"].search([])._nova_usable()
+        self.assertEqual(set(run.job_ids.mapped("dataset_key")), set(usable.mapped("key")))
+        self.assertTrue(all(j.state == "done" for j in run.job_ids))
+        self.assertEqual(sum(run.job_ids.mapped("parts")), len(run.part_ids))
+
+    def test_jobs_are_chunked(self):
+        self.conn.write({"max_rows_per_part": 50, "max_parts_per_invocation": 1})
+        self.env["res.partner"].create(
+            [{"name": "Trozo %s" % i, "company_id": self.company.id} for i in range(120)])
+        run = self.prepare()
+        self.assertEqual(run.state, "ready")
+        chunks = run.job_ids.filtered(lambda j: j.dataset_key == "res_partner")
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(sorted(chunks.mapped("chunk")), list(range(1, len(chunks) + 1)))
+
+    def test_failed_job_is_retried_without_losing_data(self):
+        from unittest.mock import patch
+        Dataset = type(self.env["nova.export.dataset"])
+        original = Dataset._nova_serialize
+        calls = {"n": 0}
+
+        def flaky(ds, records, reason):
+            if ds.key == "res_partner" and not calls["n"]:
+                calls["n"] += 1
+                raise ValueError("fallo simulado")
+            return original(ds, records, reason)
+
+        partner = self.env["res.partner"].create({"name": "Reintento", "company_id": self.company.id})
+        with patch.object(Dataset, "_nova_serialize", flaky):
+            run = self.prepare()
+        self.assertEqual(run.state, "ready")
+        jobs = run.job_ids.filtered(lambda j: j.dataset_key == "res_partner")
+        self.assertTrue(any(j.attempts >= 2 for j in jobs))
+        manifest, records = self.read_run(run)
+        ds = {d["key"]: d for d in manifest["datasets"]}
+        self.assertTrue(ds["res_partner"]["complete"])
+        self.assertTrue(any(r["dataset"] == "res_partner" and r["id"] == partner.id for r in records))
+
+    def test_integrity_check(self):
+        self.full_cycle()
+        self.conn.action_check_integrity()
+        self.assertIn(self.conn.integrity_status, ("ok", "warn"))
+        self.assertTrue(self.conn.integrity_report)
+        self.assertIn("Checksum", self.conn.integrity_report)
+
+    def test_increase_rank_is_captured(self):
+        partner = self.env["res.partner"].create({"name": "Rango", "company_id": self.company.id})
+        before = len(self._events("res.partner", partner.id))
+        partner._increase_rank("customer_rank")  # raw SQL in Odoo: no write()
+        self.assertEqual(len(self._events("res.partner", partner.id)), before + 1)
+
+    def test_private_addresses_and_portal_users_not_exported(self):
+        private = self.env["res.partner"].create({"name": "Domicilio empleado", "type": "private"})
+        public = self.env["res.partner"].create({"name": "Cliente visible", "company_id": self.company.id})
+        portal = self.env["res.users"].create({"name": "Portal NOVA", "login": "nova_portal_test",
+                                                "groups_id": [(6, 0, [self.env.ref("base.group_portal").id])]})
+        _run, _manifest, records = self.full_cycle()
+        partner_ids = {r["id"] for r in records if r["dataset"] == "res_partner" and r["op"] == "upsert"}
+        user_ids = {r["id"] for r in records if r["dataset"] == "res_users" and r["op"] == "upsert"}
+        self.assertIn(public.id, partner_ids)
+        self.assertNotIn(private.id, partner_ids)
+        self.assertNotIn(portal.id, user_ids)
+        self.assertIn(self.integration.id, user_ids)
+
+    def test_flag_resync_with_keys_then_cleared_by_ack(self):
+        self.full_cycle()
+        self.conn._nova_flag_resync("prueba", ["res_partner"])  # used to crash (bad domain)
+        self.assertTrue(self.conn.resync_required)
+        self.full_cycle()
+        self.assertFalse(self.conn.resync_required)
+
     def test_event_committed_after_claim_goes_to_next_run(self):
         self.full_cycle()
         run = self.prepare()  # claims nothing new

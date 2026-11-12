@@ -20,6 +20,7 @@ fragmentados en partes acotadas, cursores, ACK y retención. Depende solo de `ba
 | `nova_stock_account` | `nova_stock`, `nova_account`, `stock_account` | Capas de valoración |
 | `nova_purchase` | `nova_master_data`, `purchase_stock` | Compras y líneas |
 | `nova_pos` | `nova_account`, `point_of_sale` | Puntos de venta, sesiones, pedidos y líneas POS |
+| `nova_website_sale` | `nova_sales`, `website_sale` | Sitios web y canal web de los pedidos (eCommerce) |
 | `nova_juj` | `nova_master_data` | Adaptador JUJ: mapeo de atributos a campos personalizados |
 
 Cada addon funcional es opt-in: instalar el conector **no** instala ventas, compras ni POS.
@@ -71,6 +72,38 @@ genérico de ORM/SQL; el ACK es una escritura técnica sobre artefactos del cone
 - `NOVA: retención` purga partes confirmadas con más de `retention_days` y eventos confirmados.
 - Coordinar la ventana con backups, cierre de POS y otros crons del cliente: 00:00 no garantiza un
   servidor ocioso.
+
+## Cola de trabajos en segundo plano (desde 16.0.1.1.0)
+
+Cada lote se divide en **trabajos cortos** (`nova.sync.job`): uno por dataset al empezar y, si un
+dataset no termina dentro de su tiempo, un trabajo de continuación (trozo 2, 3…). El cron ejecuta
+**un solo trabajo por invocación**, confirma la transacción y vuelve a dispararse tras
+`job_pause_seconds` (por defecto 10 s). Así el servidor respira entre trabajos y nunca hay un
+proceso largo.
+
+- Duración de cada trabajo: `time_budget_seconds` (por defecto 180 s), acotada al límite real del
+  worker menos 30 s. Para trabajos de 3 min en modo multiproceso, configurar en `odoo.conf`
+  `limit_time_real_cron = 240` (o `limit_time_real` si no se usa el de cron).
+- Fallos: el trozo se revierte (savepoint), vuelve a la cola con espera de 1, 5 y 15 min, hasta
+  `job_max_attempts` (3). Si sigue fallando, el dataset se marca con error en el manifest y
+  el resto del lote continúa. "Reintentar fallidos" lo vuelve a encolar mientras el lote se prepara.
+- Al cerrarse la ventana se publica lo preparado (parcial, marcado) y se cancelan los trabajos pendientes.
+
+## Panel de control (NOVA → Panel de control)
+
+- Lote actual: avance %, trabajos terminados, en cola y fallidos, registros exportados y duración
+  media por trabajo.
+- **Trabajos en segundo plano**: lista, tabla dinámica y gráfico por módulo/dataset/estado, con
+  "Reintentar".
+- **Verificar integridad** (local, acotado, no lee tablas de negocio):
+  - huella de la base;
+  - estado de la captura y resincronización;
+  - datasets con campos obligatorios faltantes o con errores;
+  - eventos atascados (más de 48 h) o sin dataset activo;
+  - lotes atascados y trabajos fallidos;
+  - cron activo;
+  - **checksum sha256** de hasta 50 partes del último lote;
+  - uso de la cuota.
 
 ## Recursos y cuotas
 

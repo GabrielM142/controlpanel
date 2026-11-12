@@ -1,6 +1,6 @@
 {
     "name": "NOVA Connector",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.1.0",
     "category": "Technical",
     "summary": "Night batch export of authorized Odoo data to NOVA (core, outbox, runs, ACK)",
     "description": """
@@ -22,6 +22,7 @@ nova_stock, nova_stock_account, nova_purchase and nova_pos.
         "views/nova_connection_views.xml",
         "views/nova_dataset_views.xml",
         "views/nova_sync_views.xml",
+        "views/nova_job_views.xml",
         "views/nova_link_wizard_views.xml",
         "views/nova_menus.xml",
     ],

@@ -9,3 +9,5 @@ access_nova_sync_part_admin,nova.sync.part admin,model_nova_sync_part,group_nova
 access_nova_sync_cursor_operator,nova.sync.cursor operator,model_nova_sync_cursor,group_nova_operator,1,0,0,0
 access_nova_change_event_operator,nova.change.event operator,model_nova_change_event,group_nova_operator,1,0,0,0
 access_nova_link_wizard_admin,nova.link.wizard admin,model_nova_link_wizard,group_nova_admin,1,1,1,1
+access_nova_sync_job_operator,nova.sync.job operator,model_nova_sync_job,group_nova_operator,1,0,0,0
+access_nova_sync_job_admin,nova.sync.job admin,model_nova_sync_job,group_nova_admin,1,1,0,0

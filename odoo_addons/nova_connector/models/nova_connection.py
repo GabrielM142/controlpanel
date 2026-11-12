@@ -39,7 +39,11 @@ class NovaConnection(models.Model):
     max_rows_per_part = fields.Integer(default=250)
     max_bytes_per_part = fields.Integer(default=512 * 1024, help="Bytes sin comprimir por parte.")
     max_parts_per_invocation = fields.Integer(default=20)
-    time_budget_seconds = fields.Integer(default=45, help="Tiempo máximo por invocación de cron.")
+    time_budget_seconds = fields.Integer(
+        default=180, help="Duración máxima de cada trabajo de la cola. Se acota al límite real del "
+                          "worker (limit_time_real_cron / limit_time_real) menos 30 s.")
+    job_pause_seconds = fields.Integer(default=10, help="Pausa entre trabajos para no saturar el servidor.")
+    job_max_attempts = fields.Integer(default=3, help="Reintentos de un trabajo fallido (espera 1, 5, 15 min).")
     query_timeout_ms = fields.Integer(default=30000)
     max_pending_bytes = fields.Integer(default=200 * 1024 * 1024,
                                        help="Bytes de partes sin ACK que detienen la preparación.")
@@ -62,7 +66,7 @@ class NovaConnection(models.Model):
             raise ValidationError(_("Solo puede existir una conexión NOVA activa por base de datos."))
 
     @api.constrains("window_start_hour", "window_end_hour", "max_rows_per_part", "max_bytes_per_part",
-                    "time_budget_seconds", "retention_days")
+                    "time_budget_seconds", "retention_days", "job_pause_seconds", "job_max_attempts")
     def _check_limits(self):
         for rec in self:
             if not (0 <= rec.window_start_hour < rec.window_end_hour <= 24):
@@ -73,6 +77,10 @@ class NovaConnection(models.Model):
                 raise ValidationError(_("Bytes por parte fuera de rango (16 KiB - 8 MiB)."))
             if not (5 <= rec.time_budget_seconds <= 600):
                 raise ValidationError(_("Presupuesto de tiempo fuera de rango (5-600 s)."))
+            if not (0 <= rec.job_pause_seconds <= 600):
+                raise ValidationError(_("Pausa entre trabajos fuera de rango (0-600 s)."))
+            if not (1 <= rec.job_max_attempts <= 10):
+                raise ValidationError(_("Reintentos fuera de rango (1-10)."))
             if rec.retention_days < 1:
                 raise ValidationError(_("La retención debe ser de al menos un día."))
 
@@ -82,9 +90,11 @@ class NovaConnection(models.Model):
         for rec in self:
             groups = Part.read_group(
                 [("run_id.connection_id", "=", rec.id), ("purged", "=", False),
-                 ("run_id.state", "not in", ["acknowledged"])], ["compressed_bytes:sum"], [])
+                 # cancelled/failed runs will never be ACKed: they must not block the quota
+                 ("run_id.state", "in", ["preparing", "ready"])], ["compressed_bytes:sum"], [])
             rec.pending_bytes = (groups[0]["compressed_bytes"] or 0) if groups else 0
-            rec.pending_events = Event.search_count([("state", "=", "pending")])
+            # Same predicate as the partial index nova_change_event_pending_idx.
+            rec.pending_events = Event.search_count([("state", "=", "pending"), ("run_id", "=", False)])
 
     # ------------------------------------------------------------------ helpers
     @api.model
@@ -197,7 +207,10 @@ class NovaConnection(models.Model):
 
     def _nova_flag_resync(self, reason, dataset_keys=None):
         cursors = self.env["nova.sync.cursor"].sudo()
-        domain = [] if not dataset_keys else [("dataset_id.key", "in", list(dataset_keys))]
-        for dataset in self.env["nova.export.dataset"].sudo().search(domain):
+        domain = [] if not dataset_keys else [("key", "in", list(dataset_keys))]
+        # Only usable delta datasets have a cursor that an ACK can complete again;
+        # resetting disabled/unavailable/snapshot ones left resync_required on forever.
+        datasets = self.env["nova.export.dataset"].sudo().search(domain)._nova_usable()
+        for dataset in datasets.filtered(lambda d: d.mode == "delta"):
             cursors._nova_for(dataset)._nova_start_resync()
         self.sudo().write({"resync_required": True, "resync_reason": reason})

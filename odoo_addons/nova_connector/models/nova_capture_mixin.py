@@ -24,16 +24,30 @@ class NovaCaptureMixin(models.AbstractModel):
             names.update(trigger)
         return names
 
-    def _nova_capture_dependencies(self, op):
+    def _nova_dependency_targets(self):
+        """{dataset_key: recordset} of records whose exported data depends on self.
+        Read with sudo: capture must never raise AccessError into business code."""
+        out = {}
+        records = self.sudo().with_context(active_test=False)
         for dep in registry.dependencies_for_model(self._name):
-            targets = self.env[registry.DATASETS[dep["dataset"]]["model"]] if dep["dataset"] in registry.DATASETS else None
-            if targets is None:
+            if dep["dataset"] not in registry.DATASETS:
                 continue
+            targets = self.env[registry.DATASETS[dep["dataset"]]["model"]].sudo()
             for fname in dep["fields"]:
-                if fname in self._fields:
-                    targets |= self.mapped(fname)
+                if fname.split(".")[0] in self._fields:
+                    targets |= records.mapped(fname)
             if targets:
-                self.env["nova.change.event"]._nova_record(targets, "upsert", dataset_keys=[dep["dataset"]])
+                out[dep["dataset"]] = out.get(dep["dataset"], targets.browse()) | targets
+        return out
+
+    def _nova_capture_dependencies(self, op, previous=None):
+        targets_by_key = self._nova_dependency_targets()
+        for key, old in (previous or {}).items():
+            targets_by_key[key] = targets_by_key.get(key, old.browse()) | old
+        for key, targets in targets_by_key.items():
+            targets = targets.exists()
+            if targets:
+                self.env["nova.change.event"]._nova_record(targets, "upsert", dataset_keys=[key])
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -43,14 +57,21 @@ class NovaCaptureMixin(models.AbstractModel):
         return records
 
     def write(self, vals):
+        previous = None
+        deps = registry.dependencies_for_model(self._name)
+        dep_changed = False
+        if deps and self.env["nova.connection"]._nova_capture_flag():
+            dep_fields = {f.split(".")[0] for d in deps for f in d["fields"]}
+            if dep_fields & set(vals):
+                dep_changed = True
+                # Targets before the write too: a re-pointed link must refresh the old record.
+                previous = self._nova_dependency_targets()
         res = super().write(vals)
         trigger = self._nova_trigger_fields()
         if trigger is None or trigger & set(vals) or "active" in vals or "company_id" in vals:
             self.env["nova.change.event"]._nova_record(self, "upsert")
-        if registry.dependencies_for_model(self._name):
-            dep_fields = {f for d in registry.dependencies_for_model(self._name) for f in d["fields"]}
-            if dep_fields & set(vals):
-                self._nova_capture_dependencies("write")
+        if dep_changed:
+            self._nova_capture_dependencies("write", previous=previous)
         return res
 
     def unlink(self):
@@ -61,7 +82,7 @@ class NovaCaptureMixin(models.AbstractModel):
                 ref_names.update(spec["capture"]["refs"])
             ref_names = [n for n in ref_names if n in self._fields]
             if ref_names:
-                for row in self.with_context(active_test=False).read(ref_names, load=None):
+                for row in self.sudo().with_context(active_test=False).read(ref_names, load=None):
                     refs_by_id[row["id"]] = {k: row.get(k) for k in ref_names}
             self.env["nova.change.event"]._nova_record(self, "delete", refs_by_id=refs_by_id)
             # Related records (e.g. move lines of a deleted reconciliation) change state.

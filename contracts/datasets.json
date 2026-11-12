@@ -48,7 +48,8 @@
         "refs": []
       },
       "children": [],
-      "description": "Compañías autorizadas"
+      "description": "Compañías autorizadas",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -190,7 +191,14 @@
         ]
       },
       "children": [],
-      "description": "Clientes, proveedores y contactos comerciales"
+      "description": "Clientes, proveedores y contactos comerciales",
+      "domain": [
+        [
+          "type",
+          "!=",
+          "private"
+        ]
+      ]
     },
     {
       "addon": "nova_master_data",
@@ -223,7 +231,8 @@
         "refs": []
       },
       "children": [],
-      "description": "Provincias / estados"
+      "description": "Provincias / estados",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -266,7 +275,14 @@
         "refs": []
       },
       "children": [],
-      "description": "Usuarios (vendedores/responsables): solo nombre y estado"
+      "description": "Usuarios (vendedores/responsables): solo nombre y estado",
+      "domain": [
+        [
+          "share",
+          "=",
+          false
+        ]
+      ]
     },
     {
       "addon": "nova_master_data",
@@ -301,7 +317,8 @@
         ]
       },
       "children": [],
-      "description": "Categorías de producto"
+      "description": "Categorías de producto",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -396,7 +413,8 @@
         ]
       },
       "children": [],
-      "description": "Plantillas de producto"
+      "description": "Plantillas de producto",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -448,7 +466,8 @@
         ]
       },
       "children": [],
-      "description": "Variantes de producto"
+      "description": "Variantes de producto",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -496,7 +515,8 @@
         "refs": []
       },
       "children": [],
-      "description": "Unidades de medida"
+      "description": "Unidades de medida",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -539,7 +559,8 @@
         "refs": []
       },
       "children": [],
-      "description": "Monedas"
+      "description": "Monedas",
+      "domain": []
     },
     {
       "addon": "nova_master_data",
@@ -580,7 +601,8 @@
         ]
       },
       "children": [],
-      "description": "Tipos de cambio"
+      "description": "Tipos de cambio",
+      "domain": []
     },
     {
       "addon": "nova_sales",
@@ -620,7 +642,8 @@
         ]
       },
       "children": [],
-      "description": "Equipos de venta"
+      "description": "Equipos de venta",
+      "domain": []
     },
     {
       "addon": "nova_sales",
@@ -727,7 +750,8 @@
           "fk": "order_id"
         }
       ],
-      "description": "Pedidos de venta (encabezado)"
+      "description": "Pedidos de venta (encabezado)",
+      "domain": []
     },
     {
       "addon": "nova_sales",
@@ -847,7 +871,8 @@
         ]
       },
       "children": [],
-      "description": "Líneas de pedido: pedido/entregado/facturado separados"
+      "description": "Líneas de pedido: pedido/entregado/facturado separados",
+      "domain": []
     },
     {
       "addon": "nova_account",
@@ -897,7 +922,8 @@
         ]
       },
       "children": [],
-      "description": "Plan de cuentas"
+      "description": "Plan de cuentas",
+      "domain": []
     },
     {
       "addon": "nova_account",
@@ -942,7 +968,8 @@
         ]
       },
       "children": [],
-      "description": "Diarios"
+      "description": "Diarios",
+      "domain": []
     },
     {
       "addon": "nova_account",
@@ -1066,7 +1093,8 @@
           "fk": "move_id"
         }
       ],
-      "description": "Asientos/facturas (encabezado)"
+      "description": "Asientos/facturas (encabezado)",
+      "domain": []
     },
     {
       "addon": "nova_account",
@@ -1226,7 +1254,8 @@
         ]
       },
       "children": [],
-      "description": "Apuntes: líneas de factura, impuestos, costo (cogs) y cartera"
+      "description": "Apuntes: líneas de factura, impuestos, costo (cogs) y cartera",
+      "domain": []
     },
     {
       "addon": "nova_account",
@@ -1289,7 +1318,8 @@
         ]
       },
       "children": [],
-      "description": "Conciliaciones parciales (pagos aplicados)"
+      "description": "Conciliaciones parciales (pagos aplicados)",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1339,7 +1369,8 @@
         ]
       },
       "children": [],
-      "description": "Bodegas"
+      "description": "Bodegas",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1394,7 +1425,8 @@
         ]
       },
       "children": [],
-      "description": "Ubicaciones"
+      "description": "Ubicaciones",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1439,7 +1471,8 @@
         ]
       },
       "children": [],
-      "description": "Tipos de operación"
+      "description": "Tipos de operación",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1524,7 +1557,8 @@
         ]
       },
       "children": [],
-      "description": "Transferencias (despachos/recepciones)"
+      "description": "Transferencias (despachos/recepciones)",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1643,7 +1677,8 @@
         ]
       },
       "children": [],
-      "description": "Movimientos de stock"
+      "description": "Movimientos de stock",
+      "domain": []
     },
     {
       "addon": "nova_stock",
@@ -1697,7 +1732,6 @@
           "location_id",
           "lot_id",
           "quantity",
-          "reserved_quantity",
           "company_id"
         ],
         "refs": [
@@ -1707,7 +1741,8 @@
         ]
       },
       "children": [],
-      "description": "Existencias por ubicación (estado actual)"
+      "description": "Existencias por ubicación (estado actual)",
+      "domain": []
     },
     {
       "addon": "nova_stock_account",
@@ -1789,7 +1824,8 @@
         ]
       },
       "children": [],
-      "description": "Capas de valoración y ajustes de valor"
+      "description": "Capas de valoración y ajustes de valor",
+      "domain": []
     },
     {
       "addon": "nova_purchase",
@@ -1889,7 +1925,8 @@
           "fk": "order_id"
         }
       ],
-      "description": "Órdenes de compra"
+      "description": "Órdenes de compra",
+      "domain": []
     },
     {
       "addon": "nova_purchase",
@@ -1985,7 +2022,8 @@
         ]
       },
       "children": [],
-      "description": "Líneas de compra con fecha prevista y cantidades recibidas"
+      "description": "Líneas de compra con fecha prevista y cantidades recibidas",
+      "domain": []
     },
     {
       "addon": "nova_pos",
@@ -2030,7 +2068,8 @@
         ]
       },
       "children": [],
-      "description": "Puntos de venta"
+      "description": "Puntos de venta",
+      "domain": []
     },
     {
       "addon": "nova_pos",
@@ -2038,7 +2077,7 @@
       "version": 1,
       "min_version": 1,
       "model": "pos.session",
-      "company_scope": "none",
+      "company_scope": "strict",
       "mode": "delta",
       "business_date": null,
       "fields": {
@@ -2085,7 +2124,8 @@
         ]
       },
       "children": [],
-      "description": "Sesiones POS"
+      "description": "Sesiones POS",
+      "domain": []
     },
     {
       "addon": "nova_pos",
@@ -2189,7 +2229,8 @@
           "fk": "order_id"
         }
       ],
-      "description": "Pedidos POS"
+      "description": "Pedidos POS",
+      "domain": []
     },
     {
       "addon": "nova_pos",
@@ -2249,6 +2290,11 @@
             "cost"
           ]
         },
+        "is_total_cost_computed": {
+          "type": "bool",
+          "optional": true,
+          "sensitivity": []
+        },
         "refunded_orderline_id": {
           "type": "m2o",
           "optional": true,
@@ -2274,7 +2320,97 @@
         ]
       },
       "children": [],
-      "description": "Líneas POS (devoluciones con cantidad negativa)"
+      "description": "Líneas POS (devoluciones con cantidad negativa)",
+      "domain": []
+    },
+    {
+      "addon": "nova_website_sale",
+      "key": "website",
+      "version": 1,
+      "min_version": 1,
+      "model": "website",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "domain": {
+          "type": "string",
+          "optional": true,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Sitios web (tiendas en línea)",
+      "domain": []
+    },
+    {
+      "addon": "nova_website_sale",
+      "key": "website_sale_order",
+      "version": 1,
+      "min_version": 1,
+      "model": "sale.order",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date_order",
+      "fields": {
+        "website_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_order": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "website_id",
+          "state",
+          "company_id",
+          "date_order"
+        ],
+        "refs": [
+          "company_id",
+          "website_id"
+        ]
+      },
+      "children": [],
+      "description": "Canal web de los pedidos (incluye carritos en borrador)",
+      "domain": [
+        [
+          "website_id",
+          "!=",
+          false
+        ]
+      ]
     }
   ],
   "dependencies": [

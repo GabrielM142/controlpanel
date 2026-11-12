@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_nova_root" name="NOVA" sequence="95" groups="nova_connector.group_nova_operator"/>
+    <menuitem id="menu_nova_dashboard" name="Panel de control" parent="menu_nova_root" sequence="5"
+              action="action_nova_dashboard"/>
+    <menuitem id="menu_nova_jobs" name="Trabajos en segundo plano" parent="menu_nova_root" sequence="35"
+              action="action_nova_sync_job"/>
     <menuitem id="menu_nova_connection" name="Conexión" parent="menu_nova_root" sequence="10"
               action="action_nova_connection"/>
     <menuitem id="menu_nova_datasets" name="Datasets" parent="menu_nova_root" sequence="20"
