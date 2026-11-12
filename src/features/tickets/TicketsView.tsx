@@ -1,5 +1,6 @@
 import {useMemo,useState} from 'react';
 import {AlertTriangle,Clock3,Filter,LifeBuoy,MessageSquare,Star,Timer,TrendingDown,TrendingUp,User} from 'lucide-react';
+import {useLive} from '../live/LiveData';
 
 type Priority='alta'|'media'|'baja';
 type Status='abierto'|'en_proceso'|'esperando_cliente'|'resuelto'|'cerrado';
@@ -31,6 +32,7 @@ const timeline=[
 ];
 
 export default function TicketsView(){
+ const {live}=useLive();
  const [priority,setPriority]=useState<'todos'|Priority>('todos');
  const [status,setStatus]=useState<'todos'|Status>('todos');
  const [agent,setAgent]=useState<'todos'|string>('todos');
@@ -44,6 +46,7 @@ export default function TicketsView(){
  const cerradosHoy=1; // demo
 
  return <>
+  {live&&<p className="legend-note" role="note">Soporte aún no tiene fuente conectada: estos tickets son de ejemplo y no cuentan en decisiones ni alertas.</p>}
   <h2 className="section-label"><span>Indicadores de Soporte</span><i/></h2>
   <div className="grid g-4">
    <article className="panel kpi tone-r">

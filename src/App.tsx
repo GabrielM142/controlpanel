@@ -12,13 +12,15 @@ import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
 import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
 import {pageReading} from './features/omega/data';
+import {buildReportContext} from './features/omega/reportAI';
+import {ReportAssistant} from './features/omega/ReportAssistant';
 import {demoTickets} from './features/tickets/TicketsView';
 import LoginView from './features/live/LoginView';
 import {api,download} from './data/api';
 import {TokensProvider} from './features/tokens/useTokens';
 import {TokensChip} from './features/tokens/TokensChip';
 import {AIDrawer} from './features/ai/AIDrawer';
-import {AlertsDrawer,globalAlerts} from './features/alerts/AlertsDrawer';
+import {AlertsDrawer,businessAlerts} from './features/alerts/AlertsDrawer';
 import {CommandPalette,type PaletteItem} from './features/palette/CommandPalette';
 import TicketsView from './features/tickets/TicketsView';
 import TruequeChat from './features/trueque/TruequeChat';
@@ -36,6 +38,7 @@ import ThresholdsView from './features/thresholds/ThresholdsView';
 import {MarketAll,MarketOdoo,MarketSkills,MarketAutomations,MarketServices} from './features/market/wrappers';
 
 const report=reportData as Report;
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const LIVE_FILTERS=new Set(['anio','mes','canal','unidad','marca','categoria','provincia','vendedor']);
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
@@ -134,7 +137,21 @@ function AppShell(){
  const widgetsValue=useMemo(()=>({live:live.live,loading:reportState.loading,widgets:reportState.data?.widgets||null,ids}),[live.live,reportState,ids]);
  const published=live.status?.published||null;
  const stale=!!published?.business_date&&(Date.now()-new Date(`${published.business_date}T23:59:59`).getTime())>2*86400000;
- const optionsFor=(key:string)=>{const base=report.filters[key].options;const extra=liveOptions[key];if(!live.live||!extra)return base;return [base[0],...extra.filter(v=>v!==base[0])];};
+ const cutDate=published?.business_date||null;
+ const optionsFor=(key:string)=>{const base=report.filters[key].options;
+  // Live: the month list follows the published close (data is deferred to the previous cut, not to the demo fixture).
+  if(live.live&&key==='mes'&&cutDate){const n=Number(cutDate.slice(5,7));const y=cutDate.slice(0,4);const months=filters.anio===y?MONTHS.slice(0,n):MONTHS;return [base[0],...months];}
+  const extra=liveOptions[key];if(!live.live||!extra)return base;return [base[0],...extra.filter(v=>v!==base[0])];};
+ const reportCtx=useMemo(()=>{
+  if(!reportPage)return null;
+  if(live.live&&(reportState.loading||!reportState.data))return null;
+  const cut=live.live?(reportState.data?.published?`Cierre ${reportState.data.published.business_date} · versión ${reportState.data.published.version}`:'Sin datos publicados'):'Datos de demostración (sin conexión a Odoo)';
+  const fl=shownFilters.map(k=>({key:k,label:report.filters[k].label,value:filters[k],isDefault:filters[k]===report.filters[k].options[0]}));
+  return buildReportContext(reportPage.id,live.live?reportState.data?.widgets||{}:null,fl,cut);
+ },[reportPage,live.live,reportState,shownFilters,filters]);
+ const touched=useRef(new Set<string>());
+ useEffect(()=>{if(!live.live||!cutDate)return;const y=cutDate.slice(0,4);const m=MONTHS[Number(cutDate.slice(5,7))-1];
+  setFilters(f=>({...f,...(touched.current.has('anio')?{}:{anio:y}),...(touched.current.has('mes')?{}:{mes:m})}));},[live.live,cutDate]);
  const loc=locate(pageId);
  const currentSub=loc.sub;
 
@@ -198,11 +215,11 @@ function AppShell(){
  ],[]);
 
  const {activeAlerts}=useThresholds();
- const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=globalAlerts.filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts]);
- const bellTotal=useMemo(()=>globalAlerts.length+activeAlerts.length,[activeAlerts]);
+ const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=businessAlerts(live.live).filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts,live.live]);
+ const bellTotal=useMemo(()=>businessAlerts(live.live).length+activeAlerts.length,[activeAlerts,live.live]);
 
  const {pending:pendingDecisions}=useDecisions();
- const openTickets=demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
+ const openTickets=live.live?0:demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
  const badgeFor=(id:string)=>id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
  function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
@@ -336,7 +353,7 @@ function AppShell(){
     </header>
     {shownFilters.length>0&&<section className="filters" aria-label="Filtros del reporte">
      <div className="filter-label"><SlidersHorizontal size={14}/><span>Filtros</span></div>
-     <div className="filter-controls">{shownFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>setFilters({...filters,[key]:e.target.value})}>{optionsFor(key).map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
+     <div className="filter-controls">{shownFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>{touched.current.add(key);setFilters({...filters,[key]:e.target.value});}}>{optionsFor(key).map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
     </section>}
     <div className={`report-content${syncing||(live.live&&reportState.loading)?' is-syncing':''}`} key={pageId}>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
@@ -347,6 +364,7 @@ function AppShell(){
       <div><span className="om-eyebrow">Lectura de Omega</span><p>{live.live&&reportState.loading?'Leyendo el último cierre…':pageReading(reportPage.id,live.live?reportState.data?.widgets||null:null)}</p></div>
       <button type="button" className="om-btn om-btn--ai" onClick={()=>askOmega(`¿Qué está pasando en ${reportPage.label}?`)}>Preguntar a Omega</button>
      </section>}
+     {reportPage&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:'José Ugalde Jerves · Control Empresarial'}</span></div>
@@ -360,7 +378,7 @@ function AppShell(){
    <span className="omega-glyph" aria-hidden="true">Ω</span>
    <span className="ai-bubble-label">Omega</span>
   </button>}
-  <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel}/>
+  <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel} ctx={reportCtx} tenant={live.tenantId}/>
   <AlertsDrawer open={alertsOpen} onClose={()=>setAlertsOpen(false)} onNavigate={navigate}/>
   <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} items={paletteItems} onSelect={navigate}/>
   {(aiOpen||alertsOpen)&&<div className="drawer-scrim" onClick={()=>{setAiOpen(false);setAlertsOpen(false);}}/>}

@@ -1,3 +1,4 @@
+import {useLive} from '../live/LiveData';
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 
 export type ThresholdArea='comercial'|'financiero'|'compras'|'inventarios'|'soporte';
@@ -94,7 +95,9 @@ export function ThresholdsProvider({children}:{children:ReactNode}){
  const resetOne=useCallback((id:string)=>{setRules(prev=>prev.map(r=>r.id===id?{...r,threshold:r.defaultThreshold,enabled:true}:r));},[]);
  const resetAll=useCallback(()=>{setRules(DEFAULTS.map(r=>({...r})));},[]);
 
- const activeAlerts=useMemo(()=>rules.filter(isTriggered),[rules]);
+ // Live: 'current' values are demo fixtures until the server evaluates rules after each publication.
+ const {live}=useLive();
+ const activeAlerts=useMemo(()=>live?[]:rules.filter(isTriggered),[rules,live]);
  const stats=useMemo(()=>({
   total:rules.length,
   enabled:rules.filter(r=>r.enabled).length,

@@ -4,6 +4,9 @@ import {Bot,CheckCircle2,CircleUser,ListTodo,Loader2,Send,Sparkles,StickyNote,Wa
 import {useTokens} from '../tokens/useTokens';
 import {useTasks,type Task} from '../tasks/useTasks';
 import {useNotes} from '../notes/useNotes';
+import {askReportAI,interpretReport,type ReportAnswer,type ReportContext} from '../omega/reportAI';
+
+const answerText=(a:ReportAnswer)=>[a.headline,...a.points.map(p=>`• ${p.text}`),a.suggestion?`Decisión sugerida: ${a.suggestion}`:'',a.caveats.join(' ')].filter(Boolean).join('\n');
 
 type Msg={role:'bot'|'user';text:string;at:number};
 
@@ -80,7 +83,7 @@ function cannedAnswer(question:string,pageId:string,pageLabel:string){
  return `Buena pregunta. Sobre ${pageLabel}: la lectura combinada de KPIs y gráficos muestra un escenario mixto — puntos positivos en ventas y foco de atención en cartera y concentración por cliente. En la próxima etapa la IA responderá con datos vivos de Odoo y series históricas.`;
 }
 
-export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:()=>void;pageId:string;pageLabel:string}){
+export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{open:boolean;onClose:()=>void;pageId:string;pageLabel:string;ctx?:ReportContext|null;tenant?:string|null}){
  const tokens=useTokens();
  const {tasks,setStatus,markAiReview,counts}=useTasks();
  const {forPage}=useNotes();
@@ -100,7 +103,9 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
   const ok=tokens.spend(12,`IA · resumen ${pageLabel}`);
   if(!ok){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o podés escalar el plan.'}]);return;}
   setBusy(true);
-  setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:summary.join(' ')}]);setBusy(false);},700);
+  // Report pages: reading built from the numbers and filters on screen. Auxiliary views keep their guide text.
+  const text=ctx?answerText(interpretReport(ctx,'Interpreta esta pantalla')):summary.join(' ');
+  setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text}]);setBusy(false);},700);
  }
 
  function ask(qOverride?:string){
@@ -108,6 +113,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
   const ok=tokens.spend(7,`IA · consulta ${pageLabel}`);
   if(!ok){setMsgs(m=>[...m,{role:'user',at:Date.now(),text:q},{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o podés escalar el plan.'}]);setInput('');return;}
   setMsgs(m=>[...m,{role:'user',at:Date.now(),text:q}]);setInput('');setBusy(true);
+  if(ctx){askReportAI(ctx,q,tenant).then(a=>setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:answerText(a)}])).finally(()=>setBusy(false));return;}
   setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:cannedAnswer(q,pageId,pageLabel)}]);setBusy(false);},650);
  }
 
@@ -181,6 +187,6 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
    <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Preguntá sobre esta pantalla…" aria-label="Consulta al copiloto"/>
    <button type="button" className="chat-send" aria-label="Enviar" onClick={()=>ask()} disabled={!input.trim()||busy}><Send size={14}/></button>
   </footer>}
-  <div className="ai-foot">Los tokens y respuestas son parte del boceto. Al conectar la base analítica, el copiloto trabajará con datos vivos. Provisto por OMEGA.</div>
+  <div className="ai-foot">{ctx?`Omega responde con las cifras y filtros de ${pageLabel} (${ctx.cut}). Solo lectura.`:'En esta vista Omega te guía; las lecturas con cifras están en cada reporte.'} Provisto por OMEGA.</div>
  </aside>;
 }

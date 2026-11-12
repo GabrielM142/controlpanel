@@ -1,6 +1,7 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 import {useThresholds} from '../thresholds/useThresholds';
 import {demoTickets} from '../tickets/TicketsView';
+import {useLive} from '../live/LiveData';
 
 // OMEGA · bandeja única de decisiones. Fuentes: tickets de soporte, umbrales excedidos (useThresholds),
 // solicitudes de aprobación de ejemplo y lo que el gerente lleva desde "Pregúntale a Omega".
@@ -24,14 +25,16 @@ const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return {
 
 export function DecisionsProvider({children}:{children:ReactNode}){
  const {activeAlerts}=useThresholds();
+ const {live}=useLive();
  const [store,setStore]=useState<{status:Record<string,DecisionStatus>;added:Omit<Decision,'status'>[]}>(read);
  const [history,setHistory]=useState<Record<string,DecisionStatus>>({});
  useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}},[store]);
 
  const base=useMemo<Omit<Decision,'status'>[]>(()=>[
-  ...DEMO_APPROVALS,
+  // Live: only what the manager created; demo approvals and tickets never mix with real data.
+  ...(live?[]:DEMO_APPROVALS),
   ...store.added,
-  ...demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').map(t=>({id:`tk-${t.id}`,kind:'reclamo' as const,
+  ...(live?[]:demoTickets).filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').map(t=>({id:`tk-${t.id}`,kind:'reclamo' as const,
    title:`${t.id} · ${t.asunto}`,detail:`${t.cliente} · ${t.canal} · abierto ${t.abierto} · en cola ${t.cola}.`,
    recommendation:t.sla>=90?'Escalar a nivel 2: el SLA está por vencer.':t.status==='esperando_cliente'?'Recordar al cliente y pausar el SLA.':'Mantener con el agente asignado y revisar en 2 h.',
    priority:t.prioridad,sla:t.sla,age:t.abierto,owner:t.agente,pageId:'tickets',source:'Tickets de soporte (demo)'})),
@@ -39,7 +42,7 @@ export function DecisionsProvider({children}:{children:ReactNode}){
    detail:`${r.metric}: ${r.current} ${r.unit} (umbral ${r.operator} ${r.threshold} ${r.unit}).`,
    recommendation:r.tone==='r'?'Asignar responsable hoy y revisar el plan de acción.':'Revisar en la reunión semanal.',
    priority:r.tone==='r'?'alta' as const:'media' as const,age:'ahora',owner:'Panel de Control',pageId:r.linkedPageId,source:'Umbrales configurados'})),
- ],[activeAlerts,store.added]);
+ ],[activeAlerts,store.added,live]);
 
  const decisions=useMemo(()=>base.map(d=>({...d,status:store.status[d.id]||'pendiente'})),[base,store.status]);
  const decide=useCallback((id:string,status:DecisionStatus)=>{

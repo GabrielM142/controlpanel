@@ -1,3 +1,4 @@
+import {useLive} from '../live/LiveData';
 import {useEffect,useMemo,useRef} from 'react';
 import {AlertTriangle,ArrowUpRight,Bell,SlidersHorizontal,X} from 'lucide-react';
 import {useThresholds,type ThresholdRule} from '../thresholds/useThresholds';
@@ -25,21 +26,27 @@ function thresholdToAlert(r:ThresholdRule):Alert{
  return {id:`th-${r.id}`,severity:r.tone,t:`Umbral excedido — ${r.label}`,d:`${r.metric}: ${fmt(r.current,r.unit)} (umbral ${r.operator} ${fmt(r.threshold,r.unit)})`,pageId:r.linkedPageId,at:'ahora'};
 }
 
+/** Demo business movements; live mode shows none until server-side rules exist. */
+export const businessAlerts=(live:boolean)=>live?[]:globalAlerts;
+
 export function useCombinedAlerts(){
+ const {live}=useLive();
  const {activeAlerts}=useThresholds();
  return useMemo(()=>{
   const dynamic=activeAlerts.map(thresholdToAlert);
-  const combined=[...dynamic,...globalAlerts];
+  const combined=[...dynamic,...businessAlerts(live)];
   const sev:Record<Severity,number>={r:0,a:1,g:2};
   return combined.sort((a,b)=>sev[a.severity]-sev[b.severity]);
- },[activeAlerts]);
+ },[activeAlerts,live]);
 }
 
 export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=>void;onNavigate:(id:string)=>void}){
  const ref=useRef<HTMLDivElement>(null);
+ const {live}=useLive();
  const {activeAlerts}=useThresholds();
  const dynamicAlerts=activeAlerts.map(thresholdToAlert);
- const combined=[...dynamicAlerts,...globalAlerts];
+ const business=businessAlerts(live);
+ const combined=[...dynamicAlerts,...business];
  const critical=combined.filter(a=>a.severity==='r').length;
  useEffect(()=>{if(!open)return;const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[open,onClose]);
 
@@ -60,8 +67,9 @@ export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=
      </div>
     </button>)}
    </>}
-   <div className="alerts-section-title"><Bell size={12}/> Movimientos del negocio <em>({globalAlerts.length})</em></div>
-   {globalAlerts.map(a=><button type="button" key={a.id} className={`alert-item sev-${a.severity}`} onClick={()=>{onNavigate(a.pageId);onClose();}}>
+   <div className="alerts-section-title"><Bell size={12}/> Movimientos del negocio <em>({business.length})</em></div>
+   {live&&business.length===0&&<p className="ai-empty">Sin alertas automáticas: se activan cuando el servidor evalúe los umbrales tras cada publicación.</p>}
+   {business.map(a=><button type="button" key={a.id} className={`alert-item sev-${a.severity}`} onClick={()=>{onNavigate(a.pageId);onClose();}}>
     <span className="alert-dot"/>
     <div>
      <div className="alert-top"><strong>{a.t}</strong><span>{a.at}</span></div>
