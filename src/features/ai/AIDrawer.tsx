@@ -128,7 +128,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel}:{open:boolean;onClose:(
  const pendingTasks=tasks.filter(t=>t.status==='pending'||t.status==='in_progress').slice(0,10);
  const pageNotes=forPage(pageId);
 
- return <aside className={`ai-drawer ${open?'open':''}`} role="dialog" aria-label="Copiloto de Análisis" aria-hidden={!open}>
+ return <aside className={`ai-drawer ${open?'open':''}`} role="dialog" aria-label="Copiloto de Análisis" aria-hidden={!open} inert={!open}>
   <header className="ai-head">
    <div><Sparkles size={16}/><strong>Copiloto de Análisis</strong><small>· {pageLabel}</small></div>
    <button type="button" aria-label="Cerrar copiloto" onClick={onClose}><X size={16}/></button>

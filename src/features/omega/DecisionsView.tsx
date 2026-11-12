@@ -39,7 +39,7 @@ export default function DecisionsView(){
   </section>
 
   <div className="segmented om-tabs" role="tablist" aria-label="Tipo de decisión">
-   {TABS.map(t=><button key={t.id} role="tab" aria-selected={tab===t.id} aria-pressed={tab===t.id} onClick={()=>setTab(t.id)}>{t.label}</button>)}
+   {TABS.map(t=><button key={t.id} role="tab" aria-selected={tab===t.id} onClick={()=>setTab(t.id)}>{t.label}</button>)}
   </div>
 
   <section className="om-card om-flush" aria-label="Decisiones">

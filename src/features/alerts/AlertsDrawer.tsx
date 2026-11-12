@@ -43,7 +43,7 @@ export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=
  const critical=combined.filter(a=>a.severity==='r').length;
  useEffect(()=>{if(!open)return;const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[open,onClose]);
 
- return <aside className={`alerts-drawer ${open?'open':''}`} role="dialog" aria-label="Alertas del negocio" aria-hidden={!open} ref={ref}>
+ return <aside className={`alerts-drawer ${open?'open':''}`} role="dialog" aria-label="Alertas del negocio" aria-hidden={!open} inert={!open} ref={ref}>
   <header className="alerts-head">
    <div><Bell size={16}/><strong>Alertas</strong><small>{combined.length} activas · {critical} críticas</small></div>
    <button type="button" aria-label="Cerrar alertas" onClick={onClose}><X size={16}/></button>

@@ -20,7 +20,7 @@ function Inline({nodes}:{nodes:Rich}){return <ReportNodes nodes={nodes}/>;}
 export function Bars({rows,max}:{rows:BarRow[];max?:number}){
  if(!rows.length)return <p className="block-missing"><CircleSlash size={13}/>Sin datos para los filtros seleccionados.</p>;
  const signed=rows.some(r=>r.v<0);const limit=max||Math.max(...rows.map(r=>Math.abs(r.v)),1);
- return <div className={`bar-list ${signed?'signed':''}`}>{rows.map((row,i)=><div className="bar-row" key={`${row.n}-${i}`}><span className="bar-name" title={row.n}>{row.n}</span><div className="bar-track" aria-label={`${row.n}: ${row.vt}`}><div className={`bar-fill ${row.v<0?'negative':''}`} style={{width:`${Math.min(100,Math.abs(row.v)/limit*100)*(signed?.5:1)}%`,...(signed?{left:row.v<0?`${50-Math.min(100,Math.abs(row.v)/limit*100)*.5}%`:'50%'}:{}),...(row.color?{background:row.color}:{})}}/></div><strong>{row.vt}</strong></div>)}</div>;
+ return <div className={`bar-list ${signed?'signed':''}`}>{rows.map((row,i)=><div className="bar-row" key={`${row.n}-${i}`}><span className="bar-name" title={row.n}>{row.n}</span><div className="bar-track" role="img" aria-label={`${row.n}: ${row.vt}`}><div className={`bar-fill ${row.v<0?'negative':''}`} style={{width:`${Math.min(100,Math.abs(row.v)/limit*100)*(signed?.5:1)}%`,...(signed?{left:row.v<0?`${50-Math.min(100,Math.abs(row.v)/limit*100)*.5}%`:'50%'}:{}),...(row.color?{background:row.color}:{})}}/></div><strong>{row.vt}</strong></div>)}</div>;
 }
 function ToggleChart({node,data,note}:{node:Extract<ReportNode,{kind:'toggle'}>;data?:Record<string,BarRow[]>;note?:string}){
  const [selected,setSelected]=useState(node.defaultOption);const id=useId();

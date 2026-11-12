@@ -282,7 +282,7 @@ function AppShell(){
          <span className="odoo-dot"/><b>Demo</b><em>· datos de ejemplo</em>
         </span>}
       <TokensChip/>
-      <button type="button" className="icon-button bell" aria-label={`Alertas (${bellTotal})`} title="Alertas del negocio y umbrales configurados" onClick={()=>setAlertsOpen(true)}>
+      <button type="button" className="icon-button bell" aria-label={`${criticalAlerts>0?`${criticalAlerts} `:''}Alertas: ${bellTotal} en total`} title="Alertas del negocio y umbrales configurados" onClick={()=>setAlertsOpen(true)}>
        <Bell size={17}/>
        {criticalAlerts>0&&<span className="bell-badge">{criticalAlerts}</span>}
       </button>
