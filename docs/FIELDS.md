@@ -173,6 +173,7 @@ Pedidos de venta (encabezado). Alcance compañía: `strict`. Modo: `delta`. Hijo
 | `amount_total` | decimal |  | price |
 | `invoice_status` | selection |  |  |
 | `commitment_date` | datetime |  |  |
+| `delivery_status` | selection | sí |  |
 
 ## `sale_order_line` v1 · `sale.order.line` (nova_sales)
 
@@ -252,7 +253,7 @@ Asientos/facturas (encabezado). Alcance compañía: `strict`. Modo: `delta`. Hij
 
 ## `account_move_line` v1 · `account.move.line` (nova_account)
 
-Apuntes: líneas de factura, impuestos, costo (cogs) y cartera. Alcance compañía: `strict`. Modo: `delta`.
+Apuntes que lee OMEGA: ingresos de factura, costo de ventas (cogs) y cartera. Alcance compañía: `strict`. Modo: `delta`.
 
 | Campo | Tipo | Opcional | Sensibilidad |
 |---|---|---|---|
