@@ -1,6 +1,6 @@
 {
     "name": "NOVA Stock Valuation",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.1.0",
     "category": "Technical",
     "summary": "Capas de valoración de inventario para NOVA",
     "author": "Nova Business",
