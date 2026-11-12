@@ -81,6 +81,20 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   JSON con Content-Type exacto, CSV que entrecomilla los retornos de carro, `npm audit` en 0.
 - Pendiente menor: texto "tenant" en dos mensajes del API; `last_error` muestra el error técnico a administradores.
 
+## Staging Odoo 16 en producción de OMEGA (2026-11-12)
+
+- Base `gca` vinculada (detalle en `docs/OPERATIONS.md`); historia completa publicada, cifras verificadas
+  contra Odoo: ventas 2026 al centavo, compras 0,1 %, despachos ±30 por zona horaria, inventario 0,01 %.
+- Margen contable: costo que Odoo contabiliza en cada entrega (cuenta de salida de la categoría) →
+  margen bruto 2026 8,5 %. Hallazgo: 65.713 unidades entregadas sin facturar (~$153 mil a costo).
+- Reportes con datos reales: 78 de 166 bloques (antes 36). Inventarios 15/19, Comercial 14/18,
+  Compras 13/19, Logística 12/18, Financiero 7/35, Dirección 5/13, Clientes 4/15, Unidades 2/4.
+- Tareas, notas, umbrales y decisiones guardados en el servidor; umbrales evaluados en cada cierre.
+- Omega IA por empresa (Anthropic u OpenAI, clave cifrada); falta la prueba con la clave real.
+- Pendiente de información del cliente: reglas de unidad/marca/canal, presupuesto, mapeo contable
+  (Financiero completo), fórmula ISE, datos del Odoo central de soporte (Tickets). Marketing: sin fuente.
+- Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
+
 ## Próximos pasos concretos
 
 1. Revisar el resultado del job `odoo16` de CI y corregir lo que falle.
