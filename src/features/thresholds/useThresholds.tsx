@@ -91,6 +91,7 @@ function readStore():ThresholdRule[]{
 // the latest published close; a rule without published data has current = NaN and never alerts.
 type ApiRule={id:string;comparator:'lt'|'gt';warn_value:string;enabled:boolean};
 type ApiThresholds={rules:ApiRule[];values:Record<string,number>;can_edit:boolean};
+const TARGETS=new Set(['com-meta-mensual','com-ticket']);
 
 export function ThresholdsProvider({children}:{children:ReactNode}){
  const {live,tenantId,status}=useLive();
@@ -101,8 +102,10 @@ export function ThresholdsProvider({children}:{children:ReactNode}){
   if(!live||!tenantId)return;let off=false;
   api<ApiThresholds>('/api/thresholds',{tenant:tenantId}).then(r=>{if(off)return;
    const saved=new Map(r.rules.map(x=>[x.id,x]));
+   // Business targets (monthly goal, minimum ticket) have no meaningful default for a real
+   // company: they stay off until an admin saves the company's own value.
    setRules(DEFAULTS.map(def=>{const s=saved.get(def.id);const v=r.values[def.id];
-    return {...def,current:typeof v==='number'?v:NaN,threshold:s?Number(s.warn_value):def.threshold,enabled:s?s.enabled:def.enabled};}));
+    return {...def,current:typeof v==='number'?v:NaN,threshold:s?Number(s.warn_value):def.threshold,enabled:s?s.enabled:(TARGETS.has(def.id)?false:def.enabled)};}));
   }).catch(()=>{});
   return()=>{off=true;};
  },[live,tenantId,version]);
