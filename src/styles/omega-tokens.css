@@ -1,0 +1,48 @@
+/* ============================================================
+   OMEGA — tokens únicos del panel gerencial (REDISENO_OMEGA.md §3).
+   Prohibido escribir hex sueltos en componentes o en theme.css: usa var(--…).
+
+   Cada color, un trabajo:
+   oro --omega-gold = marca y lo prioritario (máx. 1 CTA dorado por pantalla) ·
+   esmeralda --good = a favor · bermellón --bad = pérdida/urgente ·
+   ámbar --warn = revisar · zafiro --info = dato neutro y series ·
+   amatista --ai = todo lo que dice o hace Omega IA.
+
+   F0: se cargan antes de theme.css. Los nombres que theme.css ya define
+   (--line, --gold, --radius) siguen con su valor anterior hasta F1, así el
+   aspecto actual se mantiene.
+   ============================================================ */
+:root {
+  --bg: #0a0b10; --bg-2: #0d0e14; --surface: #111319; --surface-2: #171a22;
+  --line: #1e2129; --line-2: #23262f; --line-3: #2e323d;
+  --text: #f1efe9; --text-2: #b4b3bb; --text-3: #8c8e9b; --text-4: #6f7280;
+  --omega-gold: #d9b46c; --gold-text: #e8c98a; --gold-soft: #2a2418; --gold-line: #5c4b2a; --on-gold: #15110a;
+  --good: #3ecf8e; --good-text: #6ee3ad; --good-soft: #11261d; --on-good: #06170f;
+  --bad: #ff7a59;  --bad-text: #ff9d84;  --bad-soft: #2b1712;
+  --warn: #f2c14e; --warn-text: #f5d27c; --warn-soft: #2a2312;
+  --info: #6ea8ff; --info-text: #9cc2ff; --info-soft: #121d30; --info-muted: #2b4a7d;
+  --ai: #b49cff;   --ai-text: #cbbaff;   --ai-soft: #1e1830;   --ai-line: #3a3150;
+  --radius-sm: 10px; --radius: 14px; --radius-lg: 20px; --radius-xl: 24px;
+  --font-ui: "Geist Variable", Geist, Inter, system-ui, sans-serif;
+  --font-display: "Instrument Serif", Georgia, serif;
+  /* Foco visible: anillo dorado (CLAUDE.md, accesibilidad) */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--omega-gold);
+  /* Movimiento 150–250 ms */
+  --motion-fast: 150ms; --motion: 200ms; --motion-slow: 250ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Impresión y PDF para el directorio: fondo claro */
+@media print { :root { --bg: #ffffff; --surface: #ffffff; --text: #0a0b10; --text-2: #3a3d47; --line: #e3e5ea; } }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion: 0ms; --motion-slow: 0ms; }
+}
+
+/* Fuentes OMEGA (solo latín, locales vía @fontsource; mismo patrón que theme.css) */
+@font-face { font-family: 'Geist Variable'; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: italic; font-weight: 400; font-display: swap;
+  src: url('@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2') format('woff2'); }

@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+// Orden obligatorio: tokens OMEGA → paleta puente F0 → estilos de la app.
+import './styles/omega-tokens.css';
+import './styles/legacy-palette.css';
 import './theme.css';
 
 // One-shot migration for boceto users that used the previous side.* localStorage namespace.
