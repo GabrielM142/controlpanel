@@ -89,11 +89,12 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
  const head2=u===null?'en una sola mirada.':u<0?'pero estás perdiendo margen.':'y la operación deja utilidad.';
  const score=ise?parseNumber(ise.value.split('/')[0]):null;
 
+ const neg=(k?:{value:string})=>!!k&&(parseNumber(k.value)??0)<0;
  const big=[
-  {k:ventas,label:'Ventas',note:ventas?.delta?`${ventas.delta} ${ventas.deltaLabel.toLowerCase()}`:'vs año anterior'},
-  {k:util,label:'Utilidad',note:util?.deltaLabel||'vs año anterior'},
-  {k:rent,label:'Margen bruto',note:rent?.deltaLabel||''},
-  {k:cumpl,label:'Cumplimiento',note:'vs presupuesto'},
+  {k:ventas,label:'Ventas',fin:'income',note:ventas?.delta?`${ventas.delta} ${ventas.deltaLabel.toLowerCase()}`:'vs año anterior'},
+  {k:util,label:'Utilidad',fin:neg(util)?'loss':'income',note:util?.deltaLabel||'vs año anterior'},
+  {k:rent,label:'Margen bruto',fin:rent?.tone==='g'?'income':'risk',note:rent?.deltaLabel||''},
+  {k:cumpl,label:'Cumplimiento',fin:'goal',note:'vs presupuesto'},
  ];
 
  return <div className="om-dir">
@@ -111,7 +112,7 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
   </section>
 
   <section className="om-kpis" aria-label="Indicadores clave">
-   {big.map(({k,label,note})=><article key={label} className="om-card om-kpi">
+   {big.map(({k,label,note,fin})=><article key={label} className={`om-card om-kpi om-kpi--${fin}`}>
     <Eyebrow>{label}</Eyebrow>
     <strong className={`om-figure${k&&parseNumber(k.value)!==null&&parseNumber(k.value)!<0?' om-bad':''}`}>{k?.value||'—'}</strong>
     <div className="om-kpi-foot">{k&&<Chip tone={toneChip(k.tone)}>{k.tone==='g'?'A favor':k.tone==='r'?'En contra':'Revisar'}</Chip>}<span>{note}</span></div>

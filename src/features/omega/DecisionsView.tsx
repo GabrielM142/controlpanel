@@ -32,10 +32,10 @@ export default function DecisionsView(){
 
  return <div className="om-decisions">
   <section className="om-kpis" aria-label="Resumen de la bandeja">
-   <article className="om-card om-kpi"><Eyebrow>Abiertas</Eyebrow><strong className="om-figure">{pending.length}</strong><div className="om-kpi-foot"><span>esperan tu decisión</span></div></article>
-   <article className="om-card om-kpi"><Eyebrow>SLA en riesgo</Eyebrow><strong className={`om-figure${slaRisk?' om-bad':''}`}>{slaRisk}</strong><div className="om-kpi-foot"><span>80% o más del plazo usado</span></div></article>
-   <article className="om-card om-kpi"><Eyebrow>Dinero en juego</Eyebrow><strong className="om-figure">{fmtMoney(atStake)}</strong><div className="om-kpi-foot"><span>en decisiones con monto</span></div></article>
-   <article className="om-card om-kpi"><Eyebrow>Resueltas hoy</Eyebrow><strong className="om-figure">{resolved}</strong><div className="om-kpi-foot"><span>en este navegador (demo)</span></div></article>
+   <article className="om-card om-kpi om-kpi--ai"><Eyebrow>Abiertas</Eyebrow><strong className="om-figure">{pending.length}</strong><div className="om-kpi-foot"><span>esperan tu decisión</span></div></article>
+   <article className="om-card om-kpi om-kpi--risk"><Eyebrow>SLA en riesgo</Eyebrow><strong className={`om-figure${slaRisk?' om-bad':''}`}>{slaRisk}</strong><div className="om-kpi-foot"><span>80% o más del plazo usado</span></div></article>
+   <article className="om-card om-kpi om-kpi--goal"><Eyebrow>Dinero en juego</Eyebrow><strong className="om-figure">{fmtMoney(atStake)}</strong><div className="om-kpi-foot"><span>en decisiones con monto</span></div></article>
+   <article className="om-card om-kpi om-kpi--income"><Eyebrow>Resueltas hoy</Eyebrow><strong className="om-figure">{resolved}</strong><div className="om-kpi-foot"><span>en este navegador (demo)</span></div></article>
   </section>
 
   <div className="segmented om-tabs" role="tablist" aria-label="Tipo de decisión">

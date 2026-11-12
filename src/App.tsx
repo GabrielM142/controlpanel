@@ -229,6 +229,10 @@ function AppShell(){
      <div className="nav-trueque-foot">Módulos a medida para tu ERP</div>
     </div>
    </nav>
+   <div className="om-legend-box" aria-label="Código de color">
+    <span className="om-eyebrow">Código de color</span>
+    {[['income','Ingresos · a favor'],['loss','Costos y pérdidas'],['goal','Meta y presupuesto'],['cash','Caja y liquidez'],['risk','Riesgo · por vencer'],['ai','Omega IA']].map(([k,l])=><span key={k} className="om-legend-item"><i className={`om-dot-${k}`} aria-hidden="true"/>{l}</span>)}
+   </div>
    <SidebarFoot/>
   </>;
  }

@@ -1,0 +1,101 @@
+/* ============================================================
+   OMEGA · Fase D2 — superficies y dos capas de color (§3.2, §3.4).
+   Marca (--brand) = envase: logo, menú activo, botones principales,
+   anillo del Pulso, halo, pestañas activas. Financieros (--fin-*) = datos.
+   Solo var(--…). Se carga después de omega-views.css.
+   ============================================================ */
+
+/* Fondo con halo de marca */
+:root[data-theme=dark], :root[data-theme=dark] body { background: var(--halo); background-attachment: fixed; }
+:root[data-theme=dark] .app-shell, :root[data-theme=dark] .workspace, :root[data-theme=dark] .page-header,
+:root[data-theme=dark] .report-content { background: transparent; }
+:root[data-theme=dark] .sidebar, :root[data-theme=dark] .mobile-drawer {
+  background: color-mix(in srgb, var(--bg-2) 72%, transparent); border-right: 1px solid var(--line);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+:root[data-theme=dark] .utility-bar {
+  background: color-mix(in srgb, var(--bg) 55%, transparent); border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+:root[data-theme=dark] .filters { background: transparent; border-color: var(--line); }
+
+/* Tarjetas de cristal */
+:root[data-theme=dark] .panel, :root[data-theme=dark] .om-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: none;
+}
+:root[data-theme=dark] .filter, :root[data-theme=dark] .segmented { background: var(--surface); border-color: var(--line); }
+:root[data-theme=dark] .report-content > .section-label:first-of-type + .grid.g-6 > .kpi:first-child {
+  background: var(--surface); border-color: var(--line); box-shadow: none;
+}
+:root[data-theme=dark] .report-content > .section-label:first-of-type + .grid.g-6 > .kpi:first-child .kpi-label { color: var(--text-2); }
+
+/* KPI: línea de 3 px con el color financiero y un brillo */
+.panel.kpi, .om-kpi { position: relative; overflow: hidden; }
+.panel.kpi::before, .om-kpi::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--fin, var(--line-strong));
+  box-shadow: 0 0 22px var(--fin, transparent);
+}
+.panel.kpi.tone-g { --fin: var(--fin-income); }
+.panel.kpi.tone-r { --fin: var(--fin-loss); }
+.panel.kpi.tone-a { --fin: var(--fin-risk); }
+.om-kpi--income { --fin: var(--fin-income); } .om-kpi--loss { --fin: var(--fin-loss); }
+.om-kpi--goal { --fin: var(--fin-goal); } .om-kpi--cash { --fin: var(--fin-cash); }
+.om-kpi--risk { --fin: var(--fin-risk); } .om-kpi--ai { --fin: var(--fin-ai); }
+
+/* Botón principal = marca */
+:root[data-theme=dark] .button.primary, .om-btn--gold, .om-btn--light, .omega-present {
+  background: var(--brand) !important; border-color: var(--brand) !important; color: var(--on-brand) !important; box-shadow: var(--glow-brand);
+}
+:root[data-theme=dark] .button.primary svg { color: var(--on-brand); }
+.omega-present[aria-pressed=true] { background: var(--gold-soft) !important; color: var(--text) !important; box-shadow: inset 0 0 0 1px var(--gold-line); }
+:root[data-theme=dark] .button.secondary, .om-btn--ghost { background: var(--surface); border-color: var(--line-strong); color: var(--text); }
+
+/* Marca: logo, menú activo, pestañas activas */
+.omega-mark { background: var(--brand); border-color: transparent; color: var(--on-brand); box-shadow: var(--glow-brand); font-weight: 800; }
+:root[data-theme=dark] .nav-group button[aria-current] {
+  background: color-mix(in srgb, var(--brand) 18%, transparent) !important; border-color: color-mix(in srgb, var(--brand) 40%, transparent) !important;
+}
+:root[data-theme=dark] .nav-group button[aria-current], :root[data-theme=dark] .nav-group button[aria-current] > span { color: var(--text) !important; }
+:root[data-theme=dark] .nav-group button[aria-current]:before { background: var(--brand); }
+:root[data-theme=dark] .nav-group button[aria-current] > svg { color: var(--brand); }
+:root[data-theme=dark] .segmented button[aria-pressed=true] {
+  background: color-mix(in srgb, var(--brand) 22%, transparent); border-color: color-mix(in srgb, var(--brand) 45%, transparent); color: var(--text);
+}
+:root[data-theme=dark] .tenant-brand .brand-symbol { background: var(--brand); border-color: transparent; color: var(--on-brand); }
+:root[data-theme=dark] .page-kicker, .om-briefing-text .om-eyebrow { color: color-mix(in srgb, var(--brand) 60%, var(--text)); }
+:root[data-theme=dark] .gold-line { background: var(--brand); }
+.om-link { color: color-mix(in srgb, var(--brand) 55%, var(--text)); }
+.omega-glyph { color: var(--brand); }
+.omega-ask .omega-glyph, .om-lead > .omega-glyph, .om-btn--ai .omega-glyph, .om-ai-line .omega-glyph, .om-reco .omega-glyph { color: var(--fin-ai); }
+
+/* Datos: siempre financieros, nunca marca */
+.om-chip--gold { background: var(--goal-soft); color: var(--fin-goal); }
+.om-bar-real { fill: var(--fin-income); }
+.om-bar-best { fill: var(--fin-income); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--fin-income) 55%, transparent)); }
+.om-bar-ppto { fill: transparent; stroke: var(--fin-goal); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.om-bar-prev { fill: var(--line-strong); }
+.om-key--real { background: var(--fin-income); }
+.om-key--ppto { background: transparent; border: 1.5px dashed var(--fin-goal); box-sizing: border-box; }
+.om-key--prev { background: var(--line-strong); }
+.om-legend-note { color: var(--text-2); }
+.om-dialog-amount, .om-dec-amount { color: var(--fin-goal) !important; }
+.om-figure.om-bad { color: var(--fin-loss-text) !important; }
+:root[data-theme=dark] .kpi-value .down, :root[data-theme=dark] .down { color: var(--fin-loss-text) !important; }
+:root[data-theme=dark] .up { color: var(--fin-income) !important; }
+
+/* Leyenda "Código de color" al pie del menú */
+.om-legend-box { margin: 10px 14px 4px; padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.om-legend-box .om-eyebrow { font-size: 10px; }
+.om-legend-box span.om-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.om-legend-box i { width: 9px; height: 9px; border-radius: 999px; flex: none; box-shadow: 0 0 10px currentColor; }
+.om-dot-income { background: var(--fin-income); color: var(--fin-income); } .om-dot-loss { background: var(--fin-loss); color: var(--fin-loss); }
+.om-dot-goal { background: var(--fin-goal); color: var(--fin-goal); } .om-dot-cash { background: var(--fin-cash); color: var(--fin-cash); }
+.om-dot-risk { background: var(--fin-risk); color: var(--fin-risk); } .om-dot-ai { background: var(--fin-ai); color: var(--fin-ai); }
+
+/* Bloques Factory y burbuja Omega en cristal */
+:root[data-theme=dark] .nav-trueque { background: var(--surface); border-color: var(--line); }
+:root[data-theme=dark] .ai-bubble { background: var(--ai-soft); border-color: var(--ai-line); color: var(--text); }
+.om-legend-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; padding: 12px; }
+.om-legend-box .om-eyebrow { grid-column: 1 / -1; }
+.om-legend-box span.om-legend-item { font-size: 11px; }
+@media (max-height: 760px) { .sidebar .om-legend-box { display: none; } }

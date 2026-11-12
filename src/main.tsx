@@ -7,6 +7,7 @@ import './styles/legacy-palette.css';
 import './theme.css';
 import './styles/omega-shell.css';
 import './styles/omega-views.css';
+import './styles/omega-era.css';
 
 // OMEGA es oscuro por defecto: se fija antes del primer render (login incluido). Respeta la elección guardada.
 try{
