@@ -1,4 +1,5 @@
 from odoo.tests import tagged
+from odoo.tools import mute_logger
 
 from odoo.addons.nova_connector.tests.common import NovaCase
 
@@ -107,7 +108,10 @@ class TestNovaMasterData(NovaCase):
             return original(ds, records, reason)
 
         partner = self.env["res.partner"].create({"name": "Reintento", "company_id": self.company.id})
-        with patch.object(Dataset, "_nova_serialize", flaky):
+        # The simulated failure is logged with _logger.exception: muted so CI's
+        # "no ERROR lines" check only catches unexpected errors.
+        with patch.object(Dataset, "_nova_serialize", flaky), \
+                mute_logger("odoo.addons.nova_connector.models.nova_sync_job"):
             run = self.prepare()
         self.assertEqual(run.state, "ready")
         jobs = run.job_ids.filtered(lambda j: j.dataset_key == "res_partner")
