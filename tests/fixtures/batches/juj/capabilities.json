@@ -1,0 +1,32 @@
+{
+ "attribute_map": [
+  {
+   "adapter": "nova_juj",
+   "attribute": "brand",
+   "dataset": "product_template",
+   "field": "x_marca",
+   "relation": null,
+   "ttype": "char"
+  }
+ ],
+ "companies": [
+  {
+   "currency": "USD",
+   "id": 1,
+   "name": "Compañía 1 (fixture)"
+  },
+  {
+   "currency": "USD",
+   "id": 2,
+   "name": "Compañía 2 (fixture)"
+  }
+ ],
+ "connector_version": "16.0.1.0.0",
+ "contract": "nova.export.v1",
+ "datasets": [],
+ "generation": 1,
+ "installation_uuid": "6f1c1b6e-8d55-4a4b-a8f8-0b7f3c9c2a01",
+ "odoo_version": "16.0",
+ "state": "linked",
+ "timezone": "America/Guayaquil"
+}

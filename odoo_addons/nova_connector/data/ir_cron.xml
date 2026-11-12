@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Wakes every 15 min; only works inside the night window of the
+             connection timezone. Continuations re-trigger it with _trigger(). -->
+        <record id="ir_cron_nova_prepare" model="ir.cron">
+            <field name="name">NOVA: preparar lote nocturno</field>
+            <field name="model_id" ref="model_nova_sync_run"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_prepare()</field>
+            <field name="interval_number">15</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="ir_cron_nova_retention" model="ir.cron">
+            <field name="name">NOVA: retención de lotes confirmados</field>
+            <field name="model_id" ref="model_nova_sync_run"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_retention()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,71 @@
+# Staging / local reproduction. NOT for client production servers.
+#   cp .env.example .env.staging   (fill secrets)
+#   docker compose -f infra/compose.staging.yml --env-file .env.staging up -d
+# Services: central PostgreSQL 15 (NOVA), API, worker, and a disposable Odoo 16
+# Community + PostgreSQL 12 (Ubuntu 20.04 default) to install/test the addons.
+name: nova-staging
+
+services:
+  nova-db:
+    image: postgres:15.8
+    environment:
+      POSTGRES_DB: nova
+      POSTGRES_USER: nova_owner
+      POSTGRES_PASSWORD: ${NOVA_DB_OWNER_PASSWORD:?set NOVA_DB_OWNER_PASSWORD}
+    volumes: [nova-db:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U nova_owner -d nova"], interval: 5s, retries: 20}
+    ports: ["127.0.0.1:55432:5432"]
+
+  nova-migrate:
+    build: {context: .., dockerfile: infra/Dockerfile}
+    command: ["node", "sql/migrate.mjs"]
+    environment:
+      DATABASE_URL: postgres://nova_owner:${NOVA_DB_OWNER_PASSWORD}@nova-db:5432/nova
+    depends_on: {nova-db: {condition: service_healthy}}
+
+  nova-api:
+    build: {context: .., dockerfile: infra/Dockerfile}
+    command: ["node", "server/index.mjs"]
+    environment:
+      APP_MODE: live
+      PORT: "8787"
+      DATABASE_URL: postgres://nova_owner:${NOVA_DB_OWNER_PASSWORD}@nova-db:5432/nova
+      NOVA_DB_ROLE: nova_api
+      NOVA_SECRET_KEY: ${NOVA_SECRET_KEY:?set NOVA_SECRET_KEY}
+      NOVA_CORS_ORIGINS: ${NOVA_CORS_ORIGINS:-http://localhost:3000}
+      NOVA_COOKIE_SECURE: ${NOVA_COOKIE_SECURE:-false}
+      NOVA_ALLOW_INSECURE_SOURCES: "true"
+      NOVA_SOURCE_HOST_ALLOWLIST: odoo16
+      PGPOOL_MAX: "5"
+    ports: ["127.0.0.1:8787:8787"]
+    depends_on: {nova-migrate: {condition: service_completed_successfully}}
+
+  nova-worker:
+    build: {context: .., dockerfile: infra/Dockerfile}
+    command: ["node", "worker/run.mjs"]
+    environment:
+      DATABASE_URL: postgres://nova_owner:${NOVA_DB_OWNER_PASSWORD}@nova-db:5432/nova
+      NOVA_DB_ROLE: nova_worker
+      NOVA_SECRET_KEY: ${NOVA_SECRET_KEY}
+      NOVA_ALLOW_INSECURE_SOURCES: "true"
+      NOVA_SOURCE_HOST_ALLOWLIST: odoo16
+      NOVA_WORKER_CONCURRENCY: "2"
+    depends_on: {nova-migrate: {condition: service_completed_successfully}}
+
+  odoo16-db:
+    image: postgres:12.20
+    environment: {POSTGRES_DB: postgres, POSTGRES_USER: odoo, POSTGRES_PASSWORD: odoo}
+    volumes: [odoo16-db:/var/lib/postgresql/data]
+
+  odoo16:
+    image: odoo:16.0
+    depends_on: [odoo16-db]
+    environment: {HOST: odoo16-db, USER: odoo, PASSWORD: odoo}
+    volumes: ["../odoo_addons:/mnt/extra-addons:ro"]
+    # Resource budget of the smallest client (2 CPU / 2 GB) to measure impact; adjust only after measuring.
+    deploy: {resources: {limits: {cpus: "2", memory: 2g}}}
+    ports: ["127.0.0.1:8069:8069"]
+
+volumes:
+  nova-db:
+  odoo16-db:

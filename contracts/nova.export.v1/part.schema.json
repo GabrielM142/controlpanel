@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nova.local/contracts/nova.export.v1/part.schema.json",
+  "title": "NOVA export part v1 (uncompressed content)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_uuid", "part_no", "dataset", "dataset_version", "records"],
+  "properties": {
+    "schema": {"const": "nova.export.part.v1"},
+    "run_uuid": {"type": "string", "format": "uuid"},
+    "part_no": {"type": "integer", "minimum": 1},
+    "dataset": {"type": "string", "pattern": "^[a-z0-9_]{1,64}$"},
+    "dataset_version": {"type": "integer", "minimum": 1},
+    "records": {
+      "type": "array", "minItems": 1, "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "required": ["op", "id", "seq", "reason"],
+        "properties": {
+          "op": {"enum": ["upsert", "delete"]},
+          "id": {"type": "integer", "minimum": 1},
+          "seq": {"type": "integer", "minimum": 1},
+          "company_id": {"type": ["integer", "null"]},
+          "reason": {"enum": ["backfill", "event", "scan", "deleted", "out_of_scope"]},
+          "data": {"type": "object"},
+          "refs": {"type": "object"}
+        },
+        "allOf": [
+          {"if": {"properties": {"op": {"const": "upsert"}}}, "then": {"required": ["data"], "not": {"required": ["refs"]}}},
+          {"if": {"properties": {"op": {"const": "delete"}}}, "then": {"required": ["refs"], "not": {"required": ["data"]}}}
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

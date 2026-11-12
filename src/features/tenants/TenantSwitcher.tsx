@@ -3,7 +3,7 @@ import {Check,ChevronDown,Layers3} from 'lucide-react';
 import {useTenants} from './useTenants';
 
 export function TenantSwitcher(){
- const {catalog,active,setActive}=useTenants();
+ const {catalog,active,setActive,live}=useTenants();
  const [open,setOpen]=useState(false);
  const ref=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(!open)return;const off=(e:MouseEvent)=>{if(ref.current&&!ref.current.contains(e.target as Node))setOpen(false);};document.addEventListener('mousedown',off);return()=>document.removeEventListener('mousedown',off);},[open]);
@@ -20,7 +20,7 @@ export function TenantSwitcher(){
     <span className="tenant-info"><strong>{t.name}</strong><em>{t.subtitle}</em><small>{t.sector}</small></span>
     {t.id===active.id&&<Check size={13}/>}
    </button>)}
-   <div className="tenant-menu-foot">Los datos analizados corresponden al cliente seleccionado. Panel operado por <b>Nova Business</b>.</div>
+   <div className="tenant-menu-foot">{live?<>Solo empresas de tus membresías; el servidor valida cada consulta.</>:<>Empresas de <b>demostración</b>: el selector no cambia datos en este modo.</>} Panel operado por <b>Nova Business</b>.</div>
   </div>}
  </div>;
 }

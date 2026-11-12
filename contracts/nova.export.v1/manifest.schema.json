@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nova.local/contracts/nova.export.v1/manifest.schema.json",
+  "title": "NOVA export manifest v1",
+  "description": "Immutable description of a ready batch. sha256/bytes are computed over the uncompressed part bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_uuid", "run_seq", "source", "business_date", "timezone", "requested_cutoff_at",
+               "observed_from", "observed_to", "consistency", "companies", "datasets", "parts", "totals",
+               "reconciliation", "warnings"],
+  "properties": {
+    "schema": {"const": "nova.export.v1"},
+    "run_uuid": {"type": "string", "format": "uuid"},
+    "run_seq": {"type": "integer", "minimum": 1},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["installation_uuid", "generation", "odoo_version", "connector_version"],
+      "properties": {
+        "installation_uuid": {"type": "string", "format": "uuid"},
+        "generation": {"type": "integer", "minimum": 1},
+        "odoo_version": {"type": "string", "maxLength": 32},
+        "connector_version": {"type": "string", "pattern": "^16\\.0\\.[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "business_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+    "requested_cutoff_at": {"$ref": "#/$defs/instant"},
+    "observed_from": {"$ref": "#/$defs/instant"},
+    "observed_to": {"$ref": "#/$defs/instant"},
+    "consistency": {"enum": ["captured_interval", "consistent_snapshot"]},
+    "companies": {"type": "array", "items": {"type": "integer", "minimum": 1}, "minItems": 1, "maxItems": 200},
+    "datasets": {
+      "type": "array", "maxItems": 200,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["key", "version", "mode", "records", "parts", "events", "backfill_complete", "resync_epoch",
+                     "missing_optional_fields", "complete"],
+        "properties": {
+          "key": {"type": "string", "pattern": "^[a-z0-9_]{1,64}$"},
+          "version": {"type": "integer", "minimum": 1},
+          "mode": {"enum": ["delta", "snapshot_replace"]},
+          "records": {"type": "integer", "minimum": 0},
+          "parts": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+          "events": {"type": "integer", "minimum": 0},
+          "backfill_complete": {"type": "boolean"},
+          "resync_epoch": {"type": "integer", "minimum": 1},
+          "missing_optional_fields": {"type": "array", "items": {"type": "string"}},
+          "complete": {"type": "boolean"},
+          "scope": {
+            "type": "object", "additionalProperties": false, "required": ["company_ids"],
+            "properties": {"company_ids": {"type": "array", "items": {"type": "integer", "minimum": 1}, "minItems": 1}}
+          }
+        }
+      }
+    },
+    "parts": {
+      "type": "array", "maxItems": 100000,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["part_no", "dataset", "records", "bytes", "sha256", "encoding"],
+        "properties": {
+          "part_no": {"type": "integer", "minimum": 1},
+          "dataset": {"type": "string", "pattern": "^[a-z0-9_]{1,64}$"},
+          "records": {"type": "integer", "minimum": 1},
+          "bytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "encoding": {"const": "gzip+base64"}
+        }
+      }
+    },
+    "totals": {
+      "type": "object", "additionalProperties": false, "required": ["parts", "records", "bytes"],
+      "properties": {"parts": {"type": "integer", "minimum": 0}, "records": {"type": "integer", "minimum": 0},
+                     "bytes": {"type": "integer", "minimum": 0}}
+    },
+    "reconciliation": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["dataset", "company_id", "count", "id_sum"],
+        "properties": {
+          "dataset": {"type": "string"}, "company_id": {"type": ["integer", "null"]},
+          "count": {"type": "integer", "minimum": 0}, "id_sum": {"type": "string", "pattern": "^[0-9]+$"}
+        }
+      }
+    },
+    "warnings": {"type": "array", "maxItems": 500, "items": {"type": "object", "required": ["code"], "properties": {"code": {"type": "string", "maxLength": 64}}}}
+  },
+  "$defs": {
+    "instant": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"}
+  }
+}

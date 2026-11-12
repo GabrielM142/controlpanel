@@ -1,0 +1,178 @@
+{
+ "business_date": "2026-11-10",
+ "companies": [
+  1,
+  2
+ ],
+ "consistency": "captured_interval",
+ "datasets": [
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 3,
+   "key": "account_move",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    1
+   ],
+   "records": 3,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 4,
+   "key": "account_move_line",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    2,
+    3
+   ],
+   "records": 5,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 1,
+   "key": "account_partial_reconcile",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    4
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 1,
+   "key": "product_product",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    5
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "sale_order",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    6
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 1,
+   "key": "stock_quant",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    7
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  }
+ ],
+ "observed_from": "2026-11-11T05:00:07Z",
+ "observed_to": "2026-11-11T05:03:41Z",
+ "parts": [
+  {
+   "bytes": 1753,
+   "dataset": "account_move",
+   "encoding": "gzip+base64",
+   "part_no": 1,
+   "records": 3,
+   "sha256": "8182d4a2a1bc90f0b08e30d3daa707e97ba5a517bd50572054885c7bc86ec70b"
+  },
+  {
+   "bytes": 2173,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 2,
+   "records": 4,
+   "sha256": "8a843904a9c621ef4e36dd4ce21a9e7e4ec8873154fe0d8358be25963b235318"
+  },
+  {
+   "bytes": 780,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 3,
+   "records": 1,
+   "sha256": "6c20b167cc9fe854eae670d32dc7c81ee713c0725535fd2cada95d4241415129"
+  },
+  {
+   "bytes": 464,
+   "dataset": "account_partial_reconcile",
+   "encoding": "gzip+base64",
+   "part_no": 4,
+   "records": 1,
+   "sha256": "2c2aca4cc20e0dc6b5119e9a90b68c673045ec32c921425f48377e2f2f58d4e9"
+  },
+  {
+   "bytes": 345,
+   "dataset": "product_product",
+   "encoding": "gzip+base64",
+   "part_no": 5,
+   "records": 1,
+   "sha256": "3161ae13602630debd79ddf80c0f6d4778ad5428ce82f17074c5891189bdf2a8"
+  },
+  {
+   "bytes": 307,
+   "dataset": "sale_order",
+   "encoding": "gzip+base64",
+   "part_no": 6,
+   "records": 1,
+   "sha256": "abcee264e3e25b8363d69ebf71a1079a1c74e7b20f243debd4499e397e6d869c"
+  },
+  {
+   "bytes": 386,
+   "dataset": "stock_quant",
+   "encoding": "gzip+base64",
+   "part_no": 7,
+   "records": 1,
+   "sha256": "7c1770e7600dc19b63bfb796734c86cb457b386b11f20478690194abb79016bc"
+  }
+ ],
+ "reconciliation": [],
+ "requested_cutoff_at": "2026-11-11T05:00:00Z",
+ "run_seq": 2,
+ "run_uuid": "1b0e5a2a-0d0b-4bf0-9e1c-000000000102",
+ "schema": "nova.export.v1",
+ "source": {
+  "connector_version": "16.0.1.0.0",
+  "generation": 1,
+  "installation_uuid": "6f1c1b6e-8d55-4a4b-a8f8-0b7f3c9c2a01",
+  "odoo_version": "16.0"
+ },
+ "timezone": "America/Guayaquil",
+ "totals": {
+  "bytes": 6208,
+  "parts": 7,
+  "records": 12
+ },
+ "warnings": [
+  {
+   "code": "fixture",
+   "detail": "Datos de prueba etiquetados, no cliente real"
+  }
+ ]
+}

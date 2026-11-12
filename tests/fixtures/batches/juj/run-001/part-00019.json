@@ -1,0 +1,10 @@
+{
+ "bytes": 610,
+ "content": "H4sIAAAAAAAA/3WR22rDMAyG30XXSZDTAzTPsauNYRxHZWaO7fqQLZS+++wc6GAs+CL6pF8S+u8wiCgCReggCE3c+oE818oQVHuOT+SDsgY6VoETPnJj8/+lAk8yCwJ0b3eQdnTCzFwNS13RQvcHy+Q9GfksU0HaZMp8bBBhIU6LmcfZEXQmaV3ButUiQcQ9LquYjR8Kdl5J4iH10Uahc8sTbk3XzD84GRUXukM7JBmXtu3adgXJjvtCvxC/xTmr2abOER9Iq3wzyg3g/MTKTDbPK/T4pNHuiczblRcrwijMukOOo4i0WZTTX15F4sPKWmzPNWM1Xl5Y2yHm9wqPCrZr5Rtbl8uSC+QjFM9EKF5CL+TnVWld5tENuuPh8Z7TyfCUihhYj3QSrahxwL4+9lesL8RkjfvHkBWx/KAxew3GTqKhb2d9bIo3zcTg8QOYSH5rYgIAAA==",
+ "dataset": "sale_order_line",
+ "encoding": "gzip+base64",
+ "part_no": 19,
+ "records": 1,
+ "run_uuid": "1b0e5a2a-0d0b-4bf0-9e1c-000000000101",
+ "sha256": "5aed8a6f28aaf2fb458cc7675ce123a6d106e9db094ca361294e034ed936c5f3"
+}

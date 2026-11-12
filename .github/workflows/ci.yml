@@ -1,0 +1,66 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22.12', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+
+  python-contracts:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.8'}   # Ubuntu 20.04 / Odoo 16 client baseline
+      - run: pip install pytz==2024.2
+      - run: python odoo_addons/tools/gen_contracts.py --check
+      - run: python odoo_addons/tools/check_addons.py
+      - run: python -m unittest discover -s tests/py -v
+
+  odoo16:
+    # Real install + tests of the addons on a disposable Odoo 16 Community database.
+    runs-on: ubuntu-22.04
+    services:
+      db:
+        image: postgres:12.20
+        env: {POSTGRES_USER: odoo, POSTGRES_PASSWORD: odoo, POSTGRES_DB: postgres}
+        options: >-
+          --health-cmd "pg_isready -U odoo" --health-interval 5s --health-retries 20
+    container:
+      image: odoo:16.0
+      options: --user root
+    defaults:
+      run: {shell: bash}
+    env:
+      ODOO: su odoo -s /bin/bash -c
+      ALL: nova_connector,nova_master_data,nova_sales,nova_account,nova_stock,nova_stock_account,nova_purchase,nova_pos,nova_juj
+    steps:
+      - uses: actions/checkout@v4
+      - name: addons path readable by the odoo user (Odoo refuses to run as root)
+        run: chmod -R a+rX "$GITHUB_WORKSPACE/odoo_addons" && echo "AP=/usr/lib/python3/dist-packages/odoo/addons,$GITHUB_WORKSPACE/odoo_addons" >> "$GITHUB_ENV"
+      - name: install + tests (all addons)
+        run: |
+          set -o pipefail
+          $ODOO "odoo -d nova_ci --db_host db --db_user odoo --db_password odoo --addons-path=$AP -i $ALL --test-enable --test-tags nova --stop-after-init --log-level=test" 2>&1 | tee odoo-test.log
+          ! grep -E "(ERROR|CRITICAL) nova_ci" odoo-test.log
+      - name: upgrade (-u)
+        run: |
+          set -o pipefail
+          $ODOO "odoo -d nova_ci --db_host db --db_user odoo --db_password odoo --addons-path=$AP -u $ALL --stop-after-init" 2>&1 | tee odoo-upgrade.log
+          ! grep -E "(ERROR|CRITICAL) nova_ci" odoo-upgrade.log
+      - name: core only (no sale/stock/pos installed)
+        run: |
+          set -o pipefail
+          $ODOO "odoo -d nova_core --db_host db --db_user odoo --db_password odoo --addons-path=$AP -i nova_connector,nova_master_data --test-enable --test-tags nova --stop-after-init --log-level=test" 2>&1 | tee odoo-core.log
+          ! grep -E "(ERROR|CRITICAL) nova_core" odoo-core.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: odoo16-logs, path: '*.log'}

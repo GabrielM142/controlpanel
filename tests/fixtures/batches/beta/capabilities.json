@@ -1,0 +1,18 @@
+{
+ "attribute_map": [],
+ "companies": [
+  {
+   "currency": "USD",
+   "id": 1,
+   "name": "Compañía 1 (fixture)"
+  }
+ ],
+ "connector_version": "16.0.1.0.0",
+ "contract": "nova.export.v1",
+ "datasets": [],
+ "generation": 1,
+ "installation_uuid": "0a9d4a0e-55a2-4c3d-9d77-7e2b3f9e0b02",
+ "odoo_version": "16.0",
+ "state": "linked",
+ "timezone": "America/Guayaquil"
+}

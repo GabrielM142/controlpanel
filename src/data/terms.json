@@ -1,0 +1,13 @@
+{
+  "version": "2026-09",
+  "intro": "Nova Business (en adelante “Nova Business”, “nosotros”) es responsable del tratamiento de los datos que se recopilan a través de este formulario y del chat de captación. Al enviar tu solicitud declarás haber leído y aceptar lo siguiente:",
+  "sections": [
+    {"title": "Finalidad", "body": "Los datos ingresados se utilizan únicamente para analizar la necesidad planteada, elaborar una cotización y contactarte por los canales que indicaste. No compartimos tu información con terceros ajenos al proyecto sin tu autorización expresa."},
+    {"title": "Confidencialidad", "body": "Los datos se almacenan de manera confidencial. Podés solicitar su modificación o eliminación cuando quieras escribiendo a contacto@novabusiness.io."},
+    {"title": "Uso responsable", "body": "Te comprometes a no cargar información falsa, datos sensibles sin autorización de sus titulares, ni contenidos que violen la normativa vigente. Nova Business puede archivar o rechazar solicitudes que no cumplan con estas condiciones."},
+    {"title": "Tokens y facturación", "body": "Los tokens del plan son no acumulables y se consumen por captación, análisis e interpretación de datos. La cotización final del módulo se comunica por escrito y requiere aprobación explícita antes de facturarse."},
+    {"title": "Propiedad intelectual", "body": "Los entregables desarrollados por Nova Business se licencian de acuerdo al plan contratado. La información operativa cargada por el cliente sigue siendo de su propiedad."},
+    {"title": "Vigencia", "body": "Estos términos rigen desde 09/2026. Para el detalle completo consultá la política extendida con tu ejecutivo comercial."}
+  ],
+  "note": "Al hacer clic en “Aceptar” confirmás que actuás en representación de la empresa indicada y que estás autorizado a compartir la información cargada."
+}

@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nova_juj_map_operator,nova.juj.attribute.map operator,model_nova_juj_attribute_map,nova_connector.group_nova_operator,1,0,0,0
+access_nova_juj_map_admin,nova.juj.attribute.map admin,model_nova_juj_attribute_map,nova_connector.group_nova_admin,1,1,1,1

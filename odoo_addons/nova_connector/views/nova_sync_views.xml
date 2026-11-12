@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_nova_sync_run_tree" model="ir.ui.view">
+        <field name="name">nova.sync.run.tree</field>
+        <field name="model">nova.sync.run</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false" decoration-success="state == 'acknowledged'"
+                  decoration-info="state == 'ready'" decoration-danger="state == 'failed'">
+                <field name="run_seq"/>
+                <field name="business_date"/>
+                <field name="state"/>
+                <field name="observed_from"/>
+                <field name="observed_to"/>
+                <field name="parts_count"/>
+                <field name="records_count"/>
+                <field name="bytes_total"/>
+                <field name="acked_at"/>
+                <field name="error"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_nova_sync_run_form" model="ir.ui.view">
+        <field name="name">nova.sync.run.form</field>
+        <field name="model">nova.sync.run</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false">
+                <header>
+                    <button name="action_cancel" type="object" string="Cancelar lote" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', 'not in', ['pending', 'preparing', 'ready'])]}"
+                            confirm="Los eventos del lote vuelven a pendiente. ¿Continuar?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="preparing,ready,acknowledged"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="run_uuid"/>
+                            <field name="run_seq"/>
+                            <field name="business_date"/>
+                            <field name="timezone"/>
+                            <field name="requested_cutoff_at"/>
+                        </group>
+                        <group>
+                            <field name="observed_from"/>
+                            <field name="observed_to"/>
+                            <field name="ready_at"/>
+                            <field name="acked_at"/>
+                            <field name="receipt_uuid"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="parts_count"/>
+                        <field name="records_count"/>
+                        <field name="bytes_total"/>
+                        <field name="error"/>
+                    </group>
+                    <notebook>
+                        <page string="Partes" groups="nova_connector.group_nova_admin">
+                            <field name="part_ids">
+                                <tree>
+                                    <field name="part_no"/>
+                                    <field name="dataset_key"/>
+                                    <field name="records_count"/>
+                                    <field name="bytes"/>
+                                    <field name="compressed_bytes"/>
+                                    <field name="sha256"/>
+                                    <field name="purged"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_nova_sync_run" model="ir.actions.act_window">
+        <field name="name">Lotes NOVA</field>
+        <field name="res_model">nova.sync.run</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_nova_change_event_tree" model="ir.ui.view">
+        <field name="name">nova.change.event.tree</field>
+        <field name="model">nova.change.event</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false" edit="false">
+                <field name="id"/>
+                <field name="captured_at"/>
+                <field name="dataset_key"/>
+                <field name="model_name"/>
+                <field name="res_id"/>
+                <field name="company_id"/>
+                <field name="op"/>
+                <field name="state"/>
+                <field name="run_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_nova_change_event_search" model="ir.ui.view">
+        <field name="name">nova.change.event.search</field>
+        <field name="model">nova.change.event</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="dataset_key"/>
+                <field name="res_id"/>
+                <filter name="pending" string="Pendientes" domain="[('state', '=', 'pending')]"/>
+                <group expand="0" string="Agrupar">
+                    <filter name="by_dataset" string="Dataset" context="{'group_by': 'dataset_key'}"/>
+                    <filter name="by_state" string="Estado" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_nova_change_event" model="ir.actions.act_window">
+        <field name="name">Cola de cambios NOVA</field>
+        <field name="res_model">nova.change.event</field>
+        <field name="view_mode">tree</field>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <record id="view_nova_sync_cursor_tree" model="ir.ui.view">
+        <field name="name">nova.sync.cursor.tree</field>
+        <field name="model">nova.sync.cursor</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false" edit="false">
+                <field name="dataset_id"/>
+                <field name="backfill_done"/>
+                <field name="backfill_last_id"/>
+                <field name="scan_ts"/>
+                <field name="resync_epoch"/>
+                <field name="acked_run_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_nova_sync_cursor" model="ir.actions.act_window">
+        <field name="name">Cursores NOVA</field>
+        <field name="res_model">nova.sync.cursor</field>
+        <field name="view_mode">tree</field>
+    </record>
+</odoo>

@@ -69,7 +69,7 @@ export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=
      <em><ArrowUpRight size={12}/> Abrir vista</em>
     </div>
    </button>)}
-   <div className="alerts-note"><AlertTriangle size={12}/> Las alertas configurables salen del <b>Panel de Control · Umbrales</b>. Cuando conectemos Odoo, las notificaciones llegarán en tiempo real.</div>
+   <div className="alerts-note"><AlertTriangle size={12}/> Las alertas configurables salen del <b>Panel de Control · Umbrales</b>. Con Odoo conectado, las reglas se evalúan tras cada publicación diaria (corte del día anterior), no en tiempo real.</div>
   </div>
  </aside>;
 }

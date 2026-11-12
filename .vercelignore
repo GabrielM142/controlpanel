@@ -2,7 +2,13 @@ api/
 worker/
 lib/
 sql/
+server/
 tests/
 reference/
-scripts/migrate-report.mjs
+scripts/
+odoo_addons/
+contracts/
+infra/
+docs/
+.github/
 public/

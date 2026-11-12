@@ -1,0 +1,10 @@
+{
+ "bytes": 2301,
+ "content": "H4sIAAAAAAAA/82Wz47aMBDG38XnhNpmQZA36KWn1R5aVZZxhq23iZ36T7oI8e4dB9hukwXCqloRJYf4G4+/mfw0ypaUMkgPgRREKmWjCaK2LZDsKIgWnNfWkIJlpJEuCGNJcZcRB8q60pPi25YoWzfSbIQuu7C0lRRbIusuoQOvyygr4fWjAQwhjNIJpXjIISLYcE7GRz5D+UYAHlyDUxp3J28GXOdhSmnWN6Wic2DUa5OAqTjl85yynM0wnTat1QrEJU2U8aRunX7U2C4Tq+rvavQHazwjTzY6g47T6yw5TR0XYdOknDYGcdiESY2s0+LnLw+f5l3BgyobuakBe+TD3rOxAVuBcvpC6dth31B3+7r3po6xjfUBUuRvp8O/VTOW0+U94wWleH8lOywF98/TkbbBqNhgRaE7RfqEB1lJ9XOtqwrXPPwixWKXXU8Gn50loy8PyHgJOEkGu4qMrg8nyHhLe01GX79AxvT9ZLABGezjyWCjyVi+h4ycnyWjLw/IeAn4TzPjA8kYMzMcrKMp+2DwWxgZfDQYjPbJ4CPIWJwFY3GBi8WVA4PfDBaDgcFGD4zpLQyM6Xgu2O47ytGIGHX3A7CiMJNc5rSkq/xutab5EpjK6fFi3Uz06gfUsiullRN4bqwLk1T3pGVk9wcG4z5X/QgAAA==",
+ "dataset": "account_move",
+ "encoding": "gzip+base64",
+ "part_no": 4,
+ "records": 4,
+ "run_uuid": "1b0e5a2a-0d0b-4bf0-9e1c-000000000101",
+ "sha256": "771b367d8a65009b2f50f325f1583a5d8206500d0c86853b1e9e3b7b0ab721e0"
+}

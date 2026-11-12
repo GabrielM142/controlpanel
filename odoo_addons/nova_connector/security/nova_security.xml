@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_nova" model="ir.module.category">
+        <field name="name">NOVA</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <record id="group_nova_operator" model="res.groups">
+        <field name="name">Operador NOVA</field>
+        <field name="category_id" ref="module_category_nova"/>
+        <field name="comment">Ve estado de conexión, datasets y lotes. No descarga contenido.</field>
+    </record>
+
+    <record id="group_nova_admin" model="res.groups">
+        <field name="name">Administrador conector NOVA</field>
+        <field name="category_id" ref="module_category_nova"/>
+        <field name="implied_ids" eval="[(4, ref('group_nova_operator'))]"/>
+        <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        <field name="comment">Vincula, pausa, configura límites y compañías autorizadas.</field>
+    </record>
+
+    <record id="group_nova_integration" model="res.groups">
+        <field name="name">Usuario técnico integración NOVA</field>
+        <field name="category_id" ref="module_category_nova"/>
+        <field name="comment">Solo para el usuario dedicado con API key. Sin permisos contables ni de escritura de negocio; únicamente los métodos del modelo nova.connector.</field>
+    </record>
+
+    <record id="rule_nova_event_company" model="ir.rule">
+        <field name="name">NOVA: eventos por compañía</field>
+        <field name="model_id" ref="model_nova_change_event"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_nova_operator'))]"/>
+    </record>
+</odoo>

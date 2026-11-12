@@ -98,6 +98,6 @@ export default function ThresholdsView(){
    </section>;
   })}
 
-  <p className="legend-note" style={{marginTop:14}}><b>Cómo funciona.</b> Cada umbral genera una alerta que aparece en la campana superior y en el copiloto de análisis. Cuando conectemos la base analítica, los valores actuales se van a leer directo de Odoo y estas reglas van a activar notificaciones en tiempo real.</p>
+  <p className="legend-note" style={{marginTop:14}}><b>Cómo funciona.</b> Cada umbral genera una alerta que aparece en la campana superior y en el copiloto de análisis. Con la base analítica conectada, los valores se leen del último corte publicado por NOVA (carga nocturna desde Odoo) y las reglas se evalúan tras cada publicación diaria; no es tiempo real. En este modo los valores actuales son de ejemplo.</p>
  </>;
 }

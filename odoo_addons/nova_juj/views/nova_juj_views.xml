@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_nova_juj_map_tree" model="ir.ui.view">
+        <field name="name">nova.juj.attribute.map.tree</field>
+        <field name="model">nova.juj.attribute.map</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="attribute"/>
+                <field name="dataset_id"/>
+                <field name="model_name" invisible="1"/>
+                <field name="field_id"/>
+                <field name="active"/>
+                <field name="note"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_nova_juj_map" model="ir.actions.act_window">
+        <field name="name">Mapeo de atributos JUJ</field>
+        <field name="res_model">nova.juj.attribute.map</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <menuitem id="menu_nova_juj_map" name="Atributos JUJ" parent="nova_connector.menu_nova_root"
+              sequence="60" action="action_nova_juj_map" groups="nova_connector.group_nova_admin"/>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_nova_root" name="NOVA" sequence="95" groups="nova_connector.group_nova_operator"/>
+    <menuitem id="menu_nova_connection" name="Conexión" parent="menu_nova_root" sequence="10"
+              action="action_nova_connection"/>
+    <menuitem id="menu_nova_datasets" name="Datasets" parent="menu_nova_root" sequence="20"
+              action="action_nova_export_dataset"/>
+    <menuitem id="menu_nova_runs" name="Lotes" parent="menu_nova_root" sequence="30"
+              action="action_nova_sync_run"/>
+    <menuitem id="menu_nova_events" name="Cola de cambios" parent="menu_nova_root" sequence="40"
+              action="action_nova_change_event"/>
+    <menuitem id="menu_nova_cursors" name="Cursores" parent="menu_nova_root" sequence="50"
+              action="action_nova_sync_cursor"/>
+</odoo>

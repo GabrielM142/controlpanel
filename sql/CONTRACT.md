@@ -1,6 +1,9 @@
-# Contrato v1 — pendiente de validación con JUJ
-Vista `juj_reporting.controlpanel_v1`. Una fila por (period, unit, brand, province), sin duplicados. Period YYYY-MM; unit: Mayorista Hogar, Mayorista Intorno, Retail JUJ, Retail Intorno; brand/province texto normalizado. Importes numéricos en USD no nulos: sales (ventas netas del mes), cost (costo de esas ventas), receivable (saldo al cierre), overdue (subconjunto vencido), inventory (valor al cierre). Orders: pedidos del período contados una sola vez según reglas acordadas. Customers: informativo, nunca sumar para obtener clientes únicos. Cada balance se reparte exactamente una vez en las dimensiones; no unir hechos de distinta granularidad que multipliquen saldos.
+# Contrato v1 (vista `juj_reporting.controlpanel_v1`) — RETIRADO
 
-El contrato actual admite importes no negativos. Si notas de crédito generan netos negativos por grupo, ampliar validación y visualización antes de cargar producción. No convertir monedas sin definir fecha/tipo de cambio. No inferir unidades desde nombres sin tabla de mapeo validada. La fecha del snapshot representa extracción; period representa período contable. Agregar fecha de corte fuente y lag de réplica en próxima versión operativa.
+El contrato mensual único y la lectura directa de una réplica fueron reemplazados por la arquitectura
+de lotes nocturnos: contratos versionados en `contracts/` (`nova.export.v1`), addons Odoo 16 en
+`odoo_addons/`, migraciones en `sql/migrations/` y métricas en `lib/metrics.mjs` / `docs/METRICS.md`.
 
-No se incluye SQL que adivine el esquema del cliente. Validar fuentes account_move/account_move_line, sale_order, stock y campos personalizados contra versión y módulos instalados. El trabajador consulta únicamente la vista aprobada.
+Lecciones que se mantienen: no sumar saldos entre fechas; clientes únicos con DISTINCT; importes con
+signo (notas de crédito); no inferir unidades desde nombres; distinguir fecha de negocio de fecha de
+extracción. `lib/model.mjs` conserva el contrato v1 solo como fixture del modo demo.

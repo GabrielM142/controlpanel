@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nova_connection_operator,nova.connection operator,model_nova_connection,group_nova_operator,1,0,0,0
+access_nova_connection_admin,nova.connection admin,model_nova_connection,group_nova_admin,1,1,0,0
+access_nova_export_dataset_operator,nova.export.dataset operator,model_nova_export_dataset,group_nova_operator,1,0,0,0
+access_nova_export_dataset_admin,nova.export.dataset admin,model_nova_export_dataset,group_nova_admin,1,1,0,0
+access_nova_sync_run_operator,nova.sync.run operator,model_nova_sync_run,group_nova_operator,1,0,0,0
+access_nova_sync_run_admin,nova.sync.run admin,model_nova_sync_run,group_nova_admin,1,1,0,0
+access_nova_sync_part_admin,nova.sync.part admin,model_nova_sync_part,group_nova_admin,1,0,0,0
+access_nova_sync_cursor_operator,nova.sync.cursor operator,model_nova_sync_cursor,group_nova_operator,1,0,0,0
+access_nova_change_event_operator,nova.change.event operator,model_nova_change_event,group_nova_operator,1,0,0,0
+access_nova_link_wizard_admin,nova.link.wizard admin,model_nova_link_wizard,group_nova_admin,1,1,1,1

@@ -1,0 +1,10 @@
+{
+ "bytes": 776,
+ "content": "H4sIAAAAAAAA/21Sy5LbIBD8lzlLLpCdTazv2FNSWxRCowoJApaHNy6X/z0DaLXOQ6UL3TM90w03mGWSEROMIJVy2SaxugsKoy1C986KC4aonYWRd+BlSMI6GI8dBFQuzBHGbzdQbvXSXoWea1lphfG2yxb4xIiQaz2rHAJadaXJ/fl8PjAGOxcw6jlLQxz7L/HYvVVM0kir8A+5v1ZSAWddrH4UbDIPSxeFgQ1PPec9O7cMUKwy5aATzbPZGAJxqkrb8FnH6nKndfRGXkW6+qLng5uzSlS4EC1KalZpg3Vs6/jhcrBkrCCfGOugXkM5PZUThY7kP6a2oHcx4QztMiyGWnishUErFDFPyaUa4O61MRvchjYoW50+kLpp1RuaXgOyWx+2fc3SphoH8Ka+e6KaRZqIHbxRYCj+ifSZDyNj9H+FewebQ8reeSrLPmJIVU/G8uDoXtXPRRtDWMRXcnl/ITZbkXPphUGdls+ST/0R2dSflkH2XxY+9+z9Gxgvveo7rvQgwbqLPOAv70I6lPQOFw7332L2Dj4IAwAA",
+ "dataset": "account_move_line",
+ "encoding": "gzip+base64",
+ "part_no": 3,
+ "records": 1,
+ "run_uuid": "2c4f7a1b-3e0b-4f2a-8f1d-000000000201",
+ "sha256": "5fec7d13ba2b45122f6f3aa336d331f2c6cb12be2e5d187d3f7142724b68fa4f"
+}

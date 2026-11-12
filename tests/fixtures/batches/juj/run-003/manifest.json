@@ -1,0 +1,35 @@
+{
+ "business_date": "2026-11-11",
+ "companies": [
+  1,
+  2
+ ],
+ "consistency": "captured_interval",
+ "datasets": [],
+ "observed_from": "2026-11-12T05:00:07Z",
+ "observed_to": "2026-11-12T05:03:41Z",
+ "parts": [],
+ "reconciliation": [],
+ "requested_cutoff_at": "2026-11-12T05:00:00Z",
+ "run_seq": 3,
+ "run_uuid": "1b0e5a2a-0d0b-4bf0-9e1c-000000000103",
+ "schema": "nova.export.v1",
+ "source": {
+  "connector_version": "16.0.1.0.0",
+  "generation": 1,
+  "installation_uuid": "6f1c1b6e-8d55-4a4b-a8f8-0b7f3c9c2a01",
+  "odoo_version": "16.0"
+ },
+ "timezone": "America/Guayaquil",
+ "totals": {
+  "bytes": 0,
+  "parts": 0,
+  "records": 0
+ },
+ "warnings": [
+  {
+   "code": "fixture",
+   "detail": "Datos de prueba etiquetados, no cliente real"
+  }
+ ]
+}

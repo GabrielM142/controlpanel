@@ -1,0 +1,63 @@
+# Operación y despliegue
+
+## Componentes
+
+| Servicio | Comando | Rol BD | Notas |
+|---|---|---|---|
+| Frontend | `npm run build` (Vercel) | — | `VITE_NOVA_API_URL` vacío ⇒ modo demo explícito. Sin secretos en `VITE_*`. |
+| API | `npm run api` | `nova_api` | Detrás de TLS. `NOVA_CORS_ORIGINS` = dominio exacto del frontend. `/health/live`, `/health/ready` sin datos. |
+| Worker | `npm run worker` | `nova_worker` | Proceso separado. Nunca lo dispara un visitante. |
+| Migraciones | `npm run migrate` | owner | Una transacción por archivo; checksum; no editar migraciones aplicadas. |
+
+Piloto: API, worker y PostgreSQL 15 pueden compartir una VM con pools acotados (`PGPOOL_MAX`) y
+`NOVA_WORKER_CONCURRENCY`. Dimensionar tras medir; no hay número de clientes garantizado.
+
+## Alta de un cliente
+
+1. `npm run migrate`; crear roles de login: `CREATE ROLE nova_api_login LOGIN PASSWORD '…' IN ROLE nova_api;`
+   (ídem `nova_worker_login`) y usar esas credenciales en `DATABASE_URL` de cada servicio.
+2. `npm run admin -- create-tenant juj "JUJ"`; `NOVA_NEW_PASSWORD=… npm run admin -- create-user …`;
+   `npm run admin -- grant <email> juj owner`; `npm run admin -- terms` (solo términos aprobados).
+3. En Odoo (staging primero): instalar addons, usuario técnico + API key, compañías y ventana,
+   "Generar código de vinculación" (ver `odoo_addons/nova_connector/README.md`).
+4. En NOVA → Ajustes → Fuentes de datos: registrar la fuente y vincular con el código. El worker
+   confirma la vinculación, guarda instalación/generación y compañías.
+5. Reglas de unidad: `npm run admin -- unit-rule juj <source> company 1 MH "Mayorista Hogar" Mayorista`
+   (validadas con JUJ) y `npm run admin -- rebuild <source>`.
+
+## Runbooks
+
+| Situación | Acción |
+|---|---|
+| Cliente sin lote listo a las 03:00 | El worker reintenta cada 30 min hasta 6 h después; luego al día siguiente. Revisar en Odoo → NOVA → Lotes. |
+| Lote rechazado (checksum/esquema/versión) | Queda `rejected` y bloquea los siguientes. Corregir en origen (cancelar lote en Odoo ⇒ eventos vuelven a pendiente) o actualizar contrato. No borrar `ingest.runs`. |
+| Fallo al aplicar/publicar | Rollback total; última versión publicada intacta. Partes guardadas: el siguiente ciclo reintenta sin descargar. Ver `ingest.runs.error`. |
+| ACK perdido | Automático: el siguiente ciclo vuelve a confirmar (idempotente en Odoo). |
+| Disco/cola en el cliente | Odoo detiene la preparación al superar `max_pending_bytes`. Si hay que proteger el ERP: "Desactivar captura (emergencia)" ⇒ resync requerido. |
+| Diferencia en conciliación | `ops.data_quality_results` con `fail`. Pedir resync del dataset (`POST /api/sources/:id/resync`). |
+| Base Odoo restaurada/clonada | Odoo suspende la conexión; NOVA marca `relink_required`. Re-vincular solo si es la fuente legítima; los datos centrales se conservan. |
+| Pausar una fuente | `POST /api/sources/:id/pause` (o en Odoo "Pausar"). La UI sigue mostrando el último corte. |
+| Rotar API key | Generar nueva key en Odoo; `POST /api/sources/:id/rotate`; revocar la anterior. |
+| Rollback de versión de código | Desplegar versión anterior; migraciones solo hacia adelante (escribir migración correctiva). Restaurar backup si hubo pérdida. |
+
+## Respaldos
+
+- PostgreSQL central: `pg_dump` diario + WAL/PITR según proveedor; probar restauración en staging
+  trimestralmente. `NOVA_SECRET_KEY` en secret manager con copia de recuperación (sin ella no se
+  descifran credenciales: re-registrar API keys).
+- Coordinar la ventana de Odoo con sus backups/cierres POS: 00:00 no garantiza servidor ocioso.
+
+## Medición de recursos (pendiente de ejecutar)
+
+Escenario: Odoo 16 + PostgreSQL en contenedor limitado a 2 CPU / 2 GB (`infra/compose.staging.yml`).
+Medir baseline vs preparación: p95 de operaciones ERP, CPU, RSS, I/O, duración SQL, locks, tamaño de
+cola/partes y bytes. Casos: cero cambios, cambios pequeños, cambio masivo, recuperación de varios días.
+Fijar `max_rows_per_part`, `time_budget_seconds` y umbrales de pausa con esas cifras; no antes.
+
+## Pruebas
+
+```
+npm test                 # Node: pipeline, API/seguridad, worker, frontend SSR, preservación demo
+npm run test:py          # Python: librería del conector, contratos, verificación estática, fixtures
+sh scripts/odoo16-test.sh  # Odoo 16 real en staging (también en CI, job odoo16)
+```

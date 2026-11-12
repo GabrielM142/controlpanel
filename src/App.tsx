@@ -1,8 +1,12 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {Activity,ArrowDownToLine,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
-import {NavigateContext,ReportNodes} from './components/Report';
+import {NavigateContext,ReportNodes,blockIds} from './components/Report';
+import {LiveProvider,useLive,useReportData,WidgetsContext} from './features/live/LiveData';
+import DataSourcesView from './features/live/DataSourcesView';
+import LoginView from './features/live/LoginView';
+import {api,download} from './data/api';
 import {TokensProvider} from './features/tokens/useTokens';
 import {TokensChip} from './features/tokens/TokensChip';
 import {AIDrawer} from './features/ai/AIDrawer';
@@ -24,11 +28,13 @@ import ThresholdsView from './features/thresholds/ThresholdsView';
 import {MarketAll,MarketOdoo,MarketSkills,MarketAutomations,MarketServices} from './features/market/wrappers';
 
 const report=reportData as Report;
+const LIVE_FILTERS=new Set(['anio','mes','canal','unidad','marca','categoria','provincia','vendedor']);
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
 const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
+ {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
  {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de Nova Business — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
  {id:'market-odoo',group:'Market',subgroup:'Catálogo',label:'Módulos Odoo',question:'Extensiones certificadas para tu instancia de Odoo. Precio de referencia o “a cotizar”.',component:MarketOdoo,icon:Package},
  {id:'market-skills',group:'Market',subgroup:'Catálogo',label:'Skills',question:'Paquetes de expertise y consultoría con nuestro equipo especializado.',component:MarketSkills,icon:Sparkles},
@@ -42,7 +48,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // Sidebar taxonomy: "Control Total" wraps the three analytical groups; other groups are top-level; Factory renders as its own bottom block.
 const superGroupOrder=['Control Total','Soporte','Market','Ajustes','Espacio Personal'] as const;
@@ -65,7 +71,7 @@ const subGroups:Record<string,{label:string;ids:string[]}[]>={
   {label:'Helpdesk',ids:['tickets']},
  ],
  'Ajustes':[
-  {label:'Configuración',ids:['control']},
+  {label:'Configuración',ids:['control','sources']},
  ],
  'Market':[
   {label:'Catálogo',ids:['market','market-odoo','market-skills','market-automations','market-services']},
@@ -79,6 +85,8 @@ const ls={get(k:string,f:string){try{return localStorage.getItem(k)??f;}catch{re
 
 function AppShell(){
  const {active:activeTenant}=useTenants();
+ const live=useLive();
+ const [liveOptions,setLiveOptions]=useState<Record<string,string[]>>({});
  const [pageId,setPageId]=useState(getPage);
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
@@ -102,12 +110,22 @@ function AppShell(){
  const pageLabel=virtualPage?virtualPage.label:reportPage!.label;
  const pageQuestion=virtualPage?virtualPage.question:reportPage!.question;
  const pageFilters=virtualPage?[]:reportPage!.filters;
+ // Live mode only shows filters the API really applies (others would silently do nothing).
+ const shownFilters=live.live?pageFilters.filter(k=>LIVE_FILTERS.has(k)):pageFilters;
+ const filterQuery=useMemo(()=>Object.fromEntries(pageFilters.filter(k=>LIVE_FILTERS.has(k)).map(k=>[k,filters[k]])),[pageFilters,filters]);
+ const reportState=useReportData(live.live&&reportPage?reportPage.id:null,filterQuery);
+ const ids=useMemo(()=>reportPage?blockIds(reportPage.id,reportPage.nodes):new WeakMap<object,string>(),[reportPage]);
+ const widgetsValue=useMemo(()=>({live:live.live,loading:reportState.loading,widgets:reportState.data?.widgets||null,ids}),[live.live,reportState,ids]);
+ const published=live.status?.published||null;
+ const stale=!!published?.business_date&&(Date.now()-new Date(`${published.business_date}T23:59:59`).getTime())>2*86400000;
+ const optionsFor=(key:string)=>{const base=report.filters[key].options;const extra=liveOptions[key];if(!live.live||!extra)return base;return [base[0],...extra.filter(v=>v!==base[0])];};
  const currentSub=virtualPage?virtualPage.subgroup:findSub(pageId,pageGroup);
 
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
  useEffect(()=>{document.title=`${pageLabel} · Panel Analítico · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
+ useEffect(()=>{if(!live.live||!live.tenantId){setLiveOptions({});return;}let off=false;api<Record<string,string[]>>('/api/filters',{tenant:live.tenantId}).then(o=>{if(!off)setLiveOptions(o);}).catch(()=>{});return()=>{off=true;};},[live.live,live.tenantId,published?.version]);
  useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
@@ -128,6 +146,17 @@ function AppShell(){
  useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPaletteOpen(v=>!v);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);
 
  const toggleKey=useCallback((k:string)=>{setExpanded(prev=>{const next=new Set(prev);if(next.has(k))next.delete(k);else next.add(k);return next;});},[]);
+
+ const refresh=useCallback(async()=>{
+  if(!live.live){setNotice('Vista de demostración. La conexión a Odoo se realizará en la siguiente etapa.');return;}
+  await live.refreshStatus();
+  setNotice('Se consultó la última publicación de NOVA. Los datos se cargan cada noche desde Odoo; este botón no lanza extracciones al ERP.');
+ },[live]);
+ const exportCsv=useCallback(async()=>{
+  if(!live.tenantId||!reportPage)return;
+  const q=new URLSearchParams(Object.entries(filterQuery).filter(([,v])=>v)).toString();
+  try{await download(`/api/reports/${reportPage.id}/export.csv?${q}`,live.tenantId,`nova-${reportPage.id}.csv`);}catch(e){setNotice((e as Error).message);}
+ },[live.tenantId,reportPage,filterQuery]);
 
  const shareView=useCallback(async()=>{
   try{await navigator.clipboard.writeText(location.href);setNotice('Enlace copiado al portapapeles. Compartilo con tu equipo.');}
@@ -227,9 +256,13 @@ function AppShell(){
       <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
      </div>
      <div className="utility-right">
-      <span className="odoo-chip hide-mobile" title="Datos de ejemplo · Odoo pendiente de conexión">
-       <span className="odoo-dot"/><b>Odoo</b><em>· sync 07:58</em>
-      </span>
+      {live.live
+       ?<span className={`odoo-chip hide-mobile ${!published||stale?'is-stale':''}`} title={published?`Versión ${published.version} · consistencia: intervalo capturado (no fotografía exacta a las 00:00)`:'Aún no hay datos publicados'}>
+         <span className="odoo-dot"/><b>Odoo</b><em>· {published?`corte ${published.business_date}${stale?' · desactualizado':''}`:'sin publicación'}</em>
+        </span>
+       :<span className="odoo-chip hide-mobile is-demo" title="Datos de ejemplo · Odoo pendiente de conexión">
+         <span className="odoo-dot"/><b>Demo</b><em>· datos de ejemplo</em>
+        </span>}
       <TokensChip/>
       <button type="button" className="icon-button bell" aria-label={`Alertas (${bellTotal})`} title="Alertas del negocio y umbrales configurados" onClick={()=>setAlertsOpen(true)}>
        <Bell size={17}/>
@@ -259,7 +292,7 @@ function AppShell(){
        {icon:theme==='dark'?Sun:Moon,label:theme==='dark'?'Modo claro':'Modo oscuro',onClick:()=>setTheme(t=>t==='dark'?'light':'dark')},
        {icon:isFullscreen?Minimize2:Maximize2,label:isFullscreen?'Salir de pantalla completa':'Pantalla completa',onClick:toggleFullscreen},
       ]}/>
-      <span className="avatar hide-mobile-small">JUJ</span>
+      {live.user?<button type="button" className="avatar hide-mobile-small" title={`${live.user.name} · cerrar sesión`} aria-label="Cerrar sesión" onClick={()=>live.logout()}>{live.user.name.slice(0,2).toUpperCase()}<LogOut size={10}/></button>:<span className="avatar hide-mobile-small">JUJ</span>}
      </div>
     </div>
     <header className="page-header">
@@ -269,20 +302,25 @@ function AppShell(){
       <p>{pageQuestion}</p>
      </div>
      <div className="header-actions">
-      <div className="updated-time"><Clock3 size={13}/><span>Última actualización: hoy 07:58</span></div>
+      <div className="updated-time"><Clock3 size={13}/><span>{live.live
+       ?(published?`Corte de negocio ${published.business_date} · capturado ${new Date(Object.values(published.sources)[0]?.observed_to||published.published_at).toLocaleString('es-EC',{dateStyle:'short',timeStyle:'short'})} · publicado ${new Date(published.published_at).toLocaleString('es-EC',{dateStyle:'short',timeStyle:'short'})}`:'Sin datos publicados todavía')
+       :'Datos de demostración · sin conexión a Odoo'}</span></div>
       <div className="action-buttons">
        <button className="button secondary" onClick={()=>window.print()}><ArrowDownToLine size={15}/>Exportar</button>
-       <button className="button primary" onClick={()=>setNotice('Vista de demostración. La conexión a Odoo se realizará en la siguiente etapa.')}><RefreshCw size={14}/>Actualizar</button>
+       {live.live&&reportPage&&<button className="button secondary" onClick={exportCsv}><FileSpreadsheet size={15}/>CSV</button>}
+       <button className="button primary" onClick={refresh}><RefreshCw size={14}/>Actualizar</button>
       </div>
      </div>
     </header>
-    {pageFilters.length>0&&<section className="filters" aria-label="Filtros del reporte">
+    {shownFilters.length>0&&<section className="filters" aria-label="Filtros del reporte">
      <div className="filter-label"><SlidersHorizontal size={14}/><span>Filtros</span></div>
-     <div className="filter-controls">{pageFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>setFilters({...filters,[key]:e.target.value})}>{report.filters[key].options.map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
+     <div className="filter-controls">{shownFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>setFilters({...filters,[key]:e.target.value})}>{optionsFor(key).map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
     </section>}
     <div className="report-content" key={pageId}>
-     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<ReportNodes nodes={reportPage!.nodes}/>}
-     <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>José Ugalde Jerves · Control Empresarial</span></div>
+     {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
+     {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configurá la fuente en <b>Ajustes · Fuentes de datos</b>.</p>}
+     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
+     <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:'José Ugalde Jerves · Control Empresarial'}</span></div>
     </div>
    </main>
   </div>
@@ -300,4 +338,11 @@ function AppShell(){
  </NavigateContext.Provider>;
 }
 
-export default function App(){return <TenantsProvider><ThresholdsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></ThresholdsProvider></TenantsProvider>;}
+function Gate(){
+ const live=useLive();
+ if(live.live&&live.loading)return <main className="login-shell"><p className="legend-note">Cargando sesión…</p></main>;
+ if(live.live&&!live.user)return <LoginView/>;
+ return <TenantsProvider><ThresholdsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></ThresholdsProvider></TenantsProvider>;
+}
+
+export default function App(){return <LiveProvider><Gate/></LiveProvider>;}

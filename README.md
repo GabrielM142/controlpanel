@@ -1,26 +1,52 @@
-# Nova Business · Panel de Control (cliente JUJ)
+# Nova Business · Panel de Control (NOVA + Odoo 16)
 
-Aplicación React + TypeScript + Vite para Vercel. Contiene las 13 vistas completas del cliente: Dirección Empresarial; Comercial, Financiero, Compras, Inventarios, Clientes, Logística, Marketing y Riesgos; Mayorista Hogar, Mayorista Intorno, Retail JUJ y Retail Intorno.
+Plataforma de análisis multiempresa con datos **diferidos al cierre anterior**: addons ligeros Odoo 16
+preparan lotes nocturnos → el worker NOVA los recoge (desde 03:00 America/Guayaquil), valida, confirma
+y publica en PostgreSQL central → API → frontend React y MCP. No es tiempo real y nunca consulta Odoo al
+abrir una vista. Estado real de cada entrega y bloqueos: **[docs/STATUS.md](docs/STATUS.md)**.
 
-## Implementación
-- Componentes React tipados para KPI, tablas, gráficos, ISE, alertas y navegación geográfica.
-- Datos del mockup separados en `src/data/report.json`. No se inyecta HTML, no hay iframe ni se ejecuta el script original en el navegador.
-- Diseño propio en `src/theme.css`, tipografías locales Inter/Manrope e iconos Lucide. Sin llamadas externas para renderizar la interfaz.
-- Navegación por hash, historial del navegador, filtros con estado React, selectores de gráficos, explicación del ISE y recorrido Provincia → Cantón → Zona.
-- Menú móvil accesible, tablas con desplazamiento interno, soporte de movimiento reducido y hoja de impresión.
+| Carpeta | Contenido |
+|---|---|
+| `src/` | Frontend React/TS/Vite (13 reportes + 12 vistas auxiliares). Modo demo explícito sin `VITE_NOVA_API_URL`; modo real contra la API. |
+| `server/`, `api/` | API NOVA (Node `http`): sesión, tenants, reportes, CSV, fuentes, Factory, tareas, MCP. |
+| `worker/`, `lib/ingest/` | Scheduler, recolección, aplicación idempotente, transformaciones y publicación. |
+| `lib/` | Configuración, BD (RLS por transacción), contratos (Ajv), cifrado, SSRF, métricas. |
+| `sql/migrations/` | Migraciones versionadas (`npm run migrate`). |
+| `contracts/` | `nova.export.v1`: manifest, parte y 31 datasets (JSON Schema, generados desde los addons). |
+| `odoo_addons/` | 9 addons Odoo 16 (`nova_connector`, `nova_master_data`, `nova_sales`, `nova_account`, `nova_stock`, `nova_stock_account`, `nova_purchase`, `nova_pos`, `nova_juj`). Guía: `odoo_addons/nova_connector/README.md`. |
+| `infra/`, `.github/` | Docker Compose de staging (incluye Odoo 16 desechable) y CI (Node, Python 3.8, Odoo 16 real). |
+| `docs/` | Estado, arquitectura, operación/runbooks, métricas, campos y matriz de 166 bloques. |
+| `tests/` | Pipeline e API sobre PostgreSQL real (PGlite), worker, frontend SSR, preservación del demo; `tests/py` para la librería del conector. |
 
 ## Desarrollo
-Node >=22.12. `npm ci`, `npm run dev`. Abrir http://localhost:3000.
-`npm test` verifica contenido y orden de las 13 vistas contra el documento original, además de filtros y opciones. `npm run build` ejecuta TypeScript y compila con Vite. `npm run preview` permite revisar la salida de producción.
 
-## Fidelidad al cliente
-`reference/client-original.html` es solo una referencia de auditoría y no se publica ni ejecuta en la aplicación. `scripts/migrate-report.mjs` fue la herramienta de migración inicial. `src/data/report.json` y los componentes React son la implementación actual. La prueba de fidelidad compara el texto completo renderizado de cada página (con excepción de iconos decorativos y explicaciones inicialmente plegadas) con el original. No se eliminaron, sustituyeron ni reordenaron centros, KPI, tablas ni secciones.
+Node ≥ 22.12 y Python ≥ 3.8.
 
-## Vercel
-Importar `GabrielM142/controlpanel`. Framework **Vite**, build `npm run build`, directorio de salida `dist`, Node 22 o superior. No se requieren variables de entorno para esta etapa. Navegación hash compatible con enlaces directos. `.vercelignore` excluye el backend preliminar y la referencia; `publicDir:false` evita publicar cualquier mockup anterior.
+```
+npm ci
+npm run dev              # frontend en modo demo (http://localhost:3000)
+npm test                 # pruebas Node
+npm run test:py          # pruebas Python + contratos + verificación de addons
+npm run build
+npm run addons:zip       # dist/nova_odoo16_addons.zip (carpetas de addon en la raíz)
+npm run docs:blocks      # regenera docs/BLOCKS_MATRIX.md
+```
 
-## Alcance de los datos
-Todos los datos siguen siendo ejemplos del documento del cliente. Los filtros conservan sus opciones y selección; el original no recalculaba los indicadores y no se inventan cálculos en esta etapa. Las gráficas dinámicas sí alternan los conjuntos originales. Actualizar muestra el estado de demostración y Exportar abre impresión/guardar PDF. El texto de IA es el ejemplo original, no una generación nueva.
+Modo real local: PostgreSQL 15, `.env` desde `.env.example`, `npm run migrate`, `npm run api`,
+`npm run worker` y `VITE_NOVA_API_URL=http://localhost:8787 npm run dev`. Staging completo:
+`docs/OPERATIONS.md`.
 
-## Odoo — etapa posterior
-`api/`, `lib/`, `sql/` y `worker/` conservan el trabajo preliminar de snapshots de la primera entrega; quedan excluidos del despliegue y no se llaman desde React. No configurar ni presentar esa integración como operativa. La futura conexión requiere validar esquema, métricas, permisos, réplica, seguridad y operación del worker con JUJ.
+## Despliegue
+
+- **Frontend (Vercel)**: build `npm run build`, salida `dist`. `.vercelignore` excluye backend, addons e
+  infraestructura; `/api/*` no se reescribe a `index.html`. Sin `VITE_NOVA_API_URL` se publica el demo
+  etiquetado.
+- **API + worker + PostgreSQL**: servidor central detrás de TLS (`infra/Dockerfile`). Nunca exponer
+  PostgreSQL ni credenciales ERP al navegador.
+- **Odoo**: instalar addons primero en staging; producción del cliente solo con autorización explícita.
+
+## Fidelidad del demo
+
+`reference/client-original.html` es referencia de auditoría. `src/data/report.json` es el fixture del
+modo demo; la prueba de preservación compara el texto de las 13 vistas con el original. En modo real
+ningún número de ese fixture se muestra: cada bloque se calcula en NOVA o aparece como "Sin dato".

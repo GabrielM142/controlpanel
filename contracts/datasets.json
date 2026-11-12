@@ -1,0 +1,2292 @@
+{
+  "contract": "nova.export.v1",
+  "generated_from": "odoo_addons/*/nova_spec.py",
+  "datasets": [
+    {
+      "addon": "nova_master_data",
+      "key": "res_company",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.company",
+      "company_scope": "self",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "parent_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "country_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "name",
+          "currency_id",
+          "parent_id",
+          "country_id"
+        ],
+        "refs": []
+      },
+      "children": [],
+      "description": "Compañías autorizadas"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "res_partner",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.partner",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "is_company": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "parent_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "commercial_partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "country_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "city": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "zip": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "ref": {
+          "type": "string",
+          "optional": true,
+          "sensitivity": []
+        },
+        "vat": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": [
+            "pii"
+          ]
+        },
+        "email": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": [
+            "pii"
+          ]
+        },
+        "phone": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": [
+            "pii"
+          ]
+        },
+        "customer_rank": {
+          "type": "int",
+          "optional": true,
+          "sensitivity": []
+        },
+        "supplier_rank": {
+          "type": "int",
+          "optional": true,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "industry_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "category_id": {
+          "type": "m2m",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "name",
+          "is_company",
+          "parent_id",
+          "commercial_partner_id",
+          "company_id",
+          "state_id",
+          "country_id",
+          "city",
+          "zip",
+          "ref",
+          "vat",
+          "email",
+          "phone",
+          "customer_rank",
+          "supplier_rank",
+          "user_id",
+          "industry_id",
+          "category_id",
+          "active"
+        ],
+        "refs": [
+          "company_id",
+          "commercial_partner_id"
+        ]
+      },
+      "children": [],
+      "description": "Clientes, proveedores y contactos comerciales"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "res_country_state",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.country.state",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "country_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": []
+      },
+      "children": [],
+      "description": "Provincias / estados"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "res_users",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.users",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "name",
+          "active",
+          "company_id",
+          "partner_id"
+        ],
+        "refs": []
+      },
+      "children": [],
+      "description": "Usuarios (vendedores/responsables): solo nombre y estado"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "product_category",
+      "version": 1,
+      "min_version": 1,
+      "model": "product.category",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "complete_name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "parent_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "parent_id"
+        ]
+      },
+      "children": [],
+      "description": "Categorías de producto"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "product_template",
+      "version": 1,
+      "min_version": 1,
+      "model": "product.template",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "default_code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "categ_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "detailed_type": {
+          "type": "selection",
+          "optional": true,
+          "sensitivity": []
+        },
+        "uom_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "uom_po_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "sale_ok": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "purchase_ok": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "list_price": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        }
+      },
+      "capture": {
+        "fields": [
+          "name",
+          "default_code",
+          "categ_id",
+          "type",
+          "detailed_type",
+          "uom_id",
+          "uom_po_id",
+          "sale_ok",
+          "purchase_ok",
+          "active",
+          "company_id",
+          "list_price"
+        ],
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Plantillas de producto"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "product_product",
+      "version": 1,
+      "min_version": 1,
+      "model": "product.product",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "product_tmpl_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "default_code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "barcode": {
+          "type": "string",
+          "optional": true,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "product_tmpl_id",
+          "default_code",
+          "barcode",
+          "active",
+          "company_id"
+        ],
+        "refs": [
+          "product_tmpl_id",
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Variantes de producto"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "uom_uom",
+      "version": 1,
+      "min_version": 1,
+      "model": "uom.uom",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "category_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "factor": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "uom_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "rounding": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": []
+      },
+      "children": [],
+      "description": "Unidades de medida"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "res_currency",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.currency",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "symbol": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "decimal_places": {
+          "type": "int",
+          "optional": false,
+          "sensitivity": []
+        },
+        "rounding": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": []
+      },
+      "children": [],
+      "description": "Monedas"
+    },
+    {
+      "addon": "nova_master_data",
+      "key": "res_currency_rate",
+      "version": 1,
+      "min_version": 1,
+      "model": "res.currency.rate",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "rate": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "currency_id",
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Tipos de cambio"
+    },
+    {
+      "addon": "nova_sales",
+      "key": "crm_team",
+      "version": 1,
+      "min_version": 1,
+      "model": "crm.team",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Equipos de venta"
+    },
+    {
+      "addon": "nova_sales",
+      "key": "sale_order",
+      "version": 1,
+      "min_version": 1,
+      "model": "sale.order",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date_order",
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_invoice_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_shipping_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_order": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "team_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "pricelist_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_untaxed": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "amount_total": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "invoice_status": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "commitment_date": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "partner_id",
+          "user_id",
+          "date_order"
+        ]
+      },
+      "children": [
+        {
+          "dataset": "sale_order_line",
+          "fk": "order_id"
+        }
+      ],
+      "description": "Pedidos de venta (encabezado)"
+    },
+    {
+      "addon": "nova_sales",
+      "key": "sale_order_line",
+      "version": 1,
+      "min_version": 1,
+      "model": "sale.order.line",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "order_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom_qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty_delivered": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty_invoiced": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty_to_invoice": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_unit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "discount": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_subtotal": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "price_total": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "display_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "salesman_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "order_partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "purchase_price": {
+          "type": "decimal",
+          "optional": true,
+          "sensitivity": [
+            "cost"
+          ]
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "order_id",
+          "company_id",
+          "product_id"
+        ]
+      },
+      "children": [],
+      "description": "Líneas de pedido: pedido/entregado/facturado separados"
+    },
+    {
+      "addon": "nova_account",
+      "key": "account_account",
+      "version": 1,
+      "min_version": 1,
+      "model": "account.account",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "deprecated": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "reconcile": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Plan de cuentas"
+    },
+    {
+      "addon": "nova_account",
+      "key": "account_journal",
+      "version": 1,
+      "min_version": 1,
+      "model": "account.journal",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Diarios"
+    },
+    {
+      "addon": "nova_account",
+      "key": "account_move",
+      "version": 1,
+      "min_version": 1,
+      "model": "account.move",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "invoice_date",
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "move_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "invoice_date": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "invoice_date_due": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "commercial_partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "invoice_user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "journal_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_untaxed_signed": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_total_signed": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_residual_signed": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "payment_state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "reversed_entry_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "invoice_origin": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "team_id": {
+          "type": "m2o",
+          "optional": true,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "partner_id",
+          "invoice_date",
+          "date",
+          "move_type"
+        ]
+      },
+      "children": [
+        {
+          "dataset": "account_move_line",
+          "fk": "move_id"
+        }
+      ],
+      "description": "Asientos/facturas (encabezado)"
+    },
+    {
+      "addon": "nova_account",
+      "key": "account_move_line",
+      "version": 1,
+      "min_version": 1,
+      "model": "account.move.line",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "quantity": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_unit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "discount": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_subtotal": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "price_total": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "balance": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "debit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "credit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_currency": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_maturity": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "display_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_residual": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_residual_currency": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "reconciled": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "full_reconcile_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "parent_state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "journal_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "sale_line_ids": {
+          "type": "m2m",
+          "optional": true,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "move_id",
+          "company_id",
+          "account_id",
+          "product_id",
+          "date"
+        ]
+      },
+      "children": [],
+      "description": "Apuntes: líneas de factura, impuestos, costo (cogs) y cartera"
+    },
+    {
+      "addon": "nova_account",
+      "key": "account_partial_reconcile",
+      "version": 1,
+      "min_version": 1,
+      "model": "account.partial.reconcile",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "debit_move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "credit_move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "debit_amount_currency": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "credit_amount_currency": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "max_date": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "full_reconcile_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "debit_move_id",
+          "credit_move_id",
+          "company_id",
+          "max_date"
+        ]
+      },
+      "children": [],
+      "description": "Conciliaciones parciales (pagos aplicados)"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_warehouse",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.warehouse",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "code": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "lot_stock_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "view_location_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Bodegas"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_location",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.location",
+      "company_scope": "shared",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "complete_name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "usage": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "warehouse_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Ubicaciones"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_picking_type",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.picking.type",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "code": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "warehouse_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Tipos de operación"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_picking",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.picking",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date_done",
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "picking_type_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "scheduled_date": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_deadline": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_done": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "origin": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_dest_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "backorder_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Transferencias (despachos/recepciones)"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_move",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.move",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date",
+      "fields": {
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom_qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "quantity_done": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_dest_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_deadline": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "picking_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "picking_type_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "origin_returned_move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "warehouse_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "reference": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_unit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "sale_line_id": {
+          "type": "m2o",
+          "optional": true,
+          "sensitivity": []
+        },
+        "purchase_line_id": {
+          "type": "m2o",
+          "optional": true,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "product_id",
+          "picking_id"
+        ]
+      },
+      "children": [],
+      "description": "Movimientos de stock"
+    },
+    {
+      "addon": "nova_stock",
+      "key": "stock_quant",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.quant",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "location_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "lot_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "quantity": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "reserved_quantity": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "in_date": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": [
+          "product_id",
+          "location_id",
+          "lot_id",
+          "quantity",
+          "reserved_quantity",
+          "company_id"
+        ],
+        "refs": [
+          "company_id",
+          "product_id",
+          "location_id"
+        ]
+      },
+      "children": [],
+      "description": "Existencias por ubicación (estado actual)"
+    },
+    {
+      "addon": "nova_stock_account",
+      "key": "stock_valuation_layer",
+      "version": 1,
+      "min_version": 1,
+      "model": "stock.valuation.layer",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "create_date",
+      "fields": {
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "quantity": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "unit_cost": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "value": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "remaining_qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "remaining_value": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "stock_move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_move_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "stock_valuation_layer_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "create_date": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "product_id"
+        ]
+      },
+      "children": [],
+      "description": "Capas de valoración y ajustes de valor"
+    },
+    {
+      "addon": "nova_purchase",
+      "key": "purchase_order",
+      "version": 1,
+      "min_version": 1,
+      "model": "purchase.order",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date_approve",
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_order": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_approve": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_planned": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_untaxed": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "amount_total": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "invoice_status": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "receipt_status": {
+          "type": "selection",
+          "optional": true,
+          "sensitivity": []
+        },
+        "picking_type_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "partner_id"
+        ]
+      },
+      "children": [
+        {
+          "dataset": "purchase_order_line",
+          "fk": "order_id"
+        }
+      ],
+      "description": "Órdenes de compra"
+    },
+    {
+      "addon": "nova_purchase",
+      "key": "purchase_order_line",
+      "version": 1,
+      "min_version": 1,
+      "model": "purchase.order.line",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "order_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_uom": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty_received": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty_invoiced": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_unit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "price_subtotal": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "date_planned": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "display_type": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "order_id",
+          "company_id",
+          "product_id"
+        ]
+      },
+      "children": [],
+      "description": "Líneas de compra con fecha prevista y cantidades recibidas"
+    },
+    {
+      "addon": "nova_pos",
+      "key": "pos_config",
+      "version": 1,
+      "min_version": 1,
+      "model": "pos.config",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "active": {
+          "type": "bool",
+          "optional": false,
+          "sensitivity": []
+        },
+        "journal_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "picking_type_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id"
+        ]
+      },
+      "children": [],
+      "description": "Puntos de venta"
+    },
+    {
+      "addon": "nova_pos",
+      "key": "pos_session",
+      "version": 1,
+      "min_version": 1,
+      "model": "pos.session",
+      "company_scope": "none",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "config_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "start_at": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "stop_at": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "move_id": {
+          "type": "m2o",
+          "optional": true,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "config_id"
+        ]
+      },
+      "children": [],
+      "description": "Sesiones POS"
+    },
+    {
+      "addon": "nova_pos",
+      "key": "pos_order",
+      "version": 1,
+      "min_version": 1,
+      "model": "pos.order",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": "date_order",
+      "fields": {
+        "name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "session_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "config_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "date_order": {
+          "type": "datetime",
+          "optional": false,
+          "sensitivity": []
+        },
+        "partner_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "user_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "state": {
+          "type": "selection",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_total": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "amount_tax": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_paid": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "amount_return": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "account_move": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "pricelist_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "currency_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "company_id",
+          "session_id",
+          "date_order"
+        ]
+      },
+      "children": [
+        {
+          "dataset": "pos_order_line",
+          "fk": "order_id"
+        }
+      ],
+      "description": "Pedidos POS"
+    },
+    {
+      "addon": "nova_pos",
+      "key": "pos_order_line",
+      "version": 1,
+      "min_version": 1,
+      "model": "pos.order.line",
+      "company_scope": "strict",
+      "mode": "delta",
+      "business_date": null,
+      "fields": {
+        "order_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "product_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "qty": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_unit": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "discount": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "price_subtotal": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "price_subtotal_incl": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": [
+            "price"
+          ]
+        },
+        "total_cost": {
+          "type": "decimal",
+          "optional": true,
+          "sensitivity": [
+            "cost"
+          ]
+        },
+        "refunded_orderline_id": {
+          "type": "m2o",
+          "optional": true,
+          "sensitivity": []
+        },
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "full_product_name": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": [
+          "order_id",
+          "company_id",
+          "product_id"
+        ]
+      },
+      "children": [],
+      "description": "Líneas POS (devoluciones con cantidad negativa)"
+    }
+  ],
+  "dependencies": [
+    {
+      "addon": "nova_account",
+      "model": "account.partial.reconcile",
+      "fields": [
+        "debit_move_id",
+        "credit_move_id"
+      ],
+      "dataset": "account_move_line",
+      "description": "Pago/conciliación actualiza cartera"
+    }
+  ]
+}

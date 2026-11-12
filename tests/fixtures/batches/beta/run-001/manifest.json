@@ -1,0 +1,190 @@
+{
+ "business_date": "2026-11-09",
+ "companies": [
+  1
+ ],
+ "consistency": "captured_interval",
+ "datasets": [
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_account",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    1
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_move",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    2
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_move_line",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    3
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "product_product",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    4
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "product_template",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    5
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_company",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    6
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_partner",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    7
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  }
+ ],
+ "observed_from": "2026-11-10T05:00:07Z",
+ "observed_to": "2026-11-10T05:03:41Z",
+ "parts": [
+  {
+   "bytes": 370,
+   "dataset": "account_account",
+   "encoding": "gzip+base64",
+   "part_no": 1,
+   "records": 1,
+   "sha256": "c04409fb325f41fa1b55c629748db20d644a57ddbc5ee58860bb299f9696dc58"
+  },
+  {
+   "bytes": 692,
+   "dataset": "account_move",
+   "encoding": "gzip+base64",
+   "part_no": 2,
+   "records": 1,
+   "sha256": "76bdd92b50ba4ad964ec8eba104afaf49f957537a544314b46a8f0505dbb8dc1"
+  },
+  {
+   "bytes": 776,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 3,
+   "records": 1,
+   "sha256": "5fec7d13ba2b45122f6f3aa336d331f2c6cb12be2e5d187d3f7142724b68fa4f"
+  },
+  {
+   "bytes": 344,
+   "dataset": "product_product",
+   "encoding": "gzip+base64",
+   "part_no": 4,
+   "records": 1,
+   "sha256": "0262b42869a888cd029f863e81748edaf0b2444ec1ff122f63c5f07f105bbe8a"
+  },
+  {
+   "bytes": 463,
+   "dataset": "product_template",
+   "encoding": "gzip+base64",
+   "part_no": 5,
+   "records": 1,
+   "sha256": "9d6beed5f4c6502a88d9c8e7d15ce24f1407c49a9a6255db421b1a7c4618b2cd"
+  },
+  {
+   "bytes": 354,
+   "dataset": "res_company",
+   "encoding": "gzip+base64",
+   "part_no": 6,
+   "records": 1,
+   "sha256": "0c4299959a4a6218b6266873444f0276c9a2bccaaa6710ae1b40d87d46aae9f3"
+  },
+  {
+   "bytes": 491,
+   "dataset": "res_partner",
+   "encoding": "gzip+base64",
+   "part_no": 7,
+   "records": 1,
+   "sha256": "48888c483b4882c567caa63816c36ff75f172715f09e15226641d3b201a11089"
+  }
+ ],
+ "reconciliation": [],
+ "requested_cutoff_at": "2026-11-10T05:00:00Z",
+ "run_seq": 1,
+ "run_uuid": "2c4f7a1b-3e0b-4f2a-8f1d-000000000201",
+ "schema": "nova.export.v1",
+ "source": {
+  "connector_version": "16.0.1.0.0",
+  "generation": 1,
+  "installation_uuid": "0a9d4a0e-55a2-4c3d-9d77-7e2b3f9e0b02",
+  "odoo_version": "16.0"
+ },
+ "timezone": "America/Guayaquil",
+ "totals": {
+  "bytes": 3490,
+  "parts": 7,
+  "records": 7
+ },
+ "warnings": [
+  {
+   "code": "fixture",
+   "detail": "Datos de prueba etiquetados, no cliente real"
+  }
+ ]
+}

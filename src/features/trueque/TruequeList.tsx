@@ -1,10 +1,13 @@
 import {useCallback,useEffect,useState} from 'react';
-import {AlertCircle,ArrowUpRight,Loader2,PackageCheck,RefreshCw} from 'lucide-react';
+import {AlertCircle,ArrowUpRight,Loader2,PackageCheck,RefreshCw,Send} from 'lucide-react';
+import {api} from '../../data/api';
+import {terms,termsSha256} from '../../data/terms';
+import {useLive} from '../live/LiveData';
 
-type Request={id:string;created_at:string;client_name:string;plan:string;title:string;priority:string;status:string;tokens_used:number};
+type Request={id:string;created_at:string;client_name:string;plan:string;title:string;priority:string;status:string;tokens_used?:number;idempotency_key?:string;terms_version?:string;[k:string]:unknown};
 
-const statusLabel:Record<string,string>={received:'Recibida',analyzing:'En análisis',quoted:'Cotizada',approved:'Aprobada',in_progress:'En desarrollo',delivered:'Entregada',archived:'Archivada'};
-const statusTone:Record<string,'g'|'a'|'r'|'muted'>={received:'a',analyzing:'a',quoted:'g',approved:'g',in_progress:'a',delivered:'g',archived:'muted'};
+const statusLabel:Record<string,string>={pending_send:'Pendiente de envío',received:'Recibida',analyzing:'En análisis',quoted:'Cotizada',approved:'Aprobada',in_progress:'En desarrollo',delivered:'Entregada',archived:'Archivada'};
+const statusTone:Record<string,'g'|'a'|'r'|'muted'>={pending_send:'r',received:'a',analyzing:'a',quoted:'g',approved:'g',in_progress:'a',delivered:'g',archived:'muted'};
 
 function readLocal():Request[]{try{const raw=localStorage.getItem('nova.factory.local');if(!raw)return [];const arr=JSON.parse(raw);return Array.isArray(arr)?arr:[];}catch{return [];}}
 
@@ -13,19 +16,32 @@ export default function TruequeList(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState<string|null>(null);
  const [source,setSource]=useState<'live'|'local'|'mixed'>('local');
+ const live=useLive();
 
  const load=useCallback(async()=>{
   setLoading(true);setError(null);
   const local=readLocal();
+  if(!live.live||!live.tenantId){setItems(local);setSource('local');setError(local.length?'Modo demostración: estas solicitudes solo existen en este navegador y no fueron recibidas.':null);setLoading(false);return;}
   try{
-   const r=await fetch('/api/trueque',{headers:{Accept:'application/json'}});
-   if(r.ok){const j=await r.json();const list=Array.isArray(j.requests)?j.requests:[];const merged=[...list,...local].slice(0,50);setItems(merged);setSource(list.length>0&&local.length>0?'mixed':list.length>0?'live':'local');}
-   else if(r.status===503){setItems(local);setSource('local');setError('Base analítica pendiente de configuración — mostrando solicitudes guardadas localmente.');}
-   else{throw new Error(String(r.status));}
-  }catch{
-   setItems(local);setSource('local');setError('No se pudo consultar el servidor. Mostrando solicitudes locales.');
+   const j=await api<{requests:Request[]}>('/api/factory/requests?limit=50',{tenant:live.tenantId});
+   setItems([...local,...j.requests]);setSource(local.length?'mixed':'live');
+   if(local.length)setError('Hay solicitudes pendientes de envío guardadas en este navegador.');
+  }catch(e){
+   setItems(local);setSource('local');setError(`No se pudo consultar el servidor (${(e as Error).message}). Mostrando solo pendientes locales.`);
   }finally{setLoading(false);}
- },[]);
+ },[live.live,live.tenantId]);
+
+ const retry=async(r:Request)=>{
+  if(!live.tenantId||r.terms_version!==terms.version){setError('Los términos cambiaron: volvé a crear la solicitud y aceptá la versión vigente.');return;}
+  try{
+   const {id:_id,created_at:_c,status:_s,idempotency_key,...payload}=r;
+   await api('/api/factory/requests',{tenant:live.tenantId,method:'POST',headers:{'Idempotency-Key':String(idempotency_key||r.id)},
+    body:{...payload,terms_accepted:true,terms_sha256:await termsSha256()}});
+   const rest=readLocal().filter(x=>x.id!==r.id);
+   try{localStorage.setItem('nova.factory.local',JSON.stringify(rest));}catch{}
+   await load();
+  }catch(e){setError(`Reintento fallido: ${(e as Error).message}`);}
+ };
 
  useEffect(()=>{load();},[load]);
 
@@ -54,8 +70,10 @@ export default function TruequeList(){
        <td><span className="ph">{r.plan.toUpperCase()}</span></td>
        <td><span className={`tag ${r.priority==='alta'||r.priority==='urgente'?'r':r.priority==='baja'?'g':'a'}`}>{r.priority}</span></td>
        <td><span className={`ticket-status s-${statusTone[r.status]||'a'}`}>{statusLabel[r.status]||r.status}</span></td>
-       <td className="num">{r.tokens_used}</td>
-       <td><a className="row-link" href="#trueque" aria-label="Abrir detalle" title="Detalle disponible en la próxima iteración">Detalle <ArrowUpRight size={13}/></a></td>
+       <td className="num">{r.tokens_used??'—'}</td>
+       <td>{r.status==='pending_send'&&live.live
+        ?<button type="button" className="row-link" onClick={()=>retry(r)}>Reintentar envío <Send size={13}/></button>
+        :<a className="row-link" href="#trueque" aria-label="Abrir detalle" title="Detalle disponible en la próxima iteración">Detalle <ArrowUpRight size={13}/></a>}</td>
       </tr>)}</tbody>
      </table></div>}
    </div>

@@ -1,0 +1,482 @@
+{
+ "business_date": "2026-11-09",
+ "companies": [
+  1,
+  2
+ ],
+ "consistency": "captured_interval",
+ "datasets": [
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_account",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    1,
+    2
+   ],
+   "records": 5,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_journal",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    3
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_move",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    4
+   ],
+   "records": 4,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "account_move_line",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    5,
+    6,
+    7
+   ],
+   "records": 10,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "pos_config",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    8
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "pos_order",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    9
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "pos_order_line",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    10
+   ],
+   "records": 3,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "product_category",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    11
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "product_product",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    12
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "product_template",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    13
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_company",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    14
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_country_state",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    15
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_partner",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    16
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "res_users",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    17
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "sale_order",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    18
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "sale_order_line",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    19
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "stock_location",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    20
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "stock_quant",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    21
+   ],
+   "records": 2,
+   "resync_epoch": 1,
+   "version": 1
+  },
+  {
+   "backfill_complete": true,
+   "complete": true,
+   "events": 0,
+   "key": "stock_valuation_layer",
+   "missing_optional_fields": [],
+   "mode": "delta",
+   "parts": [
+    22
+   ],
+   "records": 1,
+   "resync_epoch": 1,
+   "version": 1
+  }
+ ],
+ "observed_from": "2026-11-10T05:00:07Z",
+ "observed_to": "2026-11-10T05:03:41Z",
+ "parts": [
+  {
+   "bytes": 1061,
+   "dataset": "account_account",
+   "encoding": "gzip+base64",
+   "part_no": 1,
+   "records": 4,
+   "sha256": "34750dfede47a1b1375ad64150625b019f5fd06111aa97c18dc2e8318997039d"
+  },
+  {
+   "bytes": 379,
+   "dataset": "account_account",
+   "encoding": "gzip+base64",
+   "part_no": 2,
+   "records": 1,
+   "sha256": "3c1174c709fff2e68d0dfd0984f4d2492db0e802a50dae3bf1d71d5b63967c40"
+  },
+  {
+   "bytes": 523,
+   "dataset": "account_journal",
+   "encoding": "gzip+base64",
+   "part_no": 3,
+   "records": 2,
+   "sha256": "541595e084790765f14bdbba3bed7580b724183f8e3b3fc581096d7a9e70d24c"
+  },
+  {
+   "bytes": 2301,
+   "dataset": "account_move",
+   "encoding": "gzip+base64",
+   "part_no": 4,
+   "records": 4,
+   "sha256": "771b367d8a65009b2f50f325f1583a5d8206500d0c86853b1e9e3b7b0ab721e0"
+  },
+  {
+   "bytes": 2630,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 5,
+   "records": 4,
+   "sha256": "b3f5c48a7a2cb79ffe97b7904e7bf640ac12df07632d215d6e71cec12f1cca4b"
+  },
+  {
+   "bytes": 2654,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 6,
+   "records": 4,
+   "sha256": "d33de412bc8be1ee5ae514b53a67b9fcb8912e202e94e65760cb2b5bd077563f"
+  },
+  {
+   "bytes": 1398,
+   "dataset": "account_move_line",
+   "encoding": "gzip+base64",
+   "part_no": 7,
+   "records": 2,
+   "sha256": "fdaf673577f79a1a74385e9e8fe12796ed0f1211ceb74b8e8b6c72044b1735c2"
+  },
+  {
+   "bytes": 355,
+   "dataset": "pos_config",
+   "encoding": "gzip+base64",
+   "part_no": 8,
+   "records": 1,
+   "sha256": "d34cfc0d27a05b6cfc6c6e5b40bb47c97c28da7da216990aad1bc215a8d3e5fe"
+  },
+  {
+   "bytes": 962,
+   "dataset": "pos_order",
+   "encoding": "gzip+base64",
+   "part_no": 9,
+   "records": 2,
+   "sha256": "2e6234f63f95101bfb5559c1c28048fb2e9040bd161c3480479f082966db5c8b"
+  },
+  {
+   "bytes": 1067,
+   "dataset": "pos_order_line",
+   "encoding": "gzip+base64",
+   "part_no": 10,
+   "records": 3,
+   "sha256": "16ac8f8fc94388817f3fd7cdaa189624e4715d42f9952e0912a2699e60ae29f1"
+  },
+  {
+   "bytes": 522,
+   "dataset": "product_category",
+   "encoding": "gzip+base64",
+   "part_no": 11,
+   "records": 2,
+   "sha256": "0c3f8fb82639e746e688d4126c721bf9e0910307de4386d46944035afa02ffd5"
+  },
+  {
+   "bytes": 541,
+   "dataset": "product_product",
+   "encoding": "gzip+base64",
+   "part_no": 12,
+   "records": 2,
+   "sha256": "5e468e148fa0ec4de37511c210659e1613f48ed4882337299a4b7f512dad1bb2"
+  },
+  {
+   "bytes": 827,
+   "dataset": "product_template",
+   "encoding": "gzip+base64",
+   "part_no": 13,
+   "records": 2,
+   "sha256": "f50e3c95425582fc37490784dbc2953caadc3cb3d26dd6519d5075c98c74c5ec"
+  },
+  {
+   "bytes": 566,
+   "dataset": "res_company",
+   "encoding": "gzip+base64",
+   "part_no": 14,
+   "records": 2,
+   "sha256": "63bea4333529269fff52b26a54074666010a55b38edaf0b85d9586be57ceb71a"
+  },
+  {
+   "bytes": 472,
+   "dataset": "res_country_state",
+   "encoding": "gzip+base64",
+   "part_no": 15,
+   "records": 2,
+   "sha256": "c7d16f3900a25aa65088532e5d66bc5b64b149c63546caeed19a9afe054bfb55"
+  },
+  {
+   "bytes": 831,
+   "dataset": "res_partner",
+   "encoding": "gzip+base64",
+   "part_no": 16,
+   "records": 2,
+   "sha256": "8efe4c742a339c6d942f2033bd0fb116c85918a95cc7552980bc11942b63558d"
+  },
+  {
+   "bytes": 513,
+   "dataset": "res_users",
+   "encoding": "gzip+base64",
+   "part_no": 17,
+   "records": 2,
+   "sha256": "842ab542dd5340ada57ff726cc5555cb771f4e1f670c4373e19406ff469ac61e"
+  },
+  {
+   "bytes": 582,
+   "dataset": "sale_order",
+   "encoding": "gzip+base64",
+   "part_no": 18,
+   "records": 1,
+   "sha256": "abb69a04826805912074537d6c6b50eb20bd64f0085e0fb0cb1a8d8f8f65ce97"
+  },
+  {
+   "bytes": 610,
+   "dataset": "sale_order_line",
+   "encoding": "gzip+base64",
+   "part_no": 19,
+   "records": 1,
+   "sha256": "5aed8a6f28aaf2fb458cc7675ce123a6d106e9db094ca361294e034ed936c5f3"
+  },
+  {
+   "bytes": 660,
+   "dataset": "stock_location",
+   "encoding": "gzip+base64",
+   "part_no": 20,
+   "records": 2,
+   "sha256": "3a4e20c65d6aec4b274e803c24e22b674d05647a122094c780e08281cf7ab1c9"
+  },
+  {
+   "bytes": 629,
+   "dataset": "stock_quant",
+   "encoding": "gzip+base64",
+   "part_no": 21,
+   "records": 2,
+   "sha256": "8b510ce865c546381be01b18ce3093ef8e0768d339895d86efde88ce1edf8095"
+  },
+  {
+   "bytes": 529,
+   "dataset": "stock_valuation_layer",
+   "encoding": "gzip+base64",
+   "part_no": 22,
+   "records": 1,
+   "sha256": "53fbe4a6ea1b979ebd0e628fbba53e124a896c0d324730b6c26d2b76e719523c"
+  }
+ ],
+ "reconciliation": [],
+ "requested_cutoff_at": "2026-11-10T05:00:00Z",
+ "run_seq": 1,
+ "run_uuid": "1b0e5a2a-0d0b-4bf0-9e1c-000000000101",
+ "schema": "nova.export.v1",
+ "source": {
+  "connector_version": "16.0.1.0.0",
+  "generation": 1,
+  "installation_uuid": "6f1c1b6e-8d55-4a4b-a8f8-0b7f3c9c2a01",
+  "odoo_version": "16.0"
+ },
+ "timezone": "America/Guayaquil",
+ "totals": {
+  "bytes": 20612,
+  "parts": 22,
+  "records": 48
+ },
+ "warnings": [
+  {
+   "code": "fixture",
+   "detail": "Datos de prueba etiquetados, no cliente real"
+  }
+ ]
+}

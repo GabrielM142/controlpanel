@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_nova_prepare_now" model="ir.actions.server">
+        <field name="name">NOVA: preparar lote ahora</field>
+        <field name="model_id" ref="model_nova_sync_run"/>
+        <field name="state">code</field>
+        <field name="code">model.action_prepare_now()</field>
+        <field name="groups_id" eval="[(4, ref('nova_connector.group_nova_admin'))]"/>
+    </record>
+    <record id="view_nova_connection_form" model="ir.ui.view">
+        <field name="name">nova.connection.form</field>
+        <field name="model">nova.connection</field>
+        <field name="arch" type="xml">
+            <form string="Conexión NOVA" create="false" delete="false">
+                <header>
+                    <button name="action_generate_link_token" type="object" string="Generar código de vinculación"
+                            class="btn-primary" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', 'in', ['linked', 'paused', 'suspended'])]}"/>
+                    <button name="action_pause" type="object" string="Pausar" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', '!=', 'linked')]}"/>
+                    <button name="action_resume" type="object" string="Reanudar" groups="nova_connector.group_nova_admin"
+                            attrs="{'invisible': [('state', '!=', 'paused')]}"/>
+                    <button name="%(nova_connector.action_nova_prepare_now)d" type="action" string="Preparar lote ahora (staging)"
+                            groups="nova_connector.group_nova_admin" attrs="{'invisible': [('state', '!=', 'linked')]}"
+                            confirm="Prepara un lote fuera de ventana. Úselo en staging o con autorización."/>
+                    <button name="action_request_resync" type="object" string="Solicitar resincronización"
+                            groups="nova_connector.group_nova_admin"/>
+                    <button name="action_disable_capture" type="object" string="Desactivar captura (emergencia)"
+                            groups="nova_connector.group_nova_admin" attrs="{'invisible': [('capture_enabled', '=', False)]}"
+                            confirm="Se pierde la garantía de deltas y se exigirá resincronización completa. ¿Continuar?"/>
+                    <button name="action_enable_capture" type="object" string="Reactivar captura"
+                            groups="nova_connector.group_nova_admin" attrs="{'invisible': [('capture_enabled', '=', True)]}"/>
+                    <button name="action_relink_after_clone" type="object" string="Re-vincular tras copia/restauración"
+                            groups="nova_connector.group_nova_admin"
+                            confirm="Crea una nueva generación de fuente y desvincula esta base. Los datos en NOVA no se borran. ¿Continuar?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,linking,linked"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" attrs="{'invisible': [('state', '!=', 'suspended')]}">
+                        Copia o restauración detectada: la sincronización está suspendida hasta re-vincular.
+                    </div>
+                    <div class="alert alert-warning" role="alert" attrs="{'invisible': [('resync_required', '=', False)]}">
+                        Resincronización requerida: <field name="resync_reason" readonly="1" nolabel="1"/>
+                    </div>
+                    <group>
+                        <group string="Identidad">
+                            <field name="name"/>
+                            <field name="installation_uuid"/>
+                            <field name="source_generation"/>
+                            <field name="central_source_ref"/>
+                            <field name="linked_at"/>
+                            <field name="capture_enabled"/>
+                            <field name="resync_required"/>
+                        </group>
+                        <group string="Programación">
+                            <field name="timezone"/>
+                            <field name="window_start_hour"/>
+                            <field name="window_end_hour"/>
+                            <field name="last_prepared_at"/>
+                            <field name="pending_bytes"/>
+                            <field name="pending_events"/>
+                        </group>
+                    </group>
+                    <group string="Compañías autorizadas">
+                        <field name="company_ids" widget="many2many_tags" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Límites de recursos (medir antes de ampliar)">
+                        <group>
+                            <field name="max_rows_per_part"/>
+                            <field name="max_bytes_per_part"/>
+                            <field name="max_parts_per_invocation"/>
+                            <field name="time_budget_seconds"/>
+                        </group>
+                        <group>
+                            <field name="query_timeout_ms"/>
+                            <field name="max_pending_bytes"/>
+                            <field name="max_pending_events"/>
+                            <field name="retention_days"/>
+                            <field name="scan_overlap_minutes"/>
+                        </group>
+                    </group>
+                    <group string="Último error">
+                        <field name="last_error" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_nova_connection_tree" model="ir.ui.view">
+        <field name="name">nova.connection.tree</field>
+        <field name="model">nova.connection</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false">
+                <field name="name"/>
+                <field name="state"/>
+                <field name="source_generation"/>
+                <field name="last_prepared_at"/>
+                <field name="resync_required"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_nova_connection" model="ir.actions.act_window">
+        <field name="name">Conexión NOVA</field>
+        <field name="res_model">nova.connection</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

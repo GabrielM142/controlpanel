@@ -27,15 +27,25 @@ const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Nova IA. Voy a ha
 
 function planLabel(p:string){return p==='free'?'Free · 100 tk':p==='pro'?'Pro · 500 tk/mes':'Enterprise · 2000 tk/mes';}
 
+import {api,ApiError} from '../../data/api';
+import {terms,termsSha256} from '../../data/terms';
+import {useLive} from '../live/LiveData';
+
+const newKey=()=>(globalThis.crypto?.randomUUID?.()||`k-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
 export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
  const tokens=useTokens();
+ const live=useLive();
+ const [idemKey,setIdemKey]=useState(newKey);
+ const [marketItem]=useState<string|null>(()=>{try{const v=sessionStorage.getItem('nova.factory.prefill');sessionStorage.removeItem('nova.factory.prefill');return v;}catch{return null;}});
  const [msgs,setMsgs]=useState<Msg[]>([openingBot,{role:'bot',at:Date.now(),text:steps[0].q}]);
  const [values,setValues]=useState<Record<string,string>>({});
  const [input,setInput]=useState('');
  const [stepIdx,setStepIdx]=useState(0);
  const [sending,setSending]=useState(false);
- const [submitted,setSubmitted]=useState<null|{id:string;fallback?:boolean}>(null);
- const [termsAccepted,setTermsAccepted]=useState<boolean>(()=>{try{return localStorage.getItem('nova.factory.terms')==='1';}catch{return false;}});
+ const [submitted,setSubmitted]=useState<null|{id:string;fallback?:boolean;error?:string}>(null);
+ // Acceptance is per request and per terms version (never silently reused from an old version).
+ const [termsAccepted,setTermsAccepted]=useState(false);
  const [termsOpen,setTermsOpen]=useState(false);
  const scrollRef=useRef<HTMLDivElement>(null);
 
@@ -67,7 +77,6 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
   if(!done||sending||submitted||!termsAccepted)return;
   setSending(true);
   const acceptedAt=new Date().toISOString();
-  try{localStorage.setItem('nova.factory.terms','1');}catch{}
   const payload={
    client_name:values.client_name||'Sin nombre',
    client_email:values.email||null,
@@ -84,20 +93,26 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
    conversation:msgs,
    tokens_used:steps.length,
    terms_accepted_at:acceptedAt,
+   terms_version:terms.version,
+   market_item:marketItem,
   };
-  try{
-   const r=await fetch('/api/trueque',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   if(r.ok){const j=await r.json();setSubmitted({id:j.id});}
-   else{throw new Error(String(r.status));}
-  }catch{
-   // Fallback: persist locally so the boceto works even without DATABASE_URL configured.
+  const saveLocal=(error?:string)=>{
+   // Not a server receipt: kept as "pendiente de envío" in this browser only, with the same idempotency key for a later retry.
    try{
     const raw=localStorage.getItem('nova.factory.local');
     const list=raw?JSON.parse(raw):[];
-    const local={...payload,id:'local-'+Date.now(),created_at:new Date().toISOString(),status:'received',tokens_used:steps.length};
-    localStorage.setItem('nova.factory.local',JSON.stringify([local,...list].slice(0,30)));
-    setSubmitted({id:local.id,fallback:true});
+    const local={...payload,conversation:[],id:'local-'+idemKey,idempotency_key:idemKey,created_at:new Date().toISOString(),status:'pending_send',tokens_used:steps.length};
+    localStorage.setItem('nova.factory.local',JSON.stringify([local,...list.filter((x:{id:string})=>x.id!==local.id)].slice(0,30)));
+    setSubmitted({id:local.id,fallback:true,error});
    }catch{}
+  };
+  try{
+   if(!live.live||!live.tenantId){saveLocal();return;}
+   const j=await api<{id:string}>('/api/factory/requests',{tenant:live.tenantId,method:'POST',headers:{'Idempotency-Key':idemKey},
+    body:{...payload,terms_accepted:true,terms_sha256:await termsSha256()}});
+   setSubmitted({id:j.id});
+  }catch(e){
+   saveLocal(e instanceof ApiError&&e.status===400?e.message:undefined);
   }finally{setSending(false);onSubmitted?.();}
  }
 
@@ -143,11 +158,16 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
      <span className="chat-avatar">{m.role==='bot'?<Bot size={14}/>:<CircleUser size={14}/>}</span>
      <div className="chat-bubble">{m.text}</div>
     </div>)}
-    {submitted&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble success">
-     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud enviada a Nova Business</strong>
-     <p>ID interno: <code>{submitted.id}</code>{submitted.fallback?' · guardado en modo boceto (todavía no hay base analítica conectada)':''}</p>
-     <p>El equipo revisa tu solicitud y te contactamos con la cotización. Consumidos {steps.length} tokens del período.</p>
+    {submitted&&!submitted.fallback&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble success">
+     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud recibida por Nova Business</strong>
+     <p>Recibo del servidor: <code>{submitted.id}</code>{marketItem?` · vinculada a ${marketItem}`:''}</p>
+     <p>El equipo revisa tu solicitud y te contactamos con la cotización.</p>
     </div></div>}
+    {submitted&&submitted.fallback&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble">
+     <strong>Pendiente de envío</strong>
+     <p>{submitted.error?`El servidor rechazó la solicitud: ${submitted.error}`:live.live?'No se pudo contactar el servidor.':'Modo demostración: no hay backend NOVA conectado.'} Quedó guardada solo en este navegador (<code>{submitted.id}</code>) y <b>todavía no fue recibida</b> por Nova Business.</p>
+    </div></div>}
+    {marketItem&&!submitted&&<p className="block-note">Solicitud vinculada al artículo del Market: <b>{marketItem}</b>.</p>}
    </div>
    <footer className="chat-composer">
     {!done&&step&&<>
@@ -168,7 +188,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
      </label>
      <button type="button" className="chat-submit" onClick={send} disabled={sending||!termsAccepted} aria-disabled={sending||!termsAccepted}>{sending?<><Loader2 size={14} className="spin"/> Enviando…</>:<><Cpu size={14}/> Enviar solicitud a Nova Business</>}</button>
     </div>}
-    {submitted&&<button type="button" className="chat-submit" onClick={()=>{setMsgs([openingBot,{role:'bot',at:Date.now(),text:steps[0].q}]);setValues({});setStepIdx(0);setInput('');setSubmitted(null);}}><Sparkles size={14}/> Nueva solicitud</button>}
+    {submitted&&<button type="button" className="chat-submit" onClick={()=>{setMsgs([openingBot,{role:'bot',at:Date.now(),text:steps[0].q}]);setValues({});setStepIdx(0);setInput('');setSubmitted(null);setIdemKey(newKey());setTermsAccepted(false);}}><Sparkles size={14}/> Nueva solicitud</button>}
    </footer>
   </section>
   {termsOpen&&<div className="terms-backdrop" onClick={e=>{if(e.target===e.currentTarget)setTermsOpen(false);}}>
@@ -178,20 +198,13 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
      <button type="button" aria-label="Cerrar" onClick={()=>setTermsOpen(false)}><X size={16}/></button>
     </header>
     <div className="terms-body">
-     <p><b>Nova Business</b> (en adelante “Nova Business”, “nosotros”) es responsable del tratamiento de los datos que se recopilan a través de este formulario y del chat de captación. Al enviar tu solicitud declarás haber leído y aceptar lo siguiente:</p>
-     <ol>
-      <li><b>Finalidad.</b> Los datos ingresados se utilizan únicamente para analizar la necesidad planteada, elaborar una cotización y contactarte por los canales que indicaste. No compartimos tu información con terceros ajenos al proyecto sin tu autorización expresa.</li>
-      <li><b>Confidencialidad.</b> Los datos se almacenan de manera confidencial. Podés solicitar su modificación o eliminación cuando quieras escribiendo a <em>contacto@novabusiness.io</em>.</li>
-      <li><b>Uso responsable.</b> Te comprometes a no cargar información falsa, datos sensibles sin autorización de sus titulares, ni contenidos que violen la normativa vigente. Nova Business puede archivar o rechazar solicitudes que no cumplan con estas condiciones.</li>
-      <li><b>Tokens y facturación.</b> Los tokens del plan son <b>no acumulables</b> y se consumen por captación, análisis e interpretación de datos. La cotización final del módulo se comunica por escrito y requiere aprobación explícita antes de facturarse.</li>
-      <li><b>Propiedad intelectual.</b> Los entregables desarrollados por Nova Business se licencian de acuerdo al plan contratado. La información operativa cargada por el cliente sigue siendo de su propiedad.</li>
-      <li><b>Vigencia.</b> Estos términos rigen desde 09/2026. Para el detalle completo consultá la política extendida con tu ejecutivo comercial.</li>
-     </ol>
-     <p className="terms-note">Al hacer clic en “Aceptar” confirmás que actuás en representación de la empresa indicada y que estás autorizado a compartir la información cargada.</p>
+     <p>{terms.intro}</p>
+     <ol>{terms.sections.map(sec=><li key={sec.title}><b>{sec.title}.</b> {sec.body}</li>)}</ol>
+     <p className="terms-note">{terms.note} <small>Versión {terms.version}.</small></p>
     </div>
     <footer className="terms-foot">
      <button type="button" className="button secondary" onClick={()=>setTermsOpen(false)}>Cerrar</button>
-     <button type="button" className="button primary" onClick={()=>{setTermsAccepted(true);try{localStorage.setItem('nova.factory.terms','1');}catch{}setTermsOpen(false);}}><Check size={14}/> Aceptar</button>
+     <button type="button" className="button primary" onClick={()=>{setTermsAccepted(true);setTermsOpen(false);}}><Check size={14}/> Aceptar</button>
     </footer>
    </div>
   </div>}

@@ -22,11 +22,11 @@ export default function MarketView({category:presetCategory}:{category?:MarketCa
  const counts=useMemo(()=>{const c:Record<string,number>={all:marketCatalog.length};(Object.keys(CATEGORY_META) as MarketCategory[]).forEach(k=>{c[k]=marketCatalog.filter(i=>i.category===k).length;});return c;},[]);
 
  function contact(item:MarketItem){
-  const msg=item.price
-   ?`Solicitud registrada — ${item.name}. Nuestro equipo te contactará con la propuesta comercial.`
-   :`Solicitud de cotización — ${item.name}. Vamos a Nova Factory para armar el pedido a medida.`;
-  window.dispatchEvent(new CustomEvent('report-notice',{detail:msg}));
-  if(!item.price)location.hash='trueque';
+  // Precios y certificaciones del catálogo son ejemplos, no promesas aprobadas. La solicitud solo
+  // existe cuando Nova Factory la confirma en el servidor.
+  try{sessionStorage.setItem('nova.factory.prefill',item.name);}catch{}
+  window.dispatchEvent(new CustomEvent('report-notice',{detail:`${item.name}: completá la solicitud en Nova Factory. Aún no se registró nada.`}));
+  location.hash='trueque';
  }
 
  return <>
