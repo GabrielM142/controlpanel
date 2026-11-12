@@ -13,7 +13,8 @@ import './styles/omega-motion.css';
 // OMEGA es oscuro por defecto: se fija antes del primer render (login incluido). Respeta la elección guardada.
 try{
  if(localStorage.getItem('nova.theme.omega')!=='1'){localStorage.setItem('nova.theme.omega','1');localStorage.setItem('nova.theme','dark');}
- document.documentElement.dataset.theme=localStorage.getItem('nova.theme')==='light'?'light':'dark';
+ document.documentElement.dataset.theme='dark'; // OMEGA skin; light is data-mode (company theme)
+ document.documentElement.dataset.mode=localStorage.getItem('nova.theme')==='light'?'light':'dark';
 }catch{document.documentElement.dataset.theme='dark';}
 
 // One-shot migration for boceto users that used the previous side.* localStorage namespace.

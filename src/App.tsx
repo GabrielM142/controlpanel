@@ -1,10 +1,12 @@
-import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType} from 'react';
-import {Activity,ArrowDownToLine,Signature,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType,type ReactNode} from 'react';
+import {Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
 import {LiveProvider,useLive,useReportData,WidgetsContext} from './features/live/LiveData';
 import DataSourcesView from './features/live/DataSourcesView';
+import ThemeView from './features/theme/ThemeView';
+import {BrandThemeProvider,useBrandTheme} from './features/theme/useBrandTheme';
 import DireccionHero from './features/omega/DireccionHero';
 import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
@@ -42,6 +44,7 @@ const virtualPages:VirtualPage[]=[
  {id:'omega',group:'Omega',label:'Pregúntale a Omega',question:'Pregunta como hablas: Omega responde con las cifras del último cierre y cita sus fuentes.',component:AskOmegaView,icon:Sparkles},
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
+ {id:'tema',group:'Ajustes',label:'Tema de la empresa',question:'¿Cómo se ve OMEGA para tu empresa? Elige tu color de marca; los colores financieros no cambian.',component:ThemeView,icon:Palette},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
  {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de OMEGA — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
  {id:'market-odoo',group:'Market',subgroup:'Catálogo',label:'Módulos Odoo',question:'Extensiones certificadas para tu instancia de Odoo. Precio de referencia o “a cotizar”.',component:MarketOdoo,icon:Package},
@@ -56,7 +59,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
@@ -80,6 +83,7 @@ const NAV:NavSection[]=[
  ]},
  {label:'Configuración',subs:[
   {label:'Datos y umbrales',ids:['sources','control']},
+  {label:'Tema de la empresa',ids:['tema']},
   {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},
  ]},
 ];
@@ -102,9 +106,9 @@ function AppShell(){
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
- const [theme,setTheme]=useState<'light'|'dark'>(()=>{
-  return document.documentElement.dataset.theme==='light'?'light':'dark';
- });
+ // Light/dark is a mode of the company theme (useBrandTheme); the header toggle keeps working.
+ const brandTheme=useBrandTheme();
+ const theme:'light'|'dark'=brandTheme.theme.mode==='light'?'light':'dark';
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
  const [rulerY,setRulerY]=useState(0);
@@ -146,7 +150,6 @@ function AppShell(){
  useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);next.add(`sec:${loc.section}`);if(currentSub)next.add(`sub:${loc.section}::${currentSub}`);return next;});},[loc.section,currentSub]);
  useEffect(()=>{ls.set('nova.nav',JSON.stringify([...expanded]));},[expanded]);
 
- useEffect(()=>{document.documentElement.dataset.theme=theme;ls.set('nova.theme',theme);},[theme]);
  useEffect(()=>{ls.set('nova.ruler',rulerOn?'on':'off');},[rulerOn]);
  useEffect(()=>{if(!rulerOn)return;const move=(e:MouseEvent)=>setRulerY(e.clientY);window.addEventListener('mousemove',move);return()=>window.removeEventListener('mousemove',move);},[rulerOn]);
 
@@ -296,7 +299,7 @@ function AppShell(){
       <div className="tool-buttons omega-tucked" role="group" aria-label="Herramientas de lectura">
        <button type="button" className={`tool-button ${rulerOn?'on':''}`} aria-pressed={rulerOn} aria-label="Regla de lectura" title="Regla de lectura" onClick={()=>setRulerOn(v=>!v)}><Minus size={16}/></button>
        <button type="button" className={`tool-button ${presentation?'on':''}`} aria-pressed={presentation} aria-label="Modo presentación" title="Modo presentación (oculta filtros y bordes)" onClick={()=>setPresentation(v=>!v)}><Play size={14}/></button>
-       <button type="button" className="tool-button" aria-label={theme==='dark'?'Modo claro':'Modo oscuro'} title={theme==='dark'?'Modo claro':'Modo oscuro'} onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}>{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</button>
+       <button type="button" className="tool-button" aria-label={theme==='dark'?'Modo claro':'Modo oscuro'} title={theme==='dark'?'Modo claro':'Modo oscuro'} onClick={()=>brandTheme.toggleMode()}>{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</button>
        <button type="button" className="tool-button" aria-label={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} title={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} onClick={toggleFullscreen}>{isFullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}</button>
       </div>
       <MoreMenu className="omega-more" items={[
@@ -305,7 +308,7 @@ function AppShell(){
        {icon:GraduationCap,label:'Repetir tour',onClick:()=>startTour()},
        {icon:Minus,label:'Regla de lectura',active:rulerOn,onClick:()=>setRulerOn(v=>!v)},
        {icon:Play,label:'Modo presentación',active:presentation,onClick:()=>setPresentation(v=>!v)},
-       {icon:theme==='dark'?Sun:Moon,label:theme==='dark'?'Modo claro':'Modo oscuro',onClick:()=>setTheme(t=>t==='dark'?'light':'dark')},
+       {icon:theme==='dark'?Sun:Moon,label:theme==='dark'?'Modo claro':'Modo oscuro',onClick:()=>brandTheme.toggleMode()},
        {icon:isFullscreen?Minimize2:Maximize2,label:isFullscreen?'Salir de pantalla completa':'Pantalla completa',onClick:toggleFullscreen},
       ]}/>
       <button type="button" className="omega-present hide-mobile" aria-pressed={presentation} onClick={()=>setPresentation(v=>!v)}><Play size={14}/>{presentation?'Salir de presentación':'Presentar al directorio'}</button>
@@ -364,11 +367,14 @@ function AppShell(){
  </NavigateContext.Provider>;
 }
 
+// Re-applies the company theme whenever the active company changes (TenantSwitcher).
+function BrandFromTenant({children}:{children:ReactNode}){const {active}=useTenants();return <BrandThemeProvider tenantId={active.id||'demo'}>{children}</BrandThemeProvider>;}
+
 function Gate(){
  const live=useLive();
  if(live.live&&live.loading)return <main className="login-shell"><p className="legend-note">Cargando sesión…</p></main>;
  if(live.live&&!live.user)return <LoginView/>;
- return <TenantsProvider><ThresholdsProvider><DecisionsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></DecisionsProvider></ThresholdsProvider></TenantsProvider>;
+ return <TenantsProvider><BrandFromTenant><ThresholdsProvider><DecisionsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></DecisionsProvider></ThresholdsProvider></BrandFromTenant></TenantsProvider>;
 }
 
 export default function App(){return <LiveProvider><Gate/></LiveProvider>;}

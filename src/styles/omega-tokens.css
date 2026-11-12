@@ -33,6 +33,11 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
 
+  /* Colores de marca sugeridos (Configuración › Tema de la empresa) y texto oscuro sobre marca clara */
+  --swatch-indigo: #6c63ff; --swatch-azul: #2f7bff; --swatch-magenta: #ff3ea5; --swatch-grafito: #4b5170;
+  --swatch-esmeralda: #10b981; --swatch-coral: #ff6b5b; --swatch-turquesa: #14b8a6; --swatch-violeta: #9333ea;
+  --on-brand-dark: #0a0a1f; --on-brand-light: #ffffff;
+
   /* --- Alias de compatibilidad (tokens F0–F6 → nueva era). Chips: fondo al 13%. --- */
   --omega-gold: var(--brand); --on-gold: var(--on-brand);
   --gold-text: color-mix(in srgb, var(--brand) 55%, var(--text));
