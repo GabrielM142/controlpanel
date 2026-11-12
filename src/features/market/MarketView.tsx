@@ -25,7 +25,7 @@ export default function MarketView({category:presetCategory}:{category?:MarketCa
   // Precios y certificaciones del catálogo son ejemplos, no promesas aprobadas. La solicitud solo
   // existe cuando Nova Factory la confirma en el servidor.
   try{sessionStorage.setItem('nova.factory.prefill',item.name);}catch{}
-  window.dispatchEvent(new CustomEvent('report-notice',{detail:`${item.name}: completá la solicitud en Nova Factory. Aún no se registró nada.`}));
+  window.dispatchEvent(new CustomEvent('report-notice',{detail:`${item.name}: completa la solicitud en Nova Factory. Aún no se registró nada.`}));
   location.hash='trueque';
  }
 
@@ -61,7 +61,7 @@ export default function MarketView({category:presetCategory}:{category?:MarketCa
    </header>
    <div className="panel-body" style={{padding:'14px 18px 20px'}}>
     {filtered.length===0
-     ?<p className="legend-note">Sin resultados. Probá con otra búsqueda o cambiá la categoría.</p>
+     ?<p className="legend-note">Sin resultados. Prueba con otra búsqueda o cambia la categoría.</p>
      :<div className="market-grid">
       {filtered.map(item=>{const Icon=item.icon;const CatIcon=CATEGORY_META[item.category].icon;return <article key={item.id} className={`market-card cat-${item.category}`}>
        <header>

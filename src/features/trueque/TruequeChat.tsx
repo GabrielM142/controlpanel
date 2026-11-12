@@ -10,17 +10,17 @@ type Step={key:'title'|'process'|'actors'|'data_sources'|'integrations'|'outputs
 
 const steps:Step[]=[
  {key:'title',q:'Perfecto. En una frase, ¿qué módulo o proceso te gustaría automatizar con OMEGA?',placeholder:'Ej: Alertas de cartera vencida por WhatsApp'},
- {key:'process',q:'Contame el proceso actual: ¿cómo lo hacen hoy y dónde se traba?',placeholder:'Ej: revisamos Excel a mano cada lunes y perdemos tiempo…'},
+ {key:'process',q:'Cuéntame el proceso actual: ¿cómo lo hacen hoy y dónde se traba?',placeholder:'Ej: revisamos Excel a mano cada lunes y perdemos tiempo…'},
  {key:'actors',q:'¿Quiénes participan? (roles, equipos)',placeholder:'Ej: cartera, comercial, gerencia'},
  {key:'data_sources',q:'¿De dónde salen los datos? (Odoo, Excel, otro sistema)',placeholder:'Ej: Odoo módulo Contabilidad + Excel de comerciales'},
  {key:'integrations',q:'¿Con qué necesita integrarse? (WhatsApp, email, ERP, etc.)',placeholder:'Ej: WhatsApp Business + Odoo'},
- {key:'outputs',q:'¿Qué salida esperás? ¿reporte, alerta, acción automática?',placeholder:'Ej: mensaje diario al gerente + alerta cuando vence'},
- {key:'priority',q:'¿Qué prioridad tiene?',placeholder:'Elegí una',options:['baja','media','alta','urgente']},
+ {key:'outputs',q:'¿Qué salida esperas? ¿reporte, alerta, acción automática?',placeholder:'Ej: mensaje diario al gerente + alerta cuando vence'},
+ {key:'priority',q:'¿Qué prioridad tiene?',placeholder:'Elige una',options:['baja','media','alta','urgente']},
  {key:'timeline',q:'¿Cuándo lo necesitarías listo?',placeholder:'Ej: fin de mes / próximo trimestre',optional:true},
- {key:'budget',q:'¿Tenés un presupuesto tentativo? (opcional)',placeholder:'Ej: rango USD 800 a 1500',optional:true},
+ {key:'budget',q:'¿Tienes un presupuesto tentativo? (opcional)',placeholder:'Ej: rango USD 800 a 1500',optional:true},
  {key:'client_name',q:'Antes de enviar: ¿a nombre de qué empresa registro la solicitud?',placeholder:'Ej: Comercial Andes SA'},
  {key:'email',q:'¿A qué correo te respondemos? (opcional, sino te contactamos por el canal habitual)',placeholder:'gerencia@empresa.com',optional:true},
- {key:'plan',q:'¿Bajo qué plan queda registrada esta solicitud?',placeholder:'Elegí un plan',options:['free','pro','enterprise']},
+ {key:'plan',q:'¿Bajo qué plan queda registrada esta solicitud?',placeholder:'Elige un plan',options:['free','pro','enterprise']},
 ];
 
 const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Omega IA. Voy a hacerte 12 preguntas cortas para armar tu solicitud de módulo. Al final el equipo de OMEGA la recibe y te envía una cotización. Empecemos…'};
@@ -56,7 +56,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
 
  function nextBotLine(nextValues:Record<string,string>,nextIdx:number){
   const remaining=steps.length-nextIdx;
-  if(nextIdx>=steps.length){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`Genial. Ya tengo todo (${Object.keys(nextValues).length} respuestas). Revisá el resumen y enviámelo cuando quieras.`}]);return;}
+  if(nextIdx>=steps.length){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`Genial. Ya tengo todo (${Object.keys(nextValues).length} respuestas). Revisa el resumen y envíamelo cuando quieras.`}]);return;}
   const previewKey=steps[nextIdx-1]?.key;const prevAck=previewKey==='priority'?`Anotado — prioridad ${nextValues[previewKey]}.`:previewKey==='plan'?`Perfecto — plan ${planLabel(nextValues[previewKey])}.`:remaining>3?'Anotado.':'Casi listos.';
   setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`${prevAck} ${steps[nextIdx].q}`}]);
  }
@@ -120,7 +120,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
   <aside className="trueque-summary">
    <div className="trueque-summary-head">
     <div className="trueque-brand"><Sparkles size={16}/><strong>Nova Factory</strong></div>
-    <p>Contanos qué módulo necesitás. El equipo de OMEGA lo diseña, cotiza y construye.</p>
+    <p>Cuéntanos qué módulo necesitas. El equipo de OMEGA lo diseña, cotiza y construye.</p>
    </div>
    <div className="trueque-plans">
     <div className="plan"><strong>Free</strong><em>100 tk/mes</em><span>Un módulo por trimestre · soporte comunidad</span></div>

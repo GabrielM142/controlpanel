@@ -55,6 +55,13 @@ function ElementNode({node}:{node:Extract<ReportNode,{kind:'element'}>}){
  if(node.attrs.class==='section-label')return <h2 className="section-label"><span><Inline nodes={node.children}/></span><i/></h2>;
  return createElement(tag,props,...(tag==='br'?[]:[<Inline key="children" nodes={node.children}/>]));
 }
+// The original report uses status emojis; they stay in the markup (preserved content) but are drawn as design-system marks.
+const GLYPHS:Record<string,{cls:string;label:string}>={'\u{1F7E2}':{cls:'is-g',label:'verde'},'\u{1F7E1}':{cls:'is-a',label:'ámbar'},'\u{1F534}':{cls:'is-r',label:'rojo'},'✨':{cls:'is-ai',label:'IA'}};
+const GLYPH_RE=/(\u{1F7E2}|\u{1F7E1}|\u{1F534}|✨)/u;
+function GlyphText({text}:{text:string}){
+ if(!GLYPH_RE.test(text))return <>{text}</>;
+ return <>{text.split(GLYPH_RE).map((part,i)=>GLYPHS[part]?<span key={i} className={`om-glyph ${GLYPHS[part].cls}`} role="img" aria-label={GLYPHS[part].label}><span className="om-glyph-raw" aria-hidden="true">{part}</span></span>:part)}</>;
+}
 export function ReportNodes({nodes}:{nodes:Rich}){return nodes.map((node,i)=><ReportBlock key={i} node={node}/>);}
 
 function titleOf(node:ReportNode){return 'label' in node?node.label:'title' in node?node.title:node.kind==='ise'?'Índice de Salud Empresarial':node.kind==='geo'?'Cobertura Comercial — Provincia → Cantón → Zona':node.kind==='matrix'?'Matriz Comercial — mejor resultado / mayor riesgo':'';}
@@ -84,7 +91,7 @@ function ReportBlock({node}:{node:ReportNode}){
  const id=BLOCK_KINDS.has(node.kind)?ctx.ids.get(node):undefined;
  if(ctx.live&&id)return <LiveBlock node={node} id={id} w={ctx.widgets?.[id]} loading={ctx.loading}/>;
  switch(node.kind){
- case 'text':return node.text;
+ case 'text':return <GlyphText text={node.text}/>;
  case 'element':return <ElementNode node={node}/>;
  case 'panel':return <Panel title={node.title} span={node.span} blockId={id}><Inline nodes={node.children}/></Panel>;
  case 'kpi':return <article className={`panel kpi tone-${node.tone}`} data-block={id}><div className="kpi-label"><span>{node.label}</span><span className={`status-dot ${node.tone}`} aria-hidden="true"/></div><div className="kpi-value"><Inline nodes={node.value}/></div><div className="kpi-deltas">{node.deltas.map((d,i)=><div key={i}><span>{d.label}</span><strong className={d.tone}><Inline nodes={d.value}/></strong></div>)}</div></article>;

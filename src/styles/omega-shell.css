@@ -100,7 +100,7 @@ td.num, .om-dec-amount, .om-sources, .om-ask kbd, .omega-ask kbd, code, kbd { fo
 :root[data-theme=dark] .sidebar nav button, :root[data-theme=dark] .mobile-drawer nav button { color: var(--text-2); }
 :root[data-theme=dark] .sidebar nav button > svg, :root[data-theme=dark] .mobile-drawer nav button > svg { color: var(--text-3); }
 :root[data-theme=dark] .sidebar nav button:hover { color: var(--text); background: var(--surface); }
-:root[data-theme=dark] .omega-section-head, :root[data-theme=dark] .omega-section-head > span,
+:root[data-theme=dark] .omega-section-head, :root[data-theme=dark] .omega-section-head > span { color: var(--text-3) !important; background: transparent !important; }
 :root[data-theme=dark] .omega-section-head svg { color: var(--text-4) !important; background: transparent !important; }
 :root[data-theme=dark] .nav-sub-header, :root[data-theme=dark] .nav-sub-header svg { color: var(--text-2) !important; }
 :root[data-theme=dark] .omega-ask-nav { color: var(--ai-text); }

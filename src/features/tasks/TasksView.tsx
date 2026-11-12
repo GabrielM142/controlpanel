@@ -43,7 +43,7 @@ export default function TasksView(){
    <article className="panel kpi tone-a"><div className="kpi-label"><span>Pendientes</span><span className="status-dot a"/></div><div className="kpi-value">{counts.pending}</div><div className="kpi-deltas"><div><span>En curso</span><strong>{counts.in_progress}</strong></div><div><span>Vencidas</span><strong className={counts.overdue>0?'down':''}>{counts.overdue}</strong></div></div></article>
    <article className="panel kpi tone-g"><div className="kpi-label"><span>Cerradas</span><span className="status-dot g"/></div><div className="kpi-value">{counts.done}</div><div className="kpi-deltas"><div><span>Total registradas</span><strong>{tasks.length}</strong></div><div><span>Cumplimiento</span><strong>{tasks.length?Math.round(counts.done/tasks.length*100):0}%</strong></div></div></article>
    <article className="panel kpi tone-r"><div className="kpi-label"><span>Alta prioridad</span><span className="status-dot r"/></div><div className="kpi-value">{tasks.filter(t=>t.priority==='alta'&&t.status!=='done'&&t.status!=='cancelled').length}</div><div className="kpi-deltas"><div><span>Sin vencimiento</span><strong>{tasks.filter(t=>!t.dueDate&&t.status!=='done').length}</strong></div><div><span>Con IA revisada</span><strong>{tasks.filter(t=>t.aiReviewedAt).length}</strong></div></div></article>
-   <article className="panel metric"><div className="kpi-label">Consejo del copiloto</div><div className="metric-value" style={{fontSize:'14px',lineHeight:1.55}}>{counts.overdue>0?`Tenés ${counts.overdue} tarea(s) vencida(s). Priorizá cerrarlas antes de crear nuevas.`:counts.pending>5?'Muchas pendientes: usá la IA para clasificar por urgencia.':'Todo bajo control. Podés pedir a la IA que sugiera próximos pasos.'}</div><p>La IA lee esta lista y te ayuda a bajarlas de estado desde el copiloto.</p></article>
+   <article className="panel metric"><div className="kpi-label">Consejo del copiloto</div><div className="metric-value" style={{fontSize:'14px',lineHeight:1.55}}>{counts.overdue>0?`Tienes ${counts.overdue} tarea(s) vencida(s). Prioriza cerrarlas antes de crear nuevas.`:counts.pending>5?'Muchas pendientes: usa la IA para clasificar por urgencia.':'Todo bajo control. Puedes pedir a la IA que sugiera próximos pasos.'}</div><p>La IA lee esta lista y te ayuda a bajarlas de estado desde el copiloto.</p></article>
   </div>
 
   <section className="panel" style={{marginTop:14}}>
@@ -78,7 +78,7 @@ export default function TasksView(){
    </div>}
    <div className="panel-body" style={{padding:0}}>
     {filtered.length===0
-     ?<div style={{padding:'34px 20px',textAlign:'center',color:'var(--muted)',fontSize:12}}>Sin tareas en este filtro. Sumá una nueva desde el botón de arriba.</div>
+     ?<div style={{padding:'34px 20px',textAlign:'center',color:'var(--muted)',fontSize:12}}>Sin tareas en este filtro. Suma una nueva desde el botón de arriba.</div>
      :<ul className="task-list">{filtered.map(t=><li key={t.id} className={`task-item p-${priorityTone[t.priority]} s-${t.status}`}>
       <button type="button" className="task-check" aria-label={t.status==='done'?'Reabrir':'Marcar como hecha'} onClick={()=>setStatus(t.id,t.status==='done'?'pending':'done')}>
        {t.status==='done'?<Check size={14}/>:t.status==='in_progress'?<CircleDot size={14}/>:<span className="task-empty"/>}
@@ -102,6 +102,6 @@ export default function TasksView(){
    </div>
   </section>
 
-  <p className="legend-note" style={{marginTop:14}}><AlertOctagon size={12} style={{verticalAlign:'-2px',marginRight:6}}/>El copiloto lee tus tareas pendientes: podés pedirle que sugiera cuál priorizar o marcar como hecha desde el drawer de IA (pestaña <b>Tareas</b>).</p>
+  <p className="legend-note" style={{marginTop:14}}><AlertOctagon size={12} style={{verticalAlign:'-2px',marginRight:6}}/>El copiloto lee tus tareas pendientes: puedes pedirle que sugiera cuál priorizar o marcar como hecha desde el drawer de IA (pestaña <b>Tareas</b>).</p>
  </>;
 }

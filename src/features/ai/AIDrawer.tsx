@@ -59,9 +59,9 @@ const summaries:Record<string,string[]>={
   'Cola de soporte con 5 tickets activos, 2 en riesgo de SLA. Andrea M. está sobrecargada con 3 casos en paralelo.',
   'Recomendación: redistribuir un caso de Andrea a Bryan (menor carga) para asegurar el SLA de Distribuidora El Oro.',
  ],
- trueque:['Estás en Nova Factory. Contame qué módulo necesitás y armo la solicitud paso a paso.'],
- 'trueque-list':['Historial de solicitudes enviadas. Podés recargar para traer las que persistieron en la base analítica.'],
- control:['Estás en el Panel de Control. Los umbrales que definís acá alimentan a la campana de alertas y a mis resúmenes. Recomiendo mantener siempre activos los umbrales críticos de cartera, stock y SLA.'],
+ trueque:['Estás en Nova Factory. Cuéntame qué módulo necesitas y armo la solicitud paso a paso.'],
+ 'trueque-list':['Historial de solicitudes enviadas. Puedes recargar para traer las que persistieron en la base analítica.'],
+ control:['Estás en el Panel de Control. Los umbrales que defines aquí alimentan a la campana de alertas y a mis resúmenes. Recomiendo mantener siempre activos los umbrales críticos de cartera, stock y SLA.'],
  tasks:['Tu tablero personal de tareas. Puedo priorizar por vencimiento y sugerirte cuáles cerrar hoy.'],
  notes:['Tus anotaciones colaborativas. Las leo al armar el resumen de la vista vinculada.'],
 };
@@ -69,13 +69,13 @@ const summaries:Record<string,string[]>={
 const followUps=[
  '¿Qué contribuye más a esa variación?',
  'Compará contra el trimestre anterior en pocas líneas.',
- '¿Qué acción concreta recomendás para la próxima reunión gerencial?',
+ '¿Qué acción concreta recomiendas para la próxima reunión gerencial?',
  '¿Qué riesgo puntual debería vigilar esta semana?',
 ];
 
 function cannedAnswer(question:string,pageId:string,pageLabel:string){
  const trimmed=question.trim().toLowerCase();
- if(!trimmed)return 'Contame qué te interesa profundizar de la vista actual.';
+ if(!trimmed)return 'Cuéntame qué te interesa profundizar de la vista actual.';
  if(trimmed.includes('riesgo')||trimmed.includes('alert'))return `En ${pageLabel} el foco de riesgo está en la concentración de resultados en pocos clientes/canales. Sugerido: pedir a Comercial detalle del top 3 en caída.`;
  if(trimmed.includes('recomend')||trimmed.includes('acción')||trimmed.includes('accion'))return `Tres pasos accionables: (1) revisar con el líder de área los 2 KPIs en ámbar; (2) redistribuir carga donde haya cuellos; (3) marcar seguimiento semanal en el tablero.`;
  if(trimmed.includes('compar')||trimmed.includes('mes')||trimmed.includes('trimestre'))return `El comparativo intertrimestral se activa cuando conectemos Odoo. Sobre los datos actuales de ${pageLabel}, se observa mejora leve pero apoyada en pocos actores.`;
@@ -101,7 +101,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{o
  function interpret(){
   if(busy)return;
   const ok=tokens.spend(12,`IA · resumen ${pageLabel}`);
-  if(!ok){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o podés escalar el plan.'}]);return;}
+  if(!ok){setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o puedes escalar el plan.'}]);return;}
   setBusy(true);
   // Report pages: reading built from the numbers and filters on screen. Auxiliary views keep their guide text.
   const text=ctx?answerText(interpretReport(ctx,'Interpreta esta pantalla')):summary.join(' ');
@@ -111,7 +111,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{o
  function ask(qOverride?:string){
   const q=(qOverride??input).trim();if(!q||busy)return;
   const ok=tokens.spend(7,`IA · consulta ${pageLabel}`);
-  if(!ok){setMsgs(m=>[...m,{role:'user',at:Date.now(),text:q},{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o podés escalar el plan.'}]);setInput('');return;}
+  if(!ok){setMsgs(m=>[...m,{role:'user',at:Date.now(),text:q},{role:'bot',at:Date.now(),text:'Se agotaron los tokens del período. Renuevan a inicio de mes o puedes escalar el plan.'}]);setInput('');return;}
   setMsgs(m=>[...m,{role:'user',at:Date.now(),text:q}]);setInput('');setBusy(true);
   if(ctx){askReportAI(ctx,q,tenant).then(a=>setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:answerText(a)}])).finally(()=>setBusy(false));return;}
   setTimeout(()=>{setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:cannedAnswer(q,pageId,pageLabel)}]);setBusy(false);},650);
@@ -128,7 +128,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{o
 
  function completeTask(t:Task){
   setStatus(t.id,'done');
-  setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`✅ Marcada como hecha: "${t.title}".`}]);
+  setMsgs(m=>[...m,{role:'bot',at:Date.now(),text:`Marcada como hecha: "${t.title}".`}]);
  }
 
  const pendingTasks=tasks.filter(t=>t.status==='pending'||t.status==='in_progress').slice(0,10);
@@ -162,7 +162,7 @@ export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{o
    </>}
 
    {tab==='tareas'&&<div className="ai-tasks">
-    <p className="ai-tasks-intro"><b>{counts.pending}</b> pendientes · <b>{counts.in_progress}</b> en curso · <b className="down">{counts.overdue}</b> vencidas. Marcá hechas rápido o pedí una sugerencia por tarea.</p>
+    <p className="ai-tasks-intro"><b>{counts.pending}</b> pendientes · <b>{counts.in_progress}</b> en curso · <b className="down">{counts.overdue}</b> vencidas. Marca hechas rápido o pide una sugerencia por tarea.</p>
     {pendingTasks.length===0
      ?<p className="ai-empty">Todo cerrado por ahora. Buen trabajo.</p>
      :<ul className="ai-task-list">{pendingTasks.map(t=><li key={t.id} className={`ai-task p-${t.priority}`}>
@@ -179,12 +179,12 @@ export function AIDrawer({open,onClose,pageId,pageLabel,ctx=null,tenant=null}:{o
    {tab==='notas'&&<div className="ai-notes">
     <p className="ai-tasks-intro">Notas vinculadas a <b>{pageLabel}</b>: {pageNotes.length}.</p>
     {pageNotes.length===0
-     ?<p className="ai-empty">No hay anotaciones para esta vista. Podés crearlas desde “Espacio Personal · Mis Notas”.</p>
+     ?<p className="ai-empty">No hay anotaciones para esta vista. Puedes crearlas desde “Espacio Personal · Mis Notas”.</p>
      :<ul className="ai-note-list">{pageNotes.map(n=><li key={n.id} className={`ai-note note-color-${n.color}`}><p>{n.text}</p><em>{new Date(n.createdAt).toLocaleDateString('es-EC',{day:'2-digit',month:'short'})}</em></li>)}</ul>}
    </div>}
   </div>
   {tab==='chat'&&<footer className="ai-composer">
-   <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Preguntá sobre esta pantalla…" aria-label="Consulta al copiloto"/>
+   <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();ask();}}} placeholder="Pregunta sobre esta pantalla…" aria-label="Consulta al copiloto"/>
    <button type="button" className="chat-send" aria-label="Enviar" onClick={()=>ask()} disabled={!input.trim()||busy}><Send size={14}/></button>
   </footer>}
   <div className="ai-foot">{ctx?`Omega responde con las cifras y filtros de ${pageLabel} (${ctx.cut}). Solo lectura.`:'En esta vista Omega te guía; las lecturas con cifras están en cada reporte.'} Provisto por OMEGA.</div>

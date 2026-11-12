@@ -27,7 +27,7 @@ export function CommandPalette({open,onClose,items,onSelect}:{open:boolean;onClo
    <div className="palette-input"><Search size={14}/><input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)} onKeyDown={onKey} placeholder="Buscar vista o acción…" aria-label="Búsqueda"/><button type="button" aria-label="Cerrar" onClick={onClose}><X size={14}/></button></div>
    <ul className="palette-list" role="listbox">
     {filtered.length===0
-     ?<li className="palette-empty">Sin resultados. Probá con otro término.</li>
+     ?<li className="palette-empty">Sin resultados. Prueba con otro término.</li>
      :filtered.map((it,i)=><li key={it.id} role="option" aria-selected={i===idx} className={i===idx?'is-active':''}
        onMouseEnter={()=>setIdx(i)}
        onMouseDown={e=>{e.preventDefault();onSelect(it.id);onClose();}}>

@@ -31,7 +31,7 @@ export default function NotesView(){
    <header className="panel-heading"><h2><StickyNote size={13} style={{verticalAlign:'-2px',marginRight:6}}/>Nueva anotación</h2><span className="panel-mark"/></header>
    <div className="panel-body">
     <div className="note-form">
-     <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Escribí una nota rápida — se guarda automáticamente…" rows={3}/>
+     <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Escribe una nota rápida — se guarda automáticamente…" rows={3}/>
      <div className="note-form-row">
       <div className="note-colors" role="radiogroup" aria-label="Color de la nota">{colorOptions.map(c=><button key={c} type="button" role="radio" aria-checked={color===c} className={`note-color note-color-${c} ${color===c?'is-selected':''}`} onClick={()=>setColor(c)} aria-label={c}/>)}</div>
       <label className="note-link"><span>Vincular a</span>
@@ -45,7 +45,7 @@ export default function NotesView(){
 
   <h2 className="section-label"><span>Muro de notas ({notes.length})</span><i/></h2>
   {notes.length===0
-   ?<p className="legend-note">Todavía no tenés notas. Escribí una arriba para arrancar.</p>
+   ?<p className="legend-note">Todavía no tienes notas. Escribe una arriba para arrancar.</p>
    :<div className="notes-grid">{notes.map(n=><article key={n.id} className={`note-card note-color-${n.color}${n.pinned?' is-pinned':''}`}>
     <div className="note-head">
      <span>{pageLabel(n.linkedPageId)}</span>

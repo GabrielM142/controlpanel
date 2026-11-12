@@ -32,7 +32,7 @@ export default function TruequeList(){
  },[live.live,live.tenantId]);
 
  const retry=async(r:Request)=>{
-  if(!live.tenantId||r.terms_version!==terms.version){setError('Los términos cambiaron: volvé a crear la solicitud y aceptá la versión vigente.');return;}
+  if(!live.tenantId||r.terms_version!==terms.version){setError('Los términos cambiaron: vuelve a crear la solicitud y aceptá la versión vigente.');return;}
   try{
    const {id:_id,created_at:_c,status:_s,idempotency_key,...payload}=r;
    await api('/api/factory/requests',{tenant:live.tenantId,method:'POST',headers:{'Idempotency-Key':String(idempotency_key||r.id)},

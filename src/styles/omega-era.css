@@ -203,3 +203,23 @@
 @media print { .om-rassist { display: none; } }
 :root[data-presentation="on"] .om-rassist { display: none; }
 .om-rassist .om-reco .om-btn { justify-self: start; width: auto; }
+
+/* Marcas de estado del reporte original (los emojis quedan en el marcado, se dibujan con el sistema) */
+.om-glyph { display: inline-block; vertical-align: middle; margin-left: 4px; }
+.om-glyph-raw { display: none; }
+.om-glyph::before { content: ""; display: inline-block; width: .55em; height: .55em; border-radius: 999px; background: var(--text-3); box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 0%, transparent); }
+.om-glyph.is-g::before { background: var(--fin-income); box-shadow: 0 0 10px color-mix(in srgb, var(--fin-income) 60%, transparent); }
+.om-glyph.is-a::before { background: var(--fin-risk); box-shadow: 0 0 10px color-mix(in srgb, var(--fin-risk) 60%, transparent); }
+.om-glyph.is-r::before { background: var(--fin-loss); box-shadow: 0 0 10px color-mix(in srgb, var(--fin-loss) 60%, transparent); }
+.om-glyph.is-ai { margin: 0 4px 0 0; }
+.om-glyph.is-ai::before { content: "Ω"; width: auto; height: auto; border-radius: 0; background: none; box-shadow: none; color: var(--fin-ai); font-family: var(--font-display); font-weight: 700; }
+/* AA: texto secundario mínimo --text-3 */
+.ai-suggest > span, .om-ask-form input::placeholder { color: var(--text-3); }
+.bell-badge { background: var(--fin-loss) !important; color: var(--on-loss) !important; }
+/* Modo claro: textos heredados de theme.css con contraste AA */
+:root[data-mode="light"] .ph, :root[data-mode="light"] .alerts-section-title, :root[data-mode="light"] .alert-item em { color: var(--text-2) !important; }
+:root[data-mode="light"] .tag.a { color: var(--fin-risk-text) !important; }
+:root[data-mode="light"] .tag.g { color: var(--fin-income) !important; }
+:root[data-mode="light"] .ai-action { color: var(--text) !important; }
+:root[data-mode="light"] .ai-action { background: var(--ai-soft) !important; border-color: var(--ai-line) !important; }
+.report-footer span i { color: var(--text-3) !important; }
