@@ -78,7 +78,7 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   sobre Neon Postgres `omega-db`. Modo en vivo activo en `controlpanel-gamma.vercel.app`; demo en Preview.
 - Revisión de seguridad aplicada: SSRF (IPv6 con IPv4 incrustada, DNS rebinding), bloqueo de login por email/IP,
   tiempo de respuesta igual para emails inexistentes, cookie `SameSite=Lax; Secure`, CSP/HSTS/Permissions-Policy,
-  JSON con Content-Type exacto, CSV con ``, `npm audit` en 0.
+  JSON con Content-Type exacto, CSV que entrecomilla los retornos de carro, `npm audit` en 0.
 - Pendiente menor: texto "tenant" en dos mensajes del API; `last_error` muestra el error técnico a administradores.
 
 ## Próximos pasos concretos
