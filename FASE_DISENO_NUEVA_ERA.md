@@ -1,5 +1,7 @@
 # FASE D · Rediseño "Nueva era" de OMEGA (solo diseño)
 
+> **Estado: COMPLETADA** (D1–D6, commits `0bca3c0` … `9bcc31d`). Este documento queda como referencia de las reglas visuales vigentes. No repitas sus pasos.
+
 > **Esta fase cambia únicamente cómo se ve OMEGA.** No agrega ni quita funciones, menús, reportes, filtros, opciones, datos ni lógica.
 > Mockup de referencia (la fuente de verdad visual): https://claude.ai/artifact/5i9jLoF985nKLZwJsqohXK
 > Pantallas: Dirección · Tema por empresa · Decisiones y tickets · Pregúntale a Omega.

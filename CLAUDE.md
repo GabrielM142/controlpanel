@@ -6,12 +6,25 @@ Lema: **"La última palabra en tus datos."** Omega es la última letra griega: l
 Stack: React 19 + TypeScript + Vite · lucide-react · API Node (`server/`, `api/`) · worker NOVA + PostgreSQL · addons Odoo 16. Node ≥ 22.12.
 Los datos son **diferidos al cierre anterior** (lote nocturno desde las 03:00). OMEGA nunca consulta Odoo al abrir una vista y la interfaz siempre debe mostrarlo.
 
-> Este repo NO es Trueque WPP. Si ves instrucciones de Angular, Firebase o `ux/rediseno-2026`, no aplican aquí.
+> **Alcance:** este archivo describe únicamente el repo `GabrielM142/controlpanel` (OMEGA). Toda instrucción, stack o rama que no aparezca aquí o en los documentos listados abajo no aplica a este proyecto.
+
+## Glosario: nombres internos que NO se cambian
+| Nombre en el código | Qué es en OMEGA |
+|---|---|
+| `trueque`, `trueque-list`, `src/features/trueque/`, `TruequeChat`, `TruequeList`, tabla `trueque_requests`, clases `nav-trueque*` | Identificadores **heredados** del módulo **Factory** ("Nueva Solicitud" y "Mis Solicitudes"): el chat guiado para pedir módulos nuevos al equipo OMEGA. No es otro producto. **No renombrar** ids, rutas, tablas ni clases. |
+| `NOVA`, `nova_*`, `VITE_NOVA_*`, claves `nova.*` en localStorage | Nombre técnico del motor de datos (worker, API, addons Odoo). La marca visible es OMEGA. **No renombrar.** |
+| `Nova Factory`, `Nova IA` | Nombres anteriores. En la interfaz se muestran como "Factory" y "Omega IA". |
+
+## Estado actual del rediseño (no repetir fases)
+- **Completado y en `main`:** F0–F6 (`22607b5` … `6e4e7f6`) y la Fase D "Nueva era" D1–D6 (`0bca3c0` … `9bcc31d`).
+- Las fases de `REDISENO_OMEGA.md` §6 y de `FASE_DISENO_NUEVA_ERA.md` **ya están hechas**: sirven como referencia de diseño, no como tareas pendientes.
+- Trabajo nuevo: solo lo que pida el dueño en el chat, respetando este archivo.
 
 ## Antes de actuar, lee
-1. `REDISENO_OMEGA.md`: identidad, psicología del color, tokens, pantallas y fases F0–F6.
-2. `docs/STATUS.md` y `docs/ARCHITECTURE.md`: estado real y arquitectura.
-3. Mockup aprobado: https://claude.ai/artifact/5i9jLoF985nKLZwJsqohXK
+1. `REDISENO_OMEGA.md`: identidad, psicología del color, tokens y pantallas.
+2. `FASE_DISENO_NUEVA_ERA.md`: reglas de la capa visual "nueva era" (ya aplicada).
+3. `docs/STATUS.md` y `docs/ARCHITECTURE.md`: estado real y arquitectura.
+4. Mockup aprobado: https://claude.ai/artifact/5i9jLoF985nKLZwJsqohXK
 
 ## Reglas que no se rompen
 - Se trabaja **directo en `main`**: es un demo publicado y el dueño lo decidió así. Cada push a `main` publica en Vercel, por eso **no hagas push sin aprobación** y nunca hagas force-push.
@@ -22,6 +35,7 @@ Los datos son **diferidos al cierre anterior** (lote nocturno desde las 03:00). 
 - El cambio de marca es **visual**: OMEGA reemplaza "Nova Business" en textos y logo. Los nombres técnicos internos (`NOVA`, `nova_connector`, variables `VITE_NOVA_*`) y las claves de `localStorage` `nova.*` se mantienen para no perder las preferencias de los usuarios.
 - Conservar el modo demo (sin `VITE_NOVA_API_URL`) y todas las vistas actuales: los 13 reportes y las 12 vistas auxiliares.
 - Una fase = un commit en `main`. Al terminar cada fase: `npm test` y `npm run build` en verde, resumen del diff y esperar aprobación antes del commit y del push.
+- Tokens vigentes: los de la "nueva era" (`--brand`, `--fin-*`; ver `FASE_DISENO_NUEVA_ERA.md` §3.1). No volver a la paleta obsidiana/oro ni a Instrument Serif.
 
 ## Sistema de diseño OMEGA (obligatorio)
 - Tokens únicos en `src/styles/omega-tokens.css` (variables CSS). **Prohibido** escribir hex sueltos en componentes o en `theme.css`: siempre `var(--…)`.

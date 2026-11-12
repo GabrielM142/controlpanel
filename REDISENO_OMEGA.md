@@ -132,7 +132,10 @@ Reglas:
 - Toast con "Deshacer" tras aprobar o rechazar.
 - Atajos: Ctrl K preguntar o buscar · `D` decisiones · `P` presentar · `?` ayuda.
 
-## 6. Fases (un commit en `main` por fase, con `npm test` en verde)
+## 6. Fases (COMPLETADAS: F0–F6 y después la Fase D "Nueva era"; ver `CLAUDE.md` › Estado actual)
+
+> La identidad visual vigente es la de §3 y `FASE_DISENO_NUEVA_ERA.md`. Las menciones a obsidiana, oro o Instrument Serif en esta tabla son históricas.
+
 | Fase | Alcance | Cierre |
 |---|---|---|
 | **F0 · Tokens** | `omega-tokens.css`, fuentes, reemplazar hex de `theme.css` por variables (des-minificar por secciones) | `npm test` y `npm run build` en verde; aspecto aún equivalente |
