@@ -9,7 +9,7 @@ type Msg={role:'bot'|'user';text:string;at:number};
 type Step={key:'title'|'process'|'actors'|'data_sources'|'integrations'|'outputs'|'priority'|'timeline'|'budget'|'client_name'|'email'|'plan';q:string;placeholder:string;options?:string[];optional?:boolean};
 
 const steps:Step[]=[
- {key:'title',q:'Perfecto. En una frase, ¿qué módulo o proceso te gustaría automatizar con Nova Business?',placeholder:'Ej: Alertas de cartera vencida por WhatsApp'},
+ {key:'title',q:'Perfecto. En una frase, ¿qué módulo o proceso te gustaría automatizar con OMEGA?',placeholder:'Ej: Alertas de cartera vencida por WhatsApp'},
  {key:'process',q:'Contame el proceso actual: ¿cómo lo hacen hoy y dónde se traba?',placeholder:'Ej: revisamos Excel a mano cada lunes y perdemos tiempo…'},
  {key:'actors',q:'¿Quiénes participan? (roles, equipos)',placeholder:'Ej: cartera, comercial, gerencia'},
  {key:'data_sources',q:'¿De dónde salen los datos? (Odoo, Excel, otro sistema)',placeholder:'Ej: Odoo módulo Contabilidad + Excel de comerciales'},
@@ -23,7 +23,7 @@ const steps:Step[]=[
  {key:'plan',q:'¿Bajo qué plan queda registrada esta solicitud?',placeholder:'Elegí un plan',options:['free','pro','enterprise']},
 ];
 
-const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Nova IA. Voy a hacerte 12 preguntas cortas para armar tu solicitud de módulo. Al final el equipo de Nova Business la recibe y te envía una cotización. Empecemos…'};
+const openingBot:Msg={role:'bot',at:Date.now(),text:'Hola, soy Omega IA. Voy a hacerte 12 preguntas cortas para armar tu solicitud de módulo. Al final el equipo de OMEGA la recibe y te envía una cotización. Empecemos…'};
 
 function planLabel(p:string){return p==='free'?'Free · 100 tk':p==='pro'?'Pro · 500 tk/mes':'Enterprise · 2000 tk/mes';}
 
@@ -120,7 +120,7 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
   <aside className="trueque-summary">
    <div className="trueque-summary-head">
     <div className="trueque-brand"><Sparkles size={16}/><strong>Nova Factory</strong></div>
-    <p>Contanos qué módulo necesitás. El equipo de Nova Business lo diseña, cotiza y construye.</p>
+    <p>Contanos qué módulo necesitás. El equipo de OMEGA lo diseña, cotiza y construye.</p>
    </div>
    <div className="trueque-plans">
     <div className="plan"><strong>Free</strong><em>100 tk/mes</em><span>Un módulo por trimestre · soporte comunidad</span></div>
@@ -159,13 +159,13 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
      <div className="chat-bubble">{m.text}</div>
     </div>)}
     {submitted&&!submitted.fallback&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble success">
-     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud recibida por Nova Business</strong>
+     <strong><Check size={13} style={{verticalAlign:'-2px'}}/> Solicitud recibida por OMEGA</strong>
      <p>Recibo del servidor: <code>{submitted.id}</code>{marketItem?` · vinculada a ${marketItem}`:''}</p>
      <p>El equipo revisa tu solicitud y te contactamos con la cotización.</p>
     </div></div>}
     {submitted&&submitted.fallback&&<div className="chat-msg bot"><span className="chat-avatar"><Bot size={14}/></span><div className="chat-bubble">
      <strong>Pendiente de envío</strong>
-     <p>{submitted.error?`El servidor rechazó la solicitud: ${submitted.error}`:live.live?'No se pudo contactar el servidor.':'Modo demostración: no hay backend NOVA conectado.'} Quedó guardada solo en este navegador (<code>{submitted.id}</code>) y <b>todavía no fue recibida</b> por Nova Business.</p>
+     <p>{submitted.error?`El servidor rechazó la solicitud: ${submitted.error}`:live.live?'No se pudo contactar el servidor.':'Modo demostración: no hay backend NOVA conectado.'} Quedó guardada solo en este navegador (<code>{submitted.id}</code>) y <b>todavía no fue recibida</b> por OMEGA.</p>
     </div></div>}
     {marketItem&&!submitted&&<p className="block-note">Solicitud vinculada al artículo del Market: <b>{marketItem}</b>.</p>}
    </div>
@@ -184,17 +184,17 @@ export default function TruequeChat({onSubmitted}:{onSubmitted?:()=>void}){
     {done&&!submitted&&<div className="trueque-terms">
      <label className="trueque-terms-check">
       <input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)}/>
-      <span>Acepto los <button type="button" className="terms-link" onClick={()=>setTermsOpen(true)}>términos y condiciones</button> de <b>Nova Business</b> y el tratamiento responsable de mis datos.</span>
+      <span>Acepto los <button type="button" className="terms-link" onClick={()=>setTermsOpen(true)}>términos y condiciones</button> de <b>OMEGA</b> y el tratamiento responsable de mis datos.</span>
      </label>
-     <button type="button" className="chat-submit" onClick={send} disabled={sending||!termsAccepted} aria-disabled={sending||!termsAccepted}>{sending?<><Loader2 size={14} className="spin"/> Enviando…</>:<><Cpu size={14}/> Enviar solicitud a Nova Business</>}</button>
+     <button type="button" className="chat-submit" onClick={send} disabled={sending||!termsAccepted} aria-disabled={sending||!termsAccepted}>{sending?<><Loader2 size={14} className="spin"/> Enviando…</>:<><Cpu size={14}/> Enviar solicitud a OMEGA</>}</button>
     </div>}
     {submitted&&<button type="button" className="chat-submit" onClick={()=>{setMsgs([openingBot,{role:'bot',at:Date.now(),text:steps[0].q}]);setValues({});setStepIdx(0);setInput('');setSubmitted(null);setIdemKey(newKey());setTermsAccepted(false);}}><Sparkles size={14}/> Nueva solicitud</button>}
    </footer>
   </section>
   {termsOpen&&<div className="terms-backdrop" onClick={e=>{if(e.target===e.currentTarget)setTermsOpen(false);}}>
-   <div className="terms-modal" role="dialog" aria-label="Términos y condiciones de Nova Business">
+   <div className="terms-modal" role="dialog" aria-label="Términos y condiciones de OMEGA">
     <header className="terms-head">
-     <div><FileText size={16}/><strong>Términos y condiciones</strong><small>· Nova Business</small></div>
+     <div><FileText size={16}/><strong>Términos y condiciones</strong><small>· OMEGA</small></div>
      <button type="button" aria-label="Cerrar" onClick={()=>setTermsOpen(false)}><X size={16}/></button>
     </header>
     <div className="terms-body">

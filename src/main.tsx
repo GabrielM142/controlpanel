@@ -5,6 +5,7 @@ import App from './App';
 import './styles/omega-tokens.css';
 import './styles/legacy-palette.css';
 import './theme.css';
+import './styles/omega-shell.css';
 
 // One-shot migration for boceto users that used the previous side.* localStorage namespace.
 try{

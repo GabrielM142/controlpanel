@@ -35,52 +35,53 @@ const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Panel de Control',question:'Configurá los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
- {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de Nova Business — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
+ {id:'market',group:'Market',subgroup:'Catálogo',label:'Todo el catálogo',question:'Catálogo completo de OMEGA — módulos Odoo, skills, automatizaciones y servicios.',component:MarketAll,icon:Store},
  {id:'market-odoo',group:'Market',subgroup:'Catálogo',label:'Módulos Odoo',question:'Extensiones certificadas para tu instancia de Odoo. Precio de referencia o “a cotizar”.',component:MarketOdoo,icon:Package},
  {id:'market-skills',group:'Market',subgroup:'Catálogo',label:'Skills',question:'Paquetes de expertise y consultoría con nuestro equipo especializado.',component:MarketSkills,icon:Sparkles},
  {id:'market-automations',group:'Market',subgroup:'Catálogo',label:'Automatizaciones',question:'Bots, integraciones y flujos automáticos que ahorran horas al mes.',component:MarketAutomations,icon:Zap},
  {id:'market-services',group:'Market',subgroup:'Catálogo',label:'Servicios',question:'Retainers, auditorías y paquetes de acompañamiento continuo.',component:MarketServices,icon:Wrench},
  {id:'tasks',group:'Espacio Personal',label:'Mis Tareas',question:'Mi tablero personal de tareas — el copiloto lo lee y sugiere próximos pasos.',component:TasksView,icon:ListTodo},
  {id:'notes',group:'Espacio Personal',label:'Mis Notas',question:'Anotaciones rápidas vinculadas a las vistas del panel.',component:NotesView,icon:StickyNote},
- {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Nova IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo Nova Business.',component:TruequeChat,icon:Wand2},
- {id:'trueque-list',group:'Factory',label:'Mis Solicitudes',question:'Historial de módulos solicitados a Nova Business con su estado actual.',component:TruequeList,icon:ListChecks},
+ {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chateá con Omega IA para describir el módulo que necesitás. Al finalizar lo enviamos al equipo OMEGA.',component:TruequeChat,icon:Wand2},
+ {id:'trueque-list',group:'Factory',label:'Mis Solicitudes',question:'Historial de módulos solicitados a OMEGA con su estado actual.',component:TruequeList,icon:ListChecks},
 ];
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
 const icons:Record<string,LucideIcon>={nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
-// Sidebar taxonomy: "Control Total" wraps the three analytical groups; other groups are top-level; Factory renders as its own bottom block.
-const superGroupOrder=['Control Total','Soporte','Market','Ajustes','Espacio Personal'] as const;
-const superGroups:Record<string,string[]>={
- 'Control Total':['Ejecutivo','Centros de Inteligencia','Unidades de Negocio'],
-};
-const allGroups=['Ejecutivo','Centros de Inteligencia','Unidades de Negocio','Soporte','Market','Ajustes','Espacio Personal'] as const;
-function findSuperGroup(group:string):string|undefined{for(const [sg,gs] of Object.entries(superGroups))if(gs.includes(group))return sg;return undefined;}
-const subGroups:Record<string,{label:string;ids:string[]}[]>={
- 'Centros de Inteligencia':[
-  {label:'Mercado',ids:['comercial','clientes','marketing']},
-  {label:'Operaciones',ids:['compras','inventarios','logistica']},
-  {label:'Finanzas & Riesgo',ids:['financiero','riesgos']},
- ],
- 'Unidades de Negocio':[
+// OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
+// its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
+type NavSub={label:string;ids:string[]};
+type NavSection={label:string;subs:NavSub[]};
+const NAV:NavSection[]=[
+ {label:'Ejecutivo',subs:[
+  {label:'Dirección',ids:['nivel1']},
+  {label:'Ventas',ids:['comercial','clientes','marketing']},
+  {label:'Compras',ids:['compras','inventarios','logistica']},
+  {label:'Finanzas y riesgo',ids:['financiero','riesgos']},
+ ]},
+ {label:'Unidades',subs:[
   {label:'Mayorista',ids:['mayoristahogar','mayoristaintorno']},
   {label:'Retail',ids:['retailjuj','retailintorno']},
- ],
- 'Soporte':[
-  {label:'Helpdesk',ids:['tickets']},
- ],
- 'Ajustes':[
-  {label:'Configuración',ids:['control','sources']},
- ],
- 'Market':[
-  {label:'Catálogo',ids:['market','market-odoo','market-skills','market-automations','market-services']},
- ],
-};
+ ]},
+ {label:'Gestión',subs:[
+  {label:'Tickets de soporte',ids:['tickets']},
+  {label:'Tareas y notas',ids:['tasks','notes']},
+ ]},
+ {label:'Configuración',subs:[
+  {label:'Datos y umbrales',ids:['sources','control']},
+  {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},
+ ]},
+];
+function locate(id:string):{section:string;sub?:string}{
+ for(const sec of NAV)for(const sub of sec.subs)if(sub.ids.includes(id))return {section:sec.label,sub:sub.ids.length>1?sub.label:undefined};
+ return {section:'Factory'};
+}
+const findSub=(id:string,_group?:string)=>locate(id).sub;
 
 const allValidIds=new Set([...report.pages.map(p=>p.id),...virtualPages.map(p=>p.id)]);
 const getPage=()=>{const h=location.hash.slice(1);return allValidIds.has(h)?h:'nivel1';};
-const findSub=(id:string,group:string)=>subGroups[group]?.find(sg=>sg.ids.includes(id))?.label;
 const ls={get(k:string,f:string){try{return localStorage.getItem(k)??f;}catch{return f;}},set(k:string,v:string){try{localStorage.setItem(k,v);}catch{}}};
 
 function AppShell(){
@@ -91,7 +92,10 @@ function AppShell(){
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
- const [theme,setTheme]=useState<'light'|'dark'>(()=>ls.get('nova.theme','light')==='dark'?'dark':'light');
+ const [theme,setTheme]=useState<'light'|'dark'>(()=>{
+  if(ls.get('nova.theme.omega','')!=='1'){ls.set('nova.theme.omega','1');return 'dark';}
+  return ls.get('nova.theme','dark')==='light'?'light':'dark';
+ });
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
  const [rulerY,setRulerY]=useState(0);
@@ -99,14 +103,13 @@ function AppShell(){
  const [alertsOpen,setAlertsOpen]=useState(false);
  const [paletteOpen,setPaletteOpen]=useState(false);
  const [presentation,setPresentation]=useState(false);
- const [expanded,setExpanded]=useState<Set<string>>(()=>{try{const raw=localStorage.getItem('nova.nav');if(raw)return new Set(JSON.parse(raw));}catch{}return new Set([...Object.keys(superGroups).map(sg=>`sg:${sg}`),...allGroups.map(g=>`g:${g}`)]);});
+ const [expanded,setExpanded]=useState<Set<string>>(()=>{const all=NAV.map(n=>`sec:${n.label}`);try{const raw=localStorage.getItem('nova.nav');if(raw){const saved=new Set<string>(JSON.parse(raw));if([...saved].some(k=>k.startsWith('sec:')))return saved;}}catch{}return new Set(all);});
  const drawer=useRef<HTMLDialogElement>(null);
 
  const isVirtual=virtualIds.has(pageId);
  const virtualPage=isVirtual?virtualById.get(pageId)!:null;
  const reportPage=!isVirtual?report.pages.find(p=>p.id===pageId)!:null;
 
- const pageGroup=virtualPage?virtualPage.group:reportPage!.group;
  const pageLabel=virtualPage?virtualPage.label:reportPage!.label;
  const pageQuestion=virtualPage?virtualPage.question:reportPage!.question;
  const pageFilters=virtualPage?[]:reportPage!.filters;
@@ -119,18 +122,19 @@ function AppShell(){
  const published=live.status?.published||null;
  const stale=!!published?.business_date&&(Date.now()-new Date(`${published.business_date}T23:59:59`).getTime())>2*86400000;
  const optionsFor=(key:string)=>{const base=report.filters[key].options;const extra=liveOptions[key];if(!live.live||!extra)return base;return [base[0],...extra.filter(v=>v!==base[0])];};
- const currentSub=virtualPage?virtualPage.subgroup:findSub(pageId,pageGroup);
+ const loc=locate(pageId);
+ const currentSub=loc.sub;
 
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
- useEffect(()=>{document.title=`${pageLabel} · Panel Analítico · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
+ useEffect(()=>{document.title=`${pageLabel} · OMEGA · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
  useEffect(()=>{if(!live.live||!live.tenantId){setLiveOptions({});return;}let off=false;api<Record<string,string[]>>('/api/filters',{tenant:live.tenantId}).then(o=>{if(!off)setLiveOptions(o);}).catch(()=>{});return()=>{off=true;};},[live.live,live.tenantId,published?.version]);
  useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
 
- useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);const sg=findSuperGroup(pageGroup);if(sg)next.add(`sg:${sg}`);next.add(`g:${pageGroup}`);if(currentSub)next.add(`s:${pageGroup}::${currentSub}`);return next;});},[pageGroup,currentSub]);
+ useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);next.add(`sec:${loc.section}`);if(currentSub)next.add(`sub:${loc.section}::${currentSub}`);return next;});},[loc.section,currentSub]);
  useEffect(()=>{ls.set('nova.nav',JSON.stringify([...expanded]));},[expanded]);
 
  useEffect(()=>{document.documentElement.dataset.theme=theme;ls.set('nova.theme',theme);},[theme]);
@@ -176,64 +180,46 @@ function AppShell(){
 
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Factory');
-  const currentSuperGroup=findSuperGroup(pageGroup);
-
-  function renderGroup(group:string){
-   const gKey=`g:${group}`;const gOpen=expanded.has(gKey);const subs=subGroups[group];
-   const rp=report.pages.filter(p=>p.group===group);
-   const vp=virtualPages.filter(p=>p.group===group);
-   const groupPages=[...rp,...vp];
-   if(groupPages.length===0)return null;
-   return <div className={`nav-group ${gOpen?'open':'closed'}`} key={group}>
-    <button type="button" className="nav-group-header" aria-expanded={gOpen} onClick={()=>toggleKey(gKey)}><span>{group}</span><ChevronDown size={12} className={gOpen?'':'rotate-neg90'}/></button>
-    {gOpen&&<div className="nav-group-body">{subs
-     ?<>{subs.map(sg=>{
-       const sKey=`s:${group}::${sg.label}`;const sOpen=expanded.has(sKey);
-       const sgPages=sg.ids.map(id=>groupPages.find(p=>p.id===id)).filter(Boolean) as (ReportPage|VirtualPage)[];
-       if(sgPages.length===0)return null;
-       return <div className={`nav-sub ${sOpen?'open':'closed'}`} key={sg.label}>
-        <button type="button" className="nav-sub-header" aria-expanded={sOpen} onClick={()=>toggleKey(sKey)}><ChevronRight size={11} className={sOpen?'rotate-90':''}/><span>{sg.label}</span></button>
-        {sOpen&&sgPages.map(p=><NavItem key={p.id} p={p}/>)}
-       </div>;
-      })}
-      {groupPages.filter(p=>!subs.some(sg=>sg.ids.includes(p.id))).map(p=><NavItem key={p.id} p={p}/>)}
-     </>
-     :groupPages.map(p=><NavItem key={p.id} p={p}/>)}
-    </div>}
-   </div>;
-  }
-
+  const byId=(id:string)=>report.pages.find(p=>p.id===id)||virtualById.get(id);
   return <>
-   <TenantSwitcher/>
-   <div className="brand-rule"/>
-   <nav aria-label="Menú principal">{superGroupOrder.map(entry=>{
-    const nested=superGroups[entry];
-    if(!nested)return renderGroup(entry);
-    const sgKey=`sg:${entry}`;const sgOpen=expanded.has(sgKey);const isActive=currentSuperGroup===entry;
-    return <div className={`nav-super ${sgOpen?'open':'closed'}${isActive?' is-active':''}`} key={entry}>
-     <button type="button" className="nav-super-header" aria-expanded={sgOpen} onClick={()=>toggleKey(sgKey)}>
-      <span className="nav-super-icon"><Command size={13}/></span>
-      <span className="nav-super-label">{entry}</span>
-      <ChevronDown size={12} className={sgOpen?'nav-super-chev':'nav-super-chev rotate-neg90'}/>
-     </button>
-     {sgOpen&&<div className="nav-super-body">{nested.map(g=>renderGroup(g))}</div>}
-    </div>;
-   })}
-   <div className="nav-trueque">
-    <div className="nav-trueque-head"><Sparkles size={12}/><span>Factory</span></div>
-    {truequePages.map(p=><NavItem key={p.id} p={p}/>)}
-    <div className="nav-trueque-foot">Powered by <b>Nova Business</b> · factoría de módulos a medida</div>
+   <div className="omega-brand">
+    <span className="omega-mark" aria-hidden="true">Ω</span>
+    <div><strong>OMEGA</strong><small>La última palabra en tus datos</small></div>
    </div>
+   <TenantSwitcher/>
+   <nav aria-label="Menú principal" className="omega-nav">
+    {NAV.map((sec,si)=>{
+     const secKey=`sec:${sec.label}`;const open=expanded.has(secKey);
+     return <div key={sec.label}>
+      {si===3&&<button type="button" className="omega-ask-nav" onClick={()=>{setAiOpen(true);setMenuOpen(false);}}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>}
+      <div className={`nav-group omega-section ${open?'open':'closed'}${loc.section===sec.label?' is-active':''}`}>
+       <button type="button" className="nav-group-header omega-section-head" aria-expanded={open} onClick={()=>toggleKey(secKey)}><span>{sec.label}</span><ChevronDown size={12} className={open?'':'rotate-neg90'}/></button>
+       {open&&<div className="nav-group-body">{sec.subs.map(sub=>{
+        const pages=sub.ids.map(byId).filter(Boolean) as (ReportPage|VirtualPage)[];
+        if(pages.length===1)return <NavItem key={sub.label} p={pages[0]}/>;
+        const subKey=`sub:${sec.label}::${sub.label}`;const subOpen=expanded.has(subKey)||sub.ids.includes(pageId);
+        return <div className={`nav-sub ${subOpen?'open':'closed'}`} key={sub.label}>
+         <button type="button" className="nav-sub-header" aria-expanded={subOpen} onClick={()=>toggleKey(subKey)}><ChevronRight size={11} className={subOpen?'rotate-90':''}/><span>{sub.label}</span></button>
+         {subOpen&&pages.map(p=><NavItem key={p.id} p={p}/>)}
+        </div>;
+       })}</div>}
+      </div>
+     </div>;
+    })}
+    <div className="nav-trueque">
+     <div className="nav-trueque-head"><Sparkles size={12}/><span>Factory</span></div>
+     {truequePages.map(p=><NavItem key={p.id} p={p}/>)}
+     <div className="nav-trueque-foot">Módulos a medida para tu ERP</div>
+    </div>
    </nav>
    <SidebarFoot/>
   </>;
  }
 
  function SidebarFoot(){
-  return <div className="sidebar-foot nova-foot">
-   <div className="nova-mark" aria-hidden="true"><Sparkles size={14}/></div>
-   <div><strong>Nova Business</strong><span>Dashboard · Soporte · Factory</span></div>
-   <span className="foot-dot"/>
+  return <div className="sidebar-foot nova-foot omega-foot">
+   <span className="omega-avatar" aria-hidden="true">{activeTenant.monogram}</span>
+   <div><strong>{activeTenant.name}</strong><span>{live.live?(live.membership?.role||''):'Demo · datos de ejemplo'}</span></div>
   </div>;
  }
 
@@ -249,16 +235,15 @@ function AppShell(){
     <div className="utility-bar">
      <div className="breadcrumbs">
       <button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(true)}><Menu size={21}/></button>
-      <span>Nova Business</span>
-      {findSuperGroup(pageGroup)&&<><ChevronRight size={12}/><span className="crumb-sub">{findSuperGroup(pageGroup)}</span></>}
-      <ChevronRight size={12}/><span>{pageGroup}</span>
+      <span>OMEGA</span>
+      <ChevronRight size={12}/><span>{loc.section}</span>
       {currentSub&&<><ChevronRight size={12}/><span className="crumb-sub">{currentSub}</span></>}
       <ChevronRight size={12}/><span className="crumb-current">{pageLabel}</span>
      </div>
      <div className="utility-right">
       {live.live
        ?<span className={`odoo-chip hide-mobile ${!published||stale?'is-stale':''}`} title={published?`Versión ${published.version} · consistencia: intervalo capturado (no fotografía exacta a las 00:00)`:'Aún no hay datos publicados'}>
-         <span className="odoo-dot"/><b>Odoo</b><em>· {published?`corte ${published.business_date}${stale?' · desactualizado':''}`:'sin publicación'}</em>
+         <span className="odoo-dot"/><b>Cierre</b><em>{published?` ${published.business_date}${stale?' · desactualizado':` · sincronizado ${new Date(Object.values(published.sources)[0]?.observed_to||published.published_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})}`}`:' sin publicación'}</em>
         </span>
        :<span className="odoo-chip hide-mobile is-demo" title="Datos de ejemplo · Odoo pendiente de conexión">
          <span className="odoo-dot"/><b>Demo</b><em>· datos de ejemplo</em>
@@ -268,22 +253,24 @@ function AppShell(){
        <Bell size={17}/>
        {criticalAlerts>0&&<span className="bell-badge">{criticalAlerts}</span>}
       </button>
-      <button type="button" className="icon-button hide-mobile" aria-label="Búsqueda rápida (Ctrl+K)" title="Búsqueda rápida (Ctrl+K)" onClick={()=>setPaletteOpen(true)}>
-       <Search size={16}/>
+      <button type="button" className="omega-ask hide-mobile" onClick={()=>setPaletteOpen(true)} aria-label="Pregúntale a Omega o busca una vista (Ctrl+K)">
+       <span className="omega-glyph" aria-hidden="true">Ω</span>
+       <span className="omega-ask-text">Pregúntale a Omega o busca una vista</span>
+       <kbd>Ctrl K</kbd>
       </button>
-      <button type="button" className="icon-button hide-mobile" aria-label="Compartir esta vista" title="Compartir enlace de esta vista" onClick={shareView}>
+      <button type="button" className="icon-button omega-tucked" aria-label="Compartir esta vista" title="Compartir enlace de esta vista" onClick={shareView}>
        <Share2 size={15}/>
       </button>
-      <button type="button" className="icon-button hide-mobile" aria-label="Iniciar tour de bienvenida" title="Repetir tour de bienvenida" onClick={()=>startTour()}>
+      <button type="button" className="icon-button omega-tucked" aria-label="Iniciar tour de bienvenida" title="Repetir tour de bienvenida" onClick={()=>startTour()}>
        <GraduationCap size={16}/>
       </button>
-      <div className="tool-buttons hide-mobile" role="group" aria-label="Herramientas de lectura">
+      <div className="tool-buttons omega-tucked" role="group" aria-label="Herramientas de lectura">
        <button type="button" className={`tool-button ${rulerOn?'on':''}`} aria-pressed={rulerOn} aria-label="Regla de lectura" title="Regla de lectura" onClick={()=>setRulerOn(v=>!v)}><Minus size={16}/></button>
        <button type="button" className={`tool-button ${presentation?'on':''}`} aria-pressed={presentation} aria-label="Modo presentación" title="Modo presentación (oculta filtros y bordes)" onClick={()=>setPresentation(v=>!v)}><Play size={14}/></button>
        <button type="button" className="tool-button" aria-label={theme==='dark'?'Modo claro':'Modo oscuro'} title={theme==='dark'?'Modo claro':'Modo oscuro'} onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}>{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</button>
        <button type="button" className="tool-button" aria-label={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} title={isFullscreen?'Salir de pantalla completa':'Pantalla completa'} onClick={toggleFullscreen}>{isFullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}</button>
       </div>
-      <MoreMenu className="show-mobile" items={[
+      <MoreMenu className="omega-more" items={[
        {icon:Search,label:'Buscar vista',shortcut:'Ctrl+K',onClick:()=>setPaletteOpen(true)},
        {icon:Share2,label:'Compartir esta vista',onClick:shareView},
        {icon:GraduationCap,label:'Repetir tour',onClick:()=>startTour()},
@@ -292,12 +279,13 @@ function AppShell(){
        {icon:theme==='dark'?Sun:Moon,label:theme==='dark'?'Modo claro':'Modo oscuro',onClick:()=>setTheme(t=>t==='dark'?'light':'dark')},
        {icon:isFullscreen?Minimize2:Maximize2,label:isFullscreen?'Salir de pantalla completa':'Pantalla completa',onClick:toggleFullscreen},
       ]}/>
+      <button type="button" className="omega-present hide-mobile" aria-pressed={presentation} onClick={()=>setPresentation(v=>!v)}><Play size={14}/>{presentation?'Salir de presentación':'Presentar al directorio'}</button>
       {live.user?<button type="button" className="avatar hide-mobile-small" title={`${live.user.name} · cerrar sesión`} aria-label="Cerrar sesión" onClick={()=>live.logout()}>{live.user.name.slice(0,2).toUpperCase()}<LogOut size={10}/></button>:<span className="avatar hide-mobile-small">JUJ</span>}
      </div>
     </div>
     <header className="page-header">
      <div className="page-heading">
-      <div className="page-kicker"><span className="gold-line"/>{pageGroup}{currentSub?` · ${currentSub}`:''}</div>
+      <div className="page-kicker"><span className="gold-line"/>{loc.section}{currentSub?` · ${currentSub}`:''}</div>
       <h1>{pageLabel}</h1>
       <p>{pageQuestion}</p>
      </div>
@@ -318,17 +306,17 @@ function AppShell(){
     </section>}
     <div className="report-content" key={pageId}>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
-     {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configurá la fuente en <b>Ajustes · Fuentes de datos</b>.</p>}
+     {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configurá la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:'José Ugalde Jerves · Control Empresarial'}</span></div>
     </div>
    </main>
   </div>
   {rulerOn&&<div className="reading-ruler" aria-hidden="true" style={{top:rulerY}}/>}
-  {!aiOpen&&<button type="button" className="ai-bubble" onClick={()=>setAiOpen(true)} aria-label="Abrir copiloto de análisis con IA" title="Interpretar la pantalla con IA">
+  {!aiOpen&&<button type="button" className="ai-bubble" onClick={()=>setAiOpen(true)} aria-label="Pregúntale a Omega sobre esta vista" title="Pregúntale a Omega">
    <span className="ai-bubble-glow" aria-hidden="true"/>
-   <Sparkles size={20}/>
-   <span className="ai-bubble-label">Copiloto</span>
+   <span className="omega-glyph" aria-hidden="true">Ω</span>
+   <span className="ai-bubble-label">Omega</span>
   </button>}
   <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel}/>
   <AlertsDrawer open={alertsOpen} onClose={()=>setAlertsOpen(false)} onNavigate={navigate}/>

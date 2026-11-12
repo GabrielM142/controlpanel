@@ -30,7 +30,7 @@ export default function MarketView({category:presetCategory}:{category?:MarketCa
  }
 
  return <>
-  <h2 className="section-label"><span>Catálogo Nova Business</span><i/></h2>
+  <h2 className="section-label"><span>Catálogo OMEGA</span><i/></h2>
   <div className="grid g-4">
    {(Object.keys(CATEGORY_META) as MarketCategory[]).map(cat=>{
     const meta=CATEGORY_META[cat];const Icon=meta.icon;
@@ -89,6 +89,6 @@ export default function MarketView({category:presetCategory}:{category?:MarketCa
    </div>
   </section>
 
-  <p className="legend-note" style={{marginTop:14}}><Star size={12} style={{verticalAlign:'-2px',marginRight:6}}/>Los precios son referenciales. La propuesta final la valida tu ejecutivo Nova Business luego de tomar el requerimiento. Los ítems <b>"A cotizar"</b> pasan directo a <b>Nova Factory</b> para el flujo guiado.</p>
+  <p className="legend-note" style={{marginTop:14}}><Star size={12} style={{verticalAlign:'-2px',marginRight:6}}/>Los precios son referenciales. La propuesta final la valida tu ejecutivo OMEGA luego de tomar el requerimiento. Los ítems <b>"A cotizar"</b> pasan directo a <b>Nova Factory</b> para el flujo guiado.</p>
  </>;
 }

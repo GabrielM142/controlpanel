@@ -20,7 +20,7 @@ export function TenantSwitcher(){
     <span className="tenant-info"><strong>{t.name}</strong><em>{t.subtitle}</em><small>{t.sector}</small></span>
     {t.id===active.id&&<Check size={13}/>}
    </button>)}
-   <div className="tenant-menu-foot">{live?<>Solo empresas de tus membresías; el servidor valida cada consulta.</>:<>Empresas de <b>demostración</b>: el selector no cambia datos en este modo.</>} Panel operado por <b>Nova Business</b>.</div>
+   <div className="tenant-menu-foot">{live?<>Solo empresas de tus membresías; el servidor valida cada consulta.</>:<>Empresas de <b>demostración</b>: el selector no cambia datos en este modo.</>} Panel operado por <b>OMEGA</b>.</div>
   </div>}
  </div>;
 }

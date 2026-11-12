@@ -46,7 +46,7 @@ export default function TruequeList(){
  useEffect(()=>{load();},[load]);
 
  return <>
-  <h2 className="section-label"><span>Mis solicitudes a Nova Business</span><i/></h2>
+  <h2 className="section-label"><span>Mis solicitudes a OMEGA</span><i/></h2>
   <section className="panel">
    <header className="panel-heading" style={{gap:12}}>
     <h2><PackageCheck size={13} style={{verticalAlign:'-2px',marginRight:6}}/>Historial ({items.length})</h2>
@@ -78,6 +78,6 @@ export default function TruequeList(){
      </table></div>}
    </div>
   </section>
-  <p className="legend-note" style={{marginTop:14}}><b>Nova Business.</b> Los módulos entregados se despliegan como paquetes independientes dentro del ERP existente. Los tokens se consumen por captación y análisis; no se acumulan mes a mes.</p>
+  <p className="legend-note" style={{marginTop:14}}><b>OMEGA.</b> Los módulos entregados se despliegan como paquetes independientes dentro del ERP existente. Los tokens se consumen por captación y análisis; no se acumulan mes a mes.</p>
  </>;
 }
