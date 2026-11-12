@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {decryptSecret, encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
-import {buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
+import {aiFacts, buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
@@ -218,7 +218,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
   // Omega IA. The server re-reads the published reports for this tenant and filters (the
   // browser's numbers are never trusted) and asks Claude. General questions (page "omega")
   // read the main reports together. Max 60 questions per user per hour.
-  const AI_SCOPE = ['nivel1', 'comercial', 'clientes', 'inventarios', 'financiero', 'compras'];
+  const AI_SCOPE = ['comercial', 'inventarios', 'compras', 'logistica', 'financiero'];
   /** The company's provider and decrypted key, else the server-wide Anthropic key, else null. */
   async function aiFor(ctx) {
     const row = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c =>
@@ -287,6 +287,9 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const pages = pageId === 'omega' ? AI_SCOPE : [pageId, ...(pageId === 'nivel1' ? ['comercial'] : [])];
     const digests = [];
     let cut = 'sin datos publicados';
+    const pub = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c =>
+      (await c.query('SELECT business_date::text FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0]);
+    if (pub?.business_date) digests.push(await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, c => aiFacts(c, pub.business_date, ctx.companies)));
     for (const id of pages) {
       const payload = await reportFor(ctx, id, filters);
       if (payload.published) cut = `${payload.published.business_date} · versión ${payload.published.version}`;

@@ -120,8 +120,8 @@ export default function AskOmegaView(){
     <Eyebrow>Por qué</Eyebrow>
     <ol className="om-why">{current.why.map(w=><li key={w}>{w}</li>)}</ol>
     {current.suggestion&&<div className="om-reco"><Eyebrow>Decisión sugerida</Eyebrow><p>{current.suggestion}</p>
-     <button type="button" className="om-btn om-btn--gold" disabled={sent===current.id} onClick={()=>{addFromOmega({title:current.suggestion!,detail:`Desde la consulta «${current.q}». ${current.conclusion}`,recommendation:current.suggestion!,pageId:current.pageId});setSent(current.id);}}>{sent===current.id?'Llevada a decisiones':'Llevar a decisiones'}</button>
-     {sent===current.id&&<button type="button" className="om-link" onClick={()=>navigate('decisiones')}>Abrir la bandeja<ArrowUpRight size={13}/></button>}
+     <button type="button" className="om-btn om-btn--gold" disabled={sent===current.id} onClick={()=>{addFromOmega({title:current.suggestion!,detail:`Desde la consulta «${current.q}». ${current.conclusion}`,recommendation:current.suggestion!,pageId:current.pageId});setSent(current.id);}}>{sent===current.id?'Guardada en tu bandeja de decisiones':'Guardar como decisión pendiente (opcional)'}</button>
+     {sent===current.id&&<button type="button" className="om-link" onClick={()=>navigate('decisiones')}>Ver en Decisiones<ArrowUpRight size={13}/></button>}
     </div>}
     <footer className="om-sources"><Eyebrow><Database size={12}/> Fuentes</Eyebrow><ul>{current.sources.map(s=><li key={s}>{s}</li>)}</ul>
      <p className="om-muted">Solo lectura · {current.cut} · <button type="button" className="om-link" onClick={()=>navigate(current.pageId)}>Abrir el reporte<ArrowUpRight size={12}/></button></p>

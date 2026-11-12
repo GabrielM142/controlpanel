@@ -59,8 +59,8 @@ export function ReportAssistant({ctx,tenant,onOpenChat,onNavigate}:{ctx:ReportCo
     <h3 className="om-rassist-headline">{answer.headline}</h3>
     {answer.points.length>0&&<ul className="om-rassist-points">{answer.points.map(p=><li key={p.text} className={`is-${p.tone}`}><i aria-hidden="true"/><span>{p.text}<small>{p.source}</small></span></li>)}</ul>}
     {answer.suggestion&&<div className="om-reco"><Eyebrow>Decisión sugerida</Eyebrow><p>{answer.suggestion}</p>
-     <button type="button" className="om-btn om-btn--gold" disabled={sent===answer.id} onClick={()=>{addFromOmega({title:answer.suggestion!,detail:`Desde ${ctx.label} («${answer.q}»). ${answer.headline}`,recommendation:answer.suggestion!,pageId:ctx.pageId});setSent(answer.id);}}>{sent===answer.id?'Llevada a decisiones':'Llevar a decisiones'}</button>
-     {sent===answer.id&&<button type="button" className="om-link" onClick={()=>onNavigate('decisiones')}>Abrir la bandeja<ArrowUpRight size={13} aria-hidden="true"/></button>}
+     <button type="button" className="om-btn om-btn--gold" disabled={sent===answer.id} onClick={()=>{addFromOmega({title:answer.suggestion!,detail:`Desde ${ctx.label} («${answer.q}»). ${answer.headline}`,recommendation:answer.suggestion!,pageId:ctx.pageId});setSent(answer.id);}}>{sent===answer.id?'Guardada en tu bandeja de decisiones':'Guardar como decisión pendiente (opcional)'}</button>
+     {sent===answer.id&&<button type="button" className="om-link" onClick={()=>onNavigate('decisiones')}>Ver en Decisiones<ArrowUpRight size={13} aria-hidden="true"/></button>}
     </div>}
     <footer className="om-rassist-foot">
      <ul>{answer.caveats.map(c=><li key={c}>{c}</li>)}</ul>

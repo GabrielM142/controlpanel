@@ -167,7 +167,7 @@ function AppShell(){
  },[reportPage,live.live,reportState,shownFilters,filters]);
  const touched=useRef(new Set<string>());
  useEffect(()=>{if(!live.live||!cutDate)return;const y=cutDate.slice(0,4);const m=MONTHS[Number(cutDate.slice(5,7))-1];
-  setFilters(f=>({...f,...(touched.current.has('anio')?{}:{anio:y}),...(touched.current.has('mes')?{}:{mes:m})}));},[live.live,cutDate]);
+  setFilters(f=>({...f,...(touched.current.has('anio')?{}:{anio:y}),...(touched.current.has('mes')?{}:{mes:'Todos'})}));},[live.live,cutDate]);
  const loc=locate(pageId);
  const currentSub=loc.sub;
 
