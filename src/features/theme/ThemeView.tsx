@@ -1,8 +1,8 @@
-import {useEffect,useMemo,useState,type CSSProperties} from 'react';
+import {useEffect,useMemo,useRef,useState,type CSSProperties} from 'react';
 import {AlertTriangle,CheckCircle2,ImagePlus,Loader2,Lock} from 'lucide-react';
 import {useTenants} from '../tenants/useTenants';
 import {ConfirmDialog,Eyebrow} from '../omega/ui';
-import {FINANCIAL,SWATCHES,hueClash,onBrandFor,swatchHex,useBrandTheme,type BrandMode} from './useBrandTheme';
+import {FINANCIAL,LOGO_MAX_BYTES,SWATCHES,hueClash,onBrandFor,swatchHex,useBrandTheme,type BrandMode} from './useBrandTheme';
 
 const MODES:{id:BrandMode;label:string}[]=[{id:'dark',label:'Oscuro'},{id:'light',label:'Claro'},{id:'auto',label:'Automático'}];
 const finDot=(token:string)=>`om-dot-${token.replace('--fin-','')}`;
@@ -16,13 +16,22 @@ export default function ThemeView(){
  const [saving,setSaving]=useState(false);
  const [saved,setSaved]=useState(false);
  const [confirmClash,setConfirmClash]=useState(false);
- useEffect(()=>{setColor(theme.brandColor);setMode(theme.mode);},[theme]);
+ const [logo,setLogo]=useState<string|undefined>(theme.logo);
+ const [logoError,setLogoError]=useState<string|null>(null);
+ const fileRef=useRef<HTMLInputElement>(null);
+ useEffect(()=>{setColor(theme.brandColor);setMode(theme.mode);setLogo(theme.logo);},[theme]);
+ const pickLogo=(f?:File)=>{
+  setLogoError(null);if(!f)return;
+  if(!['image/png','image/svg+xml'].includes(f.type)){setLogoError('Usa un archivo SVG o PNG.');return;}
+  if(f.size>LOGO_MAX_BYTES){setLogoError('El logo debe pesar menos de 200 KB.');return;}
+  const r=new FileReader();r.onload=()=>setLogo(String(r.result));r.onerror=()=>setLogoError('No se pudo leer el archivo.');r.readAsDataURL(f);
+ };
 
  const check=useMemo(()=>({...onBrandFor(color),clash:hueClash(color)}),[color]);
  const swatches=useMemo(()=>SWATCHES.map(s=>({...s,hex:swatchHex(s.id)})),[]);
- const dirty=color!==theme.brandColor||mode!==theme.mode;
+ const dirty=color!==theme.brandColor||mode!==theme.mode||logo!==theme.logo;
 
- const doSave=()=>{setSaving(true);setSaved(false);setTimeout(()=>{save({brandColor:color,mode});setSaving(false);setSaved(true);},600);};
+ const doSave=()=>{setSaving(true);setSaved(false);setTimeout(()=>{save({brandColor:color,mode,logo});setSaving(false);setSaved(true);},600);};
  const onSave=()=>{if(check.clash)setConfirmClash(true);else doSave();};
 
  const preview={'--brand':color,'--on-brand':check.on} as CSSProperties;
@@ -60,9 +69,12 @@ export default function ThemeView(){
     <div className="om-card">
      <strong className="om-theme-title">Apariencia</strong>
      <div className="segmented om-mode" role="group" aria-label="Modo">{MODES.map(m=><button key={m.id} type="button" aria-pressed={mode===m.id} onClick={()=>setMode(m.id)}>{m.label}</button>)}</div>
-     <div className="om-logo-row"><span className="om-logo-slot" aria-hidden="true"><ImagePlus size={20}/></span>
-      <span className="om-muted">Logo de la empresa (SVG o PNG). Se muestra junto a la Ω de OMEGA.</span>
-      <button type="button" className="om-btn om-btn--ghost" aria-disabled="true" title="Disponible próximamente" onClick={e=>e.preventDefault()}>Subir logo</button></div>
+     <div className="om-logo-row"><span className="om-logo-slot">{logo?<img src={logo} alt="Logo actual de la empresa"/>:<ImagePlus size={20} aria-hidden="true"/>}</span>
+      <span className="om-muted">Logo de la empresa (SVG o PNG, hasta 200 KB). Se muestra junto a la Ω de OMEGA y se guarda en este navegador.</span>
+      <input ref={fileRef} type="file" accept="image/png,image/svg+xml" className="om-sr" aria-label="Elegir archivo de logo" onChange={e=>{pickLogo(e.target.files?.[0]);e.target.value='';}}/>
+      <div className="om-logo-actions"><button type="button" className="om-btn om-btn--ghost" onClick={()=>fileRef.current?.click()}>{logo?'Cambiar logo':'Subir logo'}</button>
+      {logo&&<button type="button" className="om-btn om-btn--ghost" onClick={()=>setLogo(undefined)}>Quitar</button>}</div></div>
+     {logoError&&<p className="om-check-row" role="alert"><AlertTriangle size={16} className="om-check-warn" aria-hidden="true"/>{logoError}</p>}
     </div>
 
     <div className="om-card om-locked">
@@ -74,7 +86,7 @@ export default function ThemeView(){
    <section className="om-theme-preview" aria-label="Vista previa en vivo">
     <Eyebrow>Vista previa en vivo</Eyebrow>
     <div className="om-pv" style={preview} data-pv-mode={mode==='light'?'light':'dark'}>
-     <div className="om-pv-side"><span className="om-pv-logo">Ω</span><span className="om-pv-nav is-on"/><span className="om-pv-nav"/><span className="om-pv-nav"/><span className="om-pv-nav"/></div>
+     <div className="om-pv-side"><span className="om-pv-logo">Ω</span>{logo&&<img className="om-pv-co" src={logo} alt=""/>}<span className="om-pv-nav is-on"/><span className="om-pv-nav"/><span className="om-pv-nav"/><span className="om-pv-nav"/></div>
      <div className="om-pv-main">
       <div className="om-pv-top"><span className="om-eyebrow">Briefing</span><span className="om-pv-cta">Presentar</span></div>
       <span className="om-pv-title">Tu cierre en una mirada.</span>

@@ -1,10 +1,12 @@
-import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
+import {createContext,createElement,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 
 // Tema por empresa (solo frontend): localStorage["nova.theme.<tenantId>"] = {brandColor, mode}.
 // Aplica --brand, --on-brand (contraste WCAG ≥ 4.5) y data-mode en <html>. La marca nunca pinta datos:
 // los colores financieros (--fin-*) son fijos. Los colores se leen de omega-tokens.css (sin hex aquí).
 export type BrandMode='dark'|'light'|'auto';
-export type BrandTheme={brandColor:string;mode:BrandMode};
+export type BrandTheme={brandColor:string;mode:BrandMode;logo?:string};
+/** Logo local (SVG o PNG), como data URL en este navegador. Se muestra con <img>: nunca se ejecuta. */
+export const LOGO_MAX_BYTES=200*1024;
 
 const css=(name:string)=>{try{return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}catch{return '';}};
 export const SWATCHES=[
@@ -43,7 +45,7 @@ export function hueClash(brand:string){
 const keyFor=(tenantId:string)=>`nova.theme.${tenantId}`;
 export function readTheme(tenantId:string):BrandTheme{
  const fallback:BrandTheme={brandColor:swatchHex('indigo')||'',mode:'dark'};
- try{const v=JSON.parse(localStorage.getItem(keyFor(tenantId))||'null');if(v&&hexToRgb(v.brandColor||'')&&['dark','light','auto'].includes(v.mode))return v;}catch{}
+ try{const v=JSON.parse(localStorage.getItem(keyFor(tenantId))||'null');if(v&&hexToRgb(v.brandColor||'')&&['dark','light','auto'].includes(v.mode))return {brandColor:v.brandColor,mode:v.mode,logo:typeof v.logo==='string'&&/^data:image\/(png|svg\+xml);base64,/.test(v.logo)?v.logo:undefined};}catch{}
  try{if(localStorage.getItem('nova.theme')==='light')fallback.mode='light';}catch{}
  return fallback;
 }
@@ -67,7 +69,7 @@ export function BrandThemeProvider({tenantId,children}:{tenantId:string;children
  const reset=useCallback(()=>{try{localStorage.removeItem(keyFor(tenantId));}catch{}const t={brandColor:swatchHex('indigo'),mode:'dark' as BrandMode};setTheme(t);},[tenantId]);
  const toggleMode=useCallback(()=>{setTheme(prev=>{const next:BrandTheme={...prev,mode:document.documentElement.dataset.mode==='light'?'dark':'light'};try{localStorage.setItem(keyFor(tenantId),JSON.stringify(next));localStorage.setItem('nova.theme',next.mode);}catch{}return next;});},[tenantId]);
  const value=useMemo(()=>({theme,save,reset,toggleMode,tenantId}),[theme,save,reset,toggleMode,tenantId]);
- return <BrandCtx.Provider value={value}>{children}</BrandCtx.Provider>;
+ return createElement(BrandCtx.Provider,{value},children);
 }
 
 export function useBrandTheme(){const v=useContext(BrandCtx);if(!v)throw new Error('useBrandTheme outside provider');return v;}

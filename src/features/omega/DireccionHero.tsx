@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
 import {ArrowRight,ShieldAlert,Signature} from 'lucide-react';
 import type {Widget} from '../../data/api';
-import {fmtMoney,kpisOf,listItems,parseNumber,tableRows} from './data';
+import {fmtMoney,kpisOf,listItems,parseNumber,seriesOf,tableRows} from './data';
 import {useDecisions,type Decision} from './useDecisions';
 import {Chip,ConfirmDialog,Eyebrow,OmegaGlyph,useUndoToast} from './ui';
 
@@ -38,6 +38,32 @@ function UnitsChart({rows}:{rows:string[][]}){
    </g>;})}
   </svg>
   <figcaption className="om-legend"><span><i className="om-key om-key--real"/>Real</span><span><i className="om-key om-key--ppto"/>Presupuesto</span><span><i className="om-key om-key--prev"/>Año anterior</span><span className="om-legend-note">Mayor venta: {best.n}</span></figcaption>
+ </figure>;
+}
+
+/** Resultado mensual: EBITDA (línea verde con área), utilidad neta (barras verde/rojo por signo) y flujo de caja (línea cian). */
+function MonthlyChart({ebitda,net,cash}:{ebitda:{n:string;v:number;vt:string}[];net:{n:string;v:number;vt:string}[];cash:{n:string;v:number;vt:string}[]}){
+ if(!ebitda.length)return <p className="om-empty">La serie mensual requiere el mapeo contable aprobado (Finanzas). Omega no la inventa.</p>;
+ const W=640,H=230,padL=44,padB=28,top=16;
+ const all=[...ebitda,...net,...cash].map(d=>d.v);const max=Math.max(...all,1),min=Math.min(...all,0);
+ const y=(v:number)=>top+(max-v)/(max-min||1)*(H-padB-top);
+ const step=(W-padL-16)/Math.max(ebitda.length-1,1);const x=(i:number)=>padL+i*step;
+ const line=(d:{v:number}[])=>d.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' ');
+ const area=`${line(ebitda)} L${x(ebitda.length-1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+ const bw=Math.min(18,step/3);
+ const peak=ebitda.reduce((a,b)=>b.v>a.v?b:a);
+ return <figure className="om-chart">
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Resultado mensual: EBITDA ${ebitda.map(d=>`${d.n} ${d.vt}`).join(', ')}; utilidad neta ${net.map(d=>`${d.n} ${d.vt}`).join(', ')}`}>
+   <defs><linearGradient id="om-area-income" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" style={{stopColor:'var(--fin-income)',stopOpacity:.32}}/><stop offset="100%" style={{stopColor:'var(--fin-income)',stopOpacity:0}}/></linearGradient></defs>
+   <line x1={padL} x2={W-8} y1={y(0)} y2={y(0)} className="om-zero"/>
+   {net.map((d,i)=><rect key={d.n} x={x(i)-bw/2} y={Math.min(y(d.v),y(0))} width={bw} height={Math.abs(y(d.v)-y(0))} rx="3" className={`om-grow ${d.v<0?'om-net-neg':'om-net-pos'}`}><title>{`Utilidad neta ${d.n}: ${d.vt}`}</title></rect>)}
+   <path d={area} fill="url(#om-area-income)"/>
+   <path d={line(ebitda)} className="om-line-income om-draw" fill="none"/>
+   {cash.length>0&&<path d={line(cash)} className="om-line-cash om-draw" fill="none"/>}
+   {ebitda.map((d,i)=><circle key={d.n} cx={x(i)} cy={y(d.v)} r={d===peak?5:3} className={d===peak?'om-pt-peak':'om-pt'}><title>{`EBITDA ${d.n}: ${d.vt}`}</title></circle>)}
+   {ebitda.map((d,i)=><text key={d.n} x={x(i)} y={H-8} textAnchor="middle" className="om-axis">{d.n}</text>)}
+  </svg>
+  <figcaption className="om-legend"><span><i className="om-key om-key--income"/>EBITDA</span><span><i className="om-key om-key--net"/>Utilidad neta (rojo si es pérdida)</span><span><i className="om-key om-key--cash"/>Flujo de caja</span><span className="om-legend-note">Mejor mes: {peak.n} ({peak.vt})</span></figcaption>
  </figure>;
 }
 
@@ -78,6 +104,7 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
  const units=useMemo(()=>tableRows('nivel1','nivel1-07',source),[source]);
  const iseRows=useMemo(()=>tableRows('nivel1','nivel1-08',source),[source]);
  const risks=useMemo(()=>listItems('nivel1','nivel1-10',source),[source]);
+ const monthly=useMemo(()=>({ebitda:seriesOf('financiero','financiero-29',source),net:seriesOf('financiero','financiero-30',source),cash:seriesOf('financiero','financiero-32',source)}),[source]);
  const {decisions}=useDecisions();
  const firma=decisions.filter(d=>d.status==='pendiente'&&d.amount).slice(0,3);
  const flow=useDecisionFlow();
@@ -117,6 +144,11 @@ export default function DireccionHero({widgets,live,onNavigate,onAsk}:{widgets:R
     <strong className={`om-figure${k&&parseNumber(k.value)!==null&&parseNumber(k.value)!<0?' om-bad':''}`}>{k?.value||'—'}</strong>
     <div className="om-kpi-foot">{k&&<Chip tone={toneChip(k.tone)}>{k.tone==='g'?'A favor':k.tone==='r'?'En contra':'Revisar'}</Chip>}<span>{note}</span></div>
    </article>)}
+  </section>
+
+  <section className="om-card om-rise" aria-label="Resultado mensual">
+   <header className="om-card-head"><div><Eyebrow>Resultado mensual · 2026</Eyebrow><h3>EBITDA, utilidad neta y caja</h3></div><span className="om-muted">Fuente: reporte Financiero</span></header>
+   <MonthlyChart {...monthly}/>
   </section>
 
   <div className="om-split">

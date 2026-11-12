@@ -156,3 +156,19 @@
 .utility-bar .mobile-menu { flex: none; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; color: var(--text); }
 .utility-bar .mobile-menu svg { display: block !important; width: 21px; height: 21px; }
 .report-content { padding-bottom: 96px !important; }
+
+/* Logo de la empresa junto a la Ω */
+.omega-co-logo { margin-left: auto; max-width: 56px; max-height: 34px; object-fit: contain; border-radius: 6px; }
+.om-logo-slot img { max-width: 48px; max-height: 48px; object-fit: contain; }
+.om-logo-actions { display: flex; flex-direction: column; gap: 6px; }
+.om-pv-co { width: 38px; height: 24px; object-fit: contain; }
+
+/* Resultado mensual (Dirección) */
+.om-zero { stroke: var(--line-strong); stroke-dasharray: 3 4; }
+.om-net-pos { fill: color-mix(in srgb, var(--fin-income) 55%, transparent); }
+.om-net-neg { fill: var(--fin-loss); }
+.om-line-income { stroke: var(--fin-income); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--fin-income) 50%, transparent)); }
+.om-line-cash { stroke: var(--fin-cash); stroke-width: 2; stroke-dasharray: 6 5; }
+.om-pt { fill: var(--fin-income); } .om-pt-peak { fill: var(--fin-goal); stroke: var(--bg); stroke-width: 2; }
+.om-key--income { background: var(--fin-income); } .om-key--cash { background: var(--fin-cash); }
+.om-key--net { background: linear-gradient(90deg, var(--fin-income) 50%, var(--fin-loss) 50%); }

@@ -213,6 +213,7 @@ function AppShell(){
    <div className="omega-brand">
     <span className="omega-mark" aria-hidden="true">Ω</span>
     <div><strong>OMEGA</strong><small>La última palabra en tus datos</small></div>
+    {brandTheme.theme.logo&&<img className="omega-co-logo" src={brandTheme.theme.logo} alt={`Logo de ${activeTenant.name}`}/>}
    </div>
    <TenantSwitcher/>
    <nav aria-label="Menú principal" className="omega-nav">

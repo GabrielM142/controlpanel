@@ -76,3 +76,11 @@ export function pageReading(pageId:string,widgets?:Record<string,Widget>|null):s
 }
 
 export const fmtMoney=(n:number)=>n.toLocaleString('es-EC',{style:'currency',currency:'USD',maximumFractionDigits:0});
+
+/** Bar series of a block (demo only; live mode has no monthly finance series until the accounting mapping exists). */
+export function seriesOf(pageId:string,blockId:string,widgets?:Record<string,Widget>|null):{n:string;v:number;vt:string}[]{
+ if(widgets)return [];
+ const b=blocksOf(pageById(pageId)!).find(x=>x.id===blockId);
+ if(!b||b.node.kind!=='bars')return [];
+ return b.node.rows.map(r=>{const m=/^([−-]?)([\d.,]+)\s*([KkMm]?)/.exec(r.vt.trim());const base=m?parseNumber(`${m[1]}${m[2]}`)??0:0;const mult=m&&/k/i.test(m[3])?1e3:m&&/m/i.test(m[3])?1e6:1;return {n:r.n,v:base*mult,vt:r.vt};});
+}
