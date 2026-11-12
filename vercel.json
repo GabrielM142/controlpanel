@@ -1,1 +1,18 @@
-{"buildCommand":"npm run build","outputDirectory":"dist","framework":"vite","rewrites":[{"source":"/((?!assets/|api/|health/).*)","destination":"/index.html"}],"headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"same-origin"},{"key":"X-Frame-Options","value":"SAMEORIGIN"}]}]}
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "functions": {
+    "api/index.mjs": {"maxDuration": 30, "includeFiles": "{contracts/**,src/data/report.json,package.json}"},
+    "api/cron.mjs": {"maxDuration": 800, "includeFiles": "{contracts/**,src/data/report.json,package.json}"}
+  },
+  "crons": [{"path": "/api/cron", "schedule": "*/5 * * * *"}],
+  "rewrites": [
+    {"source": "/api/cron", "destination": "/api/cron"},
+    {"source": "/api/:path*", "destination": "/api/index"},
+    {"source": "/health/:path*", "destination": "/api/index"},
+    {"source": "/mcp", "destination": "/api/index"},
+    {"source": "/((?!assets/|api/|health/|mcp).*)", "destination": "/index.html"}
+  ],
+  "headers": [{"source": "/(.*)", "headers": [{"key": "X-Content-Type-Options", "value": "nosniff"}, {"key": "Referrer-Policy", "value": "same-origin"}, {"key": "X-Frame-Options", "value": "SAMEORIGIN"}]}]
+}

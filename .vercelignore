@@ -1,13 +1,11 @@
-api/
+# Deployed: frontend (dist) + API and cron functions (api/, server/, lib/, contracts/).
+# Never deployed: worker loop, migrations, tests, Odoo addons, infra and docs.
 worker/
-lib/
 sql/
-server/
 tests/
 reference/
 scripts/
 odoo_addons/
-contracts/
 infra/
 docs/
 .github/
