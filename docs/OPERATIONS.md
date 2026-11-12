@@ -9,6 +9,20 @@
 | Worker | `npm run worker` | `nova_worker` | Proceso separado. Nunca lo dispara un visitante. |
 | Migraciones | `npm run migrate` | owner | Una transacción por archivo; checksum; no editar migraciones aplicadas. |
 
+### Producción actual: Vercel + Neon (desde 2026-11-12)
+
+| Pieza | Dónde | Variables |
+|---|---|---|
+| Panel | `dist/` (Vite) | `VITE_NOVA_API_URL=https://controlpanel-gamma.vercel.app` solo en Production (Preview queda en demo) |
+| API | función `api/index.mjs` (rewrites `/api/*`, `/health/*`, `/mcp`) | `APP_MODE=live`, `NOVA_SECRET_KEY`, `OMEGA_DATABASE_URL` (Neon pooled) |
+| Carga nocturna | Vercel Cron `*/5 * * * *` → `api/cron.mjs` (= `worker/run.mjs --once`) | `CRON_SECRET`, `OMEGA_DATABASE_URL_UNPOOLED` (advisory locks) |
+| Base | Neon `omega-db` (iad1), integración con prefijo `OMEGA` | La `DATABASE_URL` antigua del boceto se ignora a propósito |
+
+Migraciones y altas se ejecutan desde una máquina de operador con la URL directa:
+`vercel env pull` → `node --env-file=<archivo con DATABASE_URL=OMEGA_DATABASE_URL_UNPOOLED> sql/migrate.mjs`.
+Las funciones se conectan como dueño de la base y bajan privilegios con `SET LOCAL ROLE nova_api|nova_worker`
+(migración 0006 en PostgreSQL 16+). Rollback de despliegue: `vercel rollback` o `git revert`.
+
 Piloto: API, worker y PostgreSQL 15 pueden compartir una VM con pools acotados (`PGPOOL_MAX`) y
 `NOVA_WORKER_CONCURRENCY`. Dimensionar tras medir; no hay número de clientes garantizado.
 

@@ -138,7 +138,8 @@ function AppShell(){
  const widgetsValue=useMemo(()=>({live:live.live,loading:reportState.loading,widgets:reportState.data?.widgets||null,ids}),[live.live,reportState,ids]);
  const published=live.status?.published||null;
  const stale=!!published?.business_date&&(Date.now()-new Date(`${published.business_date}T23:59:59`).getTime())>2*86400000;
- const cutDate=published?.business_date||null;
+ // Live without a publication yet: anchor the period to today instead of the demo fixture month.
+ const cutDate=published?.business_date||(live.live&&live.status?new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10):null);
  const optionsFor=(key:string)=>{const base=report.filters[key].options;
   // Live: the month list follows the published close (data is deferred to the previous cut, not to the demo fixture).
   if(live.live&&key==='mes'&&cutDate){const n=Number(cutDate.slice(5,7));const y=cutDate.slice(0,4);const months=filters.anio===y?MONTHS.slice(0,n):MONTHS;return [base[0],...months];}
