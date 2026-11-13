@@ -5,6 +5,7 @@ import {enumerateBlocks} from '../lib/blocks.mjs';
 import {aiFacts, buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {alertMessage, evaluateAlerts, sendTelegram} from '../lib/alerts.mjs';
+import {cashflowBase} from '../lib/cashflow.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -804,6 +805,45 @@ export function createHandler({pool, config, now = () => new Date()}) {
       await c.query(`INSERT INTO ops.audit_log(tenant_id, user_id, action, target, details) VALUES ($1, $2, 'integration.push', $3, $4)`,
         [owner.tenant_id, owner.created_by, source, JSON.stringify({campaigns: rows.length})]);
       return {ok: true, source, campaigns: rows.length};
+    });
+  });
+
+  // Cash flow: real cash, committed flows and run-rate; scenarios are saved per company.
+  route('GET', /^\/api\/cashflow$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    const horizon = Math.min(12, Math.max(3, Number(query.meses) || 6));
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true, isolation: 'REPEATABLE READ'}, async c => {
+      const pub = (await c.query('SELECT version, business_date::text AS d FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      if (!pub?.d) return {published: null};
+      const base = await cashflowBase(c, pub.d, ctx.companies, horizon);
+      const scenarios = (await c.query('SELECT id, name, params, updated_at FROM app.cashflow_scenarios ORDER BY name')).rows;
+      return {published: {version: pub.version, business_date: pub.d}, ...base, scenarios,
+        can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.analyst};
+    });
+  });
+  route('PUT', /^\/api\/cashflow\/scenarios$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'analyst');
+    const b = await readJson(req, 16 * 1024);
+    const name = str(b.name, 80, {required: true, name: 'nombre del escenario'});
+    if (!b.params || typeof b.params !== 'object' || Array.isArray(b.params)) throw new HttpError(400, 'Parámetros inválidos');
+    const params = JSON.stringify(b.params);
+    if (params.length > 12000) throw new HttpError(400, 'Escenario demasiado grande');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const row = (await c.query(`INSERT INTO app.cashflow_scenarios(tenant_id, name, params, created_by) VALUES ($1, $2, $3, $4)
+          ON CONFLICT (tenant_id, name) DO UPDATE SET params = EXCLUDED.params, created_by = EXCLUDED.created_by, updated_at = now()
+          RETURNING id`, [ctx.tenantId, name, params, ctx.user.id])).rows[0];
+      await audit(c, ctx, 'cashflow.scenario', name, {});
+      return {ok: true, id: row.id};
+    });
+  });
+  route('DELETE', /^\/api\/cashflow\/scenarios\/(\d{1,12})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'analyst');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const n = (await c.query('DELETE FROM app.cashflow_scenarios WHERE id = $1', [match[1]])).rowCount;
+      if (!n) throw new HttpError(404, 'Escenario inexistente');
+      return {ok: true};
     });
   });
 

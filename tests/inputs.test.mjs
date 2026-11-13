@@ -149,3 +149,19 @@ test('marketing app integration: token once, push upserts by id, revoke stops it
   assert.equal((await call(api, 'DELETE', `/api/integrations/marketing/tokens/${info.body.tokens[0].id}`, {headers: H(ana, w.tenantA)})).status, 200);
   assert.equal((await push({source: 'iris', campaigns: [c1]})).status, 401);
 });
+
+test('cash flow: committed flows and run-rate from the close; scenarios per company', async () => {
+  const r = await call(api, 'GET', '/api/cashflow?meses=6', {headers: H(vera, w.tenantA)});
+  assert.equal(r.status, 200);
+  assert.equal(r.body.months.length, 6);
+  assert.ok(r.body.months[0] > r.body.cutoff.slice(0, 7), 'the projection starts after the close month');
+  assert.ok(r.body.runRate.sales >= 0 && typeof r.body.committed.overdue === 'number');
+  assert.equal(r.body.can_edit, false, 'viewers read but do not save scenarios');
+  assert.equal((await call(api, 'PUT', '/api/cashflow/scenarios', {headers: H(vera, w.tenantA), body: {name: 'x', params: {}}})).status, 403);
+  const s = await call(api, 'PUT', '/api/cashflow/scenarios', {headers: H(ana, w.tenantA), body: {name: 'Promo diciembre', params: {salesGrowth: 5, promoMonths: [r.body.months[0]]}}});
+  assert.equal(s.status, 200);
+  const again = await call(api, 'GET', '/api/cashflow', {headers: H(ana, w.tenantA)});
+  assert.deepEqual(again.body.scenarios.map(x => x.name), ['Promo diciembre']);
+  assert.equal(again.body.scenarios[0].params.salesGrowth, 5);
+  assert.equal((await call(api, 'DELETE', `/api/cashflow/scenarios/${s.body.id}`, {headers: H(ana, w.tenantA)})).status, 200);
+});
