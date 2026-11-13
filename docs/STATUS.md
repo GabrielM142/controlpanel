@@ -87,8 +87,8 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   contra Odoo: ventas 2026 al centavo, compras 0,1 %, despachos ±30 por zona horaria, inventario 0,01 %.
 - Margen contable: costo que Odoo contabiliza en cada entrega (cuenta de salida de la categoría) →
   margen bruto 2026 8,5 %. Hallazgo: 65.713 unidades entregadas sin facturar (~$153 mil a costo).
-- Reportes con datos reales: 136 de 166 bloques (antes 78). Financiero 35/35, Inventarios 19/19,
-  Clientes 15/15, Comercial 17/18, Compras 17/19, Logística 14/18, Dirección 11/13, Unidades 2/4.
+- Reportes con datos reales: 139 de 166 bloques (antes 78). Financiero 35/35, Inventarios 19/19,
+  Clientes 15/15, Logística 17/18, Comercial 17/18, Compras 17/19, Dirección 11/13, Unidades 2/4.
 - Financiero sale del dataset `account_balance_month` (saldo mensual por cuenta, snapshot) con el plan
   de cuentas ecuatoriano (601 venta, 602 administración, 603 financieros). En staging falta, al parecer,
   el asiento de apertura: caja y patrimonio negativos.
