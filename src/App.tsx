@@ -13,6 +13,7 @@ import ReportSetup from './features/inputs/ReportSetup';
 import RisksLive from './features/risks/RisksLive';
 import {useSkin} from './features/theme/useSkin';
 import {ADMIN_IDS,PORTALS,PORTAL_PAGE_IDS,SETTINGS_IDS,portalById,portalEntry,portalOf,rememberPortal,type Portal,type PortalId} from './features/portals/portals';
+import LockedModule from './features/portals/LockedModule';
 import PortalDock from './features/portals/PortalDock';
 import PortalPage,{type PortalItem,type PortalStatus} from './features/portals/PortalPage';
 import MobileDock from './features/portals/MobileDock';
@@ -187,7 +188,9 @@ function AppShell(){
  // Live mode only shows filters the API really applies (others would silently do nothing).
  const shownFilters=live.live?pageFilters.filter(k=>LIVE_FILTERS.has(k)):pageFilters;
  const filterQuery=useMemo(()=>Object.fromEntries(pageFilters.filter(k=>LIVE_FILTERS.has(k)).map(k=>[k,filters[k]])),[pageFilters,filters]);
- const reportState=useReportData(live.live&&reportPage?reportPage.id:null,filterQuery);
+ // Una vista fuera del plan sigue visible, pero no pide datos (la API respondería 403): muestra la pantalla de espera.
+ const pageLocked=pageId!=='plataforma'&&!allowed(pageId);
+ const reportState=useReportData(live.live&&reportPage&&!pageLocked?reportPage.id:null,filterQuery);
  const ids=useMemo(()=>reportPage?blockIds(reportPage.id,reportPage.nodes):new WeakMap<object,string>(),[reportPage]);
  const widgetsValue=useMemo(()=>({live:live.live,loading:reportState.loading,widgets:reportState.data?.widgets||null,ids}),[live.live,reportState,ids]);
  const published=live.status?.published||null;
@@ -273,8 +276,8 @@ function AppShell(){
 
  const paletteItems=useMemo<PaletteItem[]>(()=>[
   ...virtualPages.filter(p=>p.id.startsWith('portal-')).map(p=>({id:p.id,label:`Portal ${p.label}`,group:'Portales',keywords:p.question})),
-  ...report.pages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:labelFor(p.id,p.label),group:locate(p.id).section,keywords:`${p.group} ${p.question}`})),
-  ...virtualPages.filter(p=>!p.id.startsWith('portal-')&&allowed(p.id)).map(p=>({id:p.id,label:p.label,group:locate(p.id).section,subgroup:locate(p.id).sub,keywords:`${p.group} ${p.question}`})),
+  ...report.pages.filter(p=>p.id!=='plataforma'||allowed(p.id)).map(p=>({id:p.id,label:`${labelFor(p.id,p.label)}${allowed(p.id)?'':' · fuera de tu plan'}`,group:locate(p.id).section,keywords:`${p.group} ${p.question}`})),
+  ...virtualPages.filter(p=>!p.id.startsWith('portal-')&&(p.id!=='plataforma'||allowed(p.id))).map(p=>({id:p.id,label:`${p.label}${allowed(p.id)?'':' · fuera de tu plan'}`,group:locate(p.id).section,subgroup:locate(p.id).sub,keywords:`${p.group} ${p.question}`})),
  ],[unitNames,planModules,live.live,live.user]);
 
  const {activeAlerts}=useThresholds();
@@ -297,20 +300,22 @@ function AppShell(){
   const t=activeAlertsByPage[id];return {status:t==='r'?'atencion':t==='a'?'revisar':'estable'};
  };
  const portalBadge=(pt:Portal)=>pt.ids.reduce((n,id)=>n+(allowed(id)&&statusFor(id).status!=='estable'?(statusFor(id).badge||1):0),0);
- const portalItems=(pt:Portal):PortalItem[]=>pt.ids.filter(allowed).map(id=>{const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);
+ // Todas las vistas se muestran siempre; las que están fuera del plan llevan candado y abren una pantalla de espera.
+ const portalItems=(pt:Portal):PortalItem[]=>pt.ids.filter(id=>allValidIds.has(id)).map(id=>{const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);
   return {id,label:labelFor(id,rp?.label||vp?.label||id),question:rp?renames.reduce((q,[a,b])=>q.split(a).join(b),rp.question):vp?.question||'',icon:icons[id]||LayoutDashboard,...statusFor(id),
-   note:id==='trueque'||id==='trueque-list'?'Factory':undefined};});
- const portalAllowed=(pt:Portal)=>pt.ids.some(allowed);
+   note:id==='trueque'||id==='trueque-list'?'Factory':undefined,locked:!allowed(id)};});
+ const dockLinks=(pt:Portal)=>portalItems(pt).map(it=>({id:it.id,label:it.label,locked:it.locked,status:it.status,badge:it.badge}));
+ const portalAllowed=(pt:Portal)=>pt.ids.some(id=>allValidIds.has(id));
  const openPortal=(id:string)=>navigate(id);
  const accountName=live.live&&live.user?live.user.name:activeTenant.name;
  const accountRole=live.live?(ROLE_LABEL[live.membership?.role||'']||''):'Demo · datos de ejemplo';
  const menuLinks=(ids:string[])=>ids.filter(allowed).map(id=>({id,label:virtualById.get(id)!.label,icon:icons[id]||LayoutDashboard}));
  const accountBody={name:accountName,role:accountRole,settings:menuLinks(SETTINGS_IDS),admin:menuLinks(ADMIN_IDS),onOpen:navigate,
   onLogout:live.live?()=>live.logout():undefined,tenantSwitcher:<TenantSwitcher/>};
- function NavItem({p}:{p:ReportPage|VirtualPage}){if(!allowed(p.id))return null;const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{labelFor(p.id,p.label)}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
+ function NavItem({p}:{p:ReportPage|VirtualPage}){if(p.id==='plataforma'&&!allowed(p.id))return null;const navLocked=!allowed(p.id);const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{labelFor(p.id,p.label)}</span>{navLocked?<small className="badge-paused">Plan</small>:paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
-  return <PortalDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge}>
+  return <PortalDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} links={dockLinks} current={pageId}>
    <AvatarMenu initials={(accountName||'OM').trim().slice(0,2).toUpperCase()} {...accountBody}/>
   </PortalDock>;
  }
@@ -401,6 +406,7 @@ function AppShell(){
      <div className="filter-controls">{shownFilters.map(key=><label className="filter" key={key}><span>{report.filters[key].label}</span><select aria-label={report.filters[key].label} value={filters[key]} onChange={e=>{touched.current.add(key);setFilters({...filters,[key]:e.target.value});}}>{optionsFor(key).map(o=><option key={o}>{o}</option>)}</select></label>)}</div>
     </section>}
     <div className={`report-content${syncing||(live.live&&reportState.loading)?' is-syncing':''}`} key={pageId}>
+     {pageLocked?<LockedModule label={pageLabel} question={virtualPage?.question||reportPage?.question} icon={icons[pageId]} onNavigate={navigate} onAsk={askOmega}/>:<>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
      {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configura la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
      {reportPage&&reportPage.id==='nivel1'&&(skin==='mando'
@@ -416,11 +422,12 @@ function AppShell(){
      {virtualPage&&pageId==='cartelera'?<Billboard live={live.live} tenantKey={live.tenantId||activeTenant.id||'demo'} userName={live.live&&live.user?live.user.name:'Gerencia'}
        closeLabel={live.live?(live.status?.published?`CIERRE DEL ${live.status.published.business_date}`:'SIN CIERRE PUBLICADO'):'DATOS DE DEMOSTRACIÓN'}
        rows={PORTALS.filter(pt=>pt.id!=='mando'&&pt.id!=='omega').map(pt=>({portal:pt,items:portalItems(pt)}))}
-       info={id=>{if(!allValidIds.has(id)||!allowed(id))return null;const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);return {label:labelFor(id,rp?.label||vp?.label||id),question:rp?.question||vp?.question||'',icon:icons[id]||LayoutDashboard};}}
+       info={id=>{if(!allValidIds.has(id))return null;const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);return {label:labelFor(id,rp?.label||vp?.label||id),question:rp?.question||vp?.question||'',icon:icons[id]||LayoutDashboard};}}
        onNavigate={navigate} onAsk={askOmega} motivation={motivation}/>
       :virtualPage&&pageId.startsWith('portal-')?<PortalPage portal={portalById.get(pageId.slice(7) as PortalId)!} items={portalItems(portalById.get(pageId.slice(7) as PortalId)!)} onOpen={navigate}/>
       :virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
+     </>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
     </div>
    </main>

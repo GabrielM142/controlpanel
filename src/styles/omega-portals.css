@@ -98,3 +98,41 @@
   .portal-dock-item:hover { transform: none; }
 }
 @media print { .portal-dock, .mobile-dock { display: none !important; } }
+
+/* ── Submenú del dock: todas las vistas de cada portal (las fuera del plan, con candado) ── */
+.portal-flyout { position: fixed; left: calc(var(--dock-w) + 6px); z-index: 60; width: 260px; max-height: min(420px, calc(100vh - 16px)); overflow-y: auto;
+  padding: 8px; border-radius: 16px; background: color-mix(in srgb, var(--surface-solid, var(--bg)) 94%, transparent); border: 1px solid var(--line, color-mix(in srgb, var(--text) 12%, transparent));
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--bg) 70%, transparent), 0 0 0 1px color-mix(in srgb, var(--brand) 14%, transparent); backdrop-filter: blur(18px);
+  animation: portal-flyout-in .16s ease-out; }
+.portal-flyout::before { content: ""; position: absolute; left: -10px; top: 0; bottom: 0; width: 10px; } /* puente para no perder el hover */
+@keyframes portal-flyout-in { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.portal-flyout ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.portal-flyout-head { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 10px 10px; margin-bottom: 4px; border: 0; border-bottom: 1px solid var(--line, color-mix(in srgb, var(--text) 10%, transparent));
+  background: none; color: var(--text); font: 700 13px var(--font-hud, var(--font-ui)); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; border-radius: 10px 10px 0 0; }
+.portal-flyout-head:hover { color: var(--brand); }
+.portal-flyout-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--text-2, var(--text)); font: 500 13.5px var(--font-ui); text-align: left; cursor: pointer; transition: background .15s, color .15s; }
+.portal-flyout-item:hover, .portal-flyout-item:focus-visible { background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--text); }
+.portal-flyout-item.is-current { background: color-mix(in srgb, var(--brand) 18%, transparent); color: var(--text); font-weight: 650; }
+.portal-flyout-item.is-locked { color: var(--text-3); }
+.portal-flyout-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portal-flyout-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--fin-income); }
+.portal-flyout-dot.st-revisar { background: var(--fin-goal); }
+.portal-flyout-dot.st-atencion { background: var(--fin-loss); }
+.portal-flyout-item.is-locked .portal-flyout-dot { background: var(--text-3); }
+.portal-flyout-lock { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; font: 700 10px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); }
+.portal-flyout-badge { min-width: 20px; padding: 1px 6px; border-radius: 999px; font: 700 11px var(--font-num, var(--font-ui)); text-align: center; color: var(--on-brand); background: var(--brand); }
+@media (max-width: 767px) { .portal-flyout { display: none; } }
+
+/* Tarjetas de portal fuera del plan */
+.portal-card.is-locked { opacity: .78; }
+.portal-card.is-locked .portal-card-icon { filter: grayscale(.6); }
+.portal-card-status.is-locked { display: inline-flex; align-items: center; gap: 5px; color: var(--text-3); background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* Pantalla de espera: vista fuera del plan */
+.locked-module { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 48px 24px; max-width: 640px; margin: 24px auto; }
+.locked-module h2 { margin: 0; font: 700 clamp(22px, 3vw, 30px) var(--font-display, var(--font-ui)); color: var(--text); }
+.locked-module p { margin: 0; color: var(--text-2, var(--text)); line-height: 1.55; }
+.locked-module-icon { position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px; color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, transparent); }
+.locked-module-icon span { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bg); color: var(--fin-goal); border: 1px solid color-mix(in srgb, var(--fin-goal) 40%, transparent); }
+.locked-module-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .portal-flyout { animation: none; } }
