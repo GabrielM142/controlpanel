@@ -28,6 +28,7 @@ import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
 import {BrandThemeProvider,useBrandTheme} from './features/theme/useBrandTheme';
 import DireccionHero from './features/omega/DireccionHero';
+import CommandCenter from './features/omega/CommandCenter';
 import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
 import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
@@ -136,7 +137,7 @@ function AppShell(){
  const [menuOpen,setMenuOpen]=useState(false);
  // Light/dark is a mode of the company theme (useBrandTheme); the header toggle keeps working.
  const brandTheme=useBrandTheme();
- useSkin(live.live?live.membership?.role:null);
+ const {skin}=useSkin(live.live?live.membership?.role:null);
  const theme:'light'|'dark'=brandTheme.theme.mode==='light'?'light':'dark';
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
@@ -386,7 +387,9 @@ function AppShell(){
     <div className={`report-content${syncing||(live.live&&reportState.loading)?' is-syncing':''}`} key={pageId}>
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
      {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configura la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
-     {reportPage&&reportPage.id==='nivel1'&&<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>}
+     {reportPage&&reportPage.id==='nivel1'&&(skin==='mando'
+      ?<CommandCenter widgets={reportState.data?.widgets||null} live={live.live} tenantName={live.live?live.membership?.name||activeTenant.name:activeTenant.name} userName={live.live&&live.user?live.user.name:'Gerencia'} onNavigate={navigate} onAsk={askOmega}/>
+      :<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>)}
      {reportPage&&reportPage.id!=='nivel1'&&<section className="om-lead" aria-label="Lectura de Omega">
       <span className="omega-glyph" aria-hidden="true">Ω</span>
       <div><span className="om-eyebrow">Lectura de Omega</span><p>{liveRisks?'Reúno los riesgos, oportunidades y alertas que calculó cada área con el último cierre. Empieza por los críticos.':live.live&&reportState.loading?'Leyendo el último cierre…':pageReading(reportPage.id,live.live?reportState.data?.widgets||null:null)}</p></div>
