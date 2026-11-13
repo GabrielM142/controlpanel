@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType,type Re
 import {BellRing,ShieldCheck,Target,Banknote,Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
-import {NavigateContext,ReportNodes,blockIds} from './components/Report';
+import {NavigateContext,RenameContext,ReportNodes,blockIds} from './components/Report';
 import {LiveProvider,useLive,useReportData,versionKey,WidgetsContext} from './features/live/LiveData';
 import WarehouseView from './features/inventory/WarehouseView';
 import AISettingsView from './features/omega/AISettingsView';
@@ -199,7 +199,9 @@ function AppShell(){
  const pageLabel=labelFor(pageId,virtualPage?virtualPage.label:reportPage!.label);
  // Riesgos (connected) is built from every area's live risks: no longer "en pausa".
  const liveRisks=live.live&&reportPage?.id==='riesgos';
- const pageQuestion=virtualPage?virtualPage.question:liveRisks?'¿Qué riesgos enfrenta la empresa y qué oportunidades tiene, según el último cierre?':reportPage!.question;
+ // Live: the example unit names of the original report become this company's units.
+ const renames=useMemo<[string,string][]>(()=>!live.live?[]:UNIT_PAGE_IDS.map(id=>[report.pages.find(p=>p.id===id)!.label,labelFor(id,'')] as [string,string]).filter(([a,b])=>a&&b&&a!==b),[live.live,unitNames]);
+ const pageQuestion=virtualPage?virtualPage.question:liveRisks?'¿Qué riesgos enfrenta la empresa y qué oportunidades tiene, según el último cierre?':renames.reduce((q,[a,b])=>q.split(a).join(b),reportPage!.question);
  const pageFilters=virtualPage?[]:reportPage!.filters;
  // Live mode only shows filters the API really applies (others would silently do nothing).
  const shownFilters=live.live?pageFilters.filter(k=>LIVE_FILTERS.has(k)):pageFilters;
@@ -373,7 +375,7 @@ function AppShell(){
        {siblings.length>1
         ?<label className="om-crumb-current"><span className="sr-only">Cambiar a otra vista de {loc.section}</span>
           <select value={pageId} onChange={e=>navigate(e.target.value)} aria-label={`Vistas de ${loc.section}`}>
-           {siblings.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+           {siblings.filter(s=>allowed(s.id)).map(s=><option key={s.id} value={s.id}>{labelFor(s.id,s.label)}</option>)}</select></label>
         :<span className="crumb-current" aria-current="page">{pageLabel}</span>}
       </nav>
      </div>
@@ -453,7 +455,7 @@ function AppShell(){
      </section>}
      {reportPage&&!liveRisks&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
-     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
+     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
     </div>

@@ -4,6 +4,8 @@ import type {Rich,ReportNode,BarRow} from '../types';
 import type {GeoRow,Widget} from '../data/api';
 import {WidgetsContext} from '../features/live/LiveData';
 export const NavigateContext=createContext<(id:string)=>void>(()=>{});
+/** Live: example unit names of the original report text → this company's configured units. */
+export const RenameContext=createContext<[string,string][]>([]);
 
 // Stable widget catalog: same numbering rule as lib/blocks.mjs and the 166-block matrix.
 export const BLOCK_KINDS=new Set(['kpi','table','panel','list','ise','toggle','geo','matrix','metric','bars']);
@@ -58,7 +60,9 @@ function ElementNode({node}:{node:Extract<ReportNode,{kind:'element'}>}){
 // The original report uses status emojis; they stay in the markup (preserved content) but are drawn as design-system marks.
 const GLYPHS:Record<string,{cls:string;label:string}>={'\u{1F7E2}':{cls:'is-g',label:'verde'},'\u{1F7E1}':{cls:'is-a',label:'ámbar'},'\u{1F534}':{cls:'is-r',label:'rojo'},'✨':{cls:'is-ai',label:'IA'}};
 const GLYPH_RE=/(\u{1F7E2}|\u{1F7E1}|\u{1F534}|✨)/u;
-function GlyphText({text}:{text:string}){
+function GlyphText({text:raw}:{text:string}){
+ const renames=useContext(RenameContext);
+ let text=raw;for(const [from,to] of renames)if(text.includes(from))text=text.split(from).join(to);
  if(!GLYPH_RE.test(text))return <>{text}</>;
  return <>{text.split(GLYPH_RE).map((part,i)=>GLYPHS[part]?<span key={i} className={`om-glyph ${GLYPHS[part].cls}`} role="img" aria-label={GLYPHS[part].label}><span className="om-glyph-raw" aria-hidden="true">{part}</span></span>:part)}</>;
 }
