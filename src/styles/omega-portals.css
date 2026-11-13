@@ -137,26 +137,41 @@
 .locked-module-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
 @media (prefers-reduced-motion: reduce) { .portal-flyout { animation: none; } }
 
-/* ── Menú completo (escritorio ≥ 1280): todos los portales con todas sus vistas, siempre visibles ── */
-@media (min-width: 1280px) {
-  .app-shell.menu-expanded { --dock-w: 264px; }
+/* ── Menú completo (≥ 1024): todos los portales, plegables, con todas sus vistas ── */
+@media (min-width: 1024px) {
+  .app-shell.menu-expanded { --dock-w: 248px; }
   .portal-dock.is-expanded { align-items: stretch; padding: 14px 10px 12px; gap: 8px; }
   .portal-menu-top { display: flex; align-items: center; gap: 10px; padding: 0 4px 6px; }
   .portal-menu-top .portal-dock-logo { width: 40px; height: 40px; font-size: 22px; margin: 0; flex: none; }
   .portal-menu-brand { flex: 1; font: 700 15px var(--font-hud, var(--font-display)); letter-spacing: .22em; color: var(--text); }
-  .portal-dock.is-expanded ul.portal-menu { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent; padding-right: 2px; }
-  .portal-menu-group > ul { list-style: none; margin: 2px 0 6px; padding: 0 0 0 14px; display: grid; gap: 1px; border-left: 1px solid var(--line); margin-left: 19px; }
-  .portal-menu-group .portal-flyout-item { padding: 7px 10px; font-size: 13px; }
-  .portal-menu-head { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 1px solid transparent; border-radius: 12px; background: none; cursor: pointer;
-    color: var(--text-2, var(--text)); font: 700 12px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; text-align: left; transition: background var(--motion) var(--ease), color var(--motion) var(--ease); }
-  .portal-menu-head:hover { background: var(--surface); color: var(--text); }
-  .portal-menu-group.is-active > .portal-menu-head { color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); border-color: color-mix(in srgb, var(--brand) 30%, transparent); }
-  .portal-menu-head .portal-dock-icon { width: 22px; height: 22px; font-size: 18px; }
-  .portal-menu-head.is-omega .portal-dock-icon { color: var(--fin-ai); }
-  .portal-menu-label { flex: 1; min-width: 0; }
-  .portal-menu-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--fin-loss); color: var(--on-loss); font: 700 10px/20px var(--font-ui); text-align: center; letter-spacing: 0; }
+  .portal-dock.is-expanded ul.portal-menu { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent; padding-right: 2px; }
   .portal-dock.is-expanded .portal-dock-foot { padding-top: 6px; border-top: 1px solid var(--line); }
 }
 .portal-menu-toggle { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--text-3); cursor: pointer; flex: none; }
 .portal-menu-toggle:hover, .portal-menu-toggle:focus-visible { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 40%, transparent); }
-@media (max-width: 1279px) { .portal-menu-toggle { display: none; } }
+@media (max-width: 1023px) { .portal-menu-toggle { display: none; } }
+
+/* Grupos plegables (compartidos por el menú lateral y la hoja del teléfono) */
+.portal-dock ul.portal-menu, .portal-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.portal-menu-row { display: flex; align-items: center; gap: 2px; }
+.portal-menu-row .portal-menu-head { flex: 1; min-width: 0; }
+.portal-menu-head { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 1px solid transparent; border-radius: 12px; background: none; cursor: pointer;
+  color: var(--text-2, var(--text)); font: 700 12px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; text-align: left; transition: background var(--motion) var(--ease), color var(--motion) var(--ease); }
+.portal-menu-head:hover { background: var(--surface); color: var(--text); }
+.portal-menu-group.is-active > .portal-menu-row .portal-menu-head { color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); border-color: color-mix(in srgb, var(--brand) 30%, transparent); }
+.portal-menu-head .portal-dock-icon { width: 22px; height: 22px; font-size: 18px; }
+.portal-menu-head.is-omega .portal-dock-icon { color: var(--fin-ai); }
+.portal-menu-label { flex: 1; min-width: 0; }
+.portal-menu-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--fin-loss); color: var(--on-loss); font: 700 10px/20px var(--font-ui); text-align: center; letter-spacing: 0; }
+.portal-menu-caret { display: grid; place-items: center; width: 32px; height: 36px; flex: none; border: 0; border-radius: 10px; background: none; color: var(--text-3); cursor: pointer; transition: color var(--motion) var(--ease), background var(--motion) var(--ease); }
+.portal-menu-caret:hover, .portal-menu-caret:focus-visible { color: var(--text); background: var(--surface); }
+.portal-menu-caret svg { transition: transform var(--motion) var(--ease); transform: rotate(-90deg); }
+.portal-menu-group.is-open .portal-menu-caret svg { transform: none; }
+.portal-menu-group > ul { list-style: none; margin: 2px 0 6px 19px; padding: 0 0 0 14px; display: grid; gap: 1px; border-left: 1px solid var(--line); }
+.portal-menu-group .portal-flyout-item { padding: 7px 10px; font-size: 13px; }
+/* Teléfono: el menú completo vive en la hoja "Menú" del dock inferior */
+.mdock-sheet-menu { max-height: 58vh; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent; padding: 4px 2px 10px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.mdock-sheet-menu .portal-menu-head { padding: 12px 10px; font-size: 13px; }
+.mdock-sheet-menu .portal-menu-caret { width: 44px; height: 44px; }
+.mdock-sheet-menu .portal-flyout-item { padding: 11px 10px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .portal-menu-caret svg { transition: none; } }

@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ChevronRight,Lock,PanelLeftClose,PanelLeftOpen} from 'lucide-react';
+import PortalMenu from './PortalMenu';
 import {PORTALS,portalEntry,type Portal,type PortalId} from './portals';
 
 // Dock lateral luminoso (escritorio y tableta): los 8 portales. En tableta muestra solo el
@@ -8,17 +9,15 @@ import {PORTALS,portalEntry,type Portal,type PortalId} from './portals';
 // las que están fuera del plan de la empresa se muestran con candado, nunca se esconden.
 export type DockLink={id:string;label:string;locked?:boolean;status?:'estable'|'revisar'|'atencion';badge?:number};
 
-// Escritorio ≥ 1280 px: menú completo siempre visible (cada portal con todas sus vistas).
+// Escritorio y tableta horizontal ≥ 1024 px: menú completo siempre visible (cada portal con todas sus vistas).
 // Se puede plegar a solo iconos; en tableta siempre es el dock compacto con submenú flotante.
-const WIDE='(min-width: 1280px)';
+const WIDE='(min-width: 1024px)';
 function useWide(){const [w,setW]=useState(()=>typeof window!=='undefined'&&window.matchMedia(WIDE).matches);
  useEffect(()=>{const m=window.matchMedia(WIDE);const on=()=>setW(m.matches);m.addEventListener('change',on);return()=>m.removeEventListener('change',on);},[]);return w;}
 
 export default function PortalDock({active,allowed,onOpen,badge,links,current,expanded=false,onToggle,children}:{active:PortalId|null;allowed:(p:Portal)=>boolean;onOpen:(id:string,p:Portal)=>void;badge:(p:Portal)=>number;
  links?:(p:Portal)=>DockLink[];current?:string;expanded?:boolean;onToggle?:()=>void;children?:React.ReactNode}){
  const wide=useWide();
- const menuRef=useRef<HTMLUListElement>(null);
- useEffect(()=>{menuRef.current?.querySelector('.is-current')?.scrollIntoView({block:'nearest'});},[current,expanded,wide]);
  const [fly,setFly]=useState<{id:PortalId;top:number}|null>(null);
  const timer=useRef<number|undefined>(undefined);
  const show=(p:Portal,el:HTMLElement)=>{window.clearTimeout(timer.current);const r=el.getBoundingClientRect();
@@ -35,21 +34,7 @@ export default function PortalDock({active,allowed,onOpen,badge,links,current,ex
    <span className="portal-menu-brand">OMEGA</span>
    {onToggle&&<button type="button" className="portal-menu-toggle" aria-label="Plegar el menú a solo iconos" title="Plegar menú" onClick={onToggle}><PanelLeftClose size={18} aria-hidden="true"/></button>}
   </div>
-  <ul className="portal-menu" ref={menuRef}>{PORTALS.filter(allowed).map(p=>{const Icon=p.id==='omega'?null:p.icon;const n=badge(p);const on=active===p.id;const ls=links(p);
-   return <li key={p.id} className={`portal-menu-group${on?' is-active':''}`}>
-    <button type="button" data-portal={p.id} className={`portal-menu-head${p.id==='omega'?' is-omega':''}`} aria-current={on&&ls.length<2?'page':undefined} onClick={()=>onOpen(portalEntry(p),p)}>
-     <span className="portal-dock-icon" aria-hidden="true">{Icon?<Icon size={18} strokeWidth={1.8}/>:'Ω'}</span>
-     <span className="portal-menu-label">{p.label}</span>
-     {n>0&&<span className="portal-menu-count" aria-label={`${n} pendientes`}>{n>99?'99+':n}</span>}
-    </button>
-    {ls.length>1&&<ul>{ls.map(l=><li key={l.id}>
-     <button type="button" className={`portal-flyout-item${l.id===current?' is-current':''}${l.locked?' is-locked':''}`} aria-current={l.id===current?'page':undefined} onClick={()=>onOpen(l.id,p)}>
-      <span className={`portal-flyout-dot st-${l.status||'estable'}`} aria-hidden="true"/>
-      <span className="portal-flyout-label">{l.label}</span>
-      {l.locked?<span className="portal-flyout-lock" title="Fuera del plan de tu empresa"><Lock size={12} aria-hidden="true"/>Plan</span>
-       :l.badge?<span className="portal-flyout-badge">{l.badge>99?'99+':l.badge}</span>:null}
-     </button></li>)}</ul>}
-   </li>;})}</ul>
+  <PortalMenu portals={PORTALS.filter(allowed)} links={links} badge={badge} active={active} current={current} onOpen={onOpen}/>
   <div className="portal-dock-foot">{children}</div>
  </nav>;
 

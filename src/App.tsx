@@ -327,7 +327,7 @@ function AppShell(){
   <a className="skip-link" href="#main" onClick={e=>{e.preventDefault();document.getElementById("main")?.focus();}}>Ir al reporte</a>
   <div className={`app-shell${menuFull?' menu-expanded':''}`}>
    <aside className="sidebar portal-shell"><Sidebar/></aside>
-   <MobileDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} more={<AccountMenuBody {...accountBody}/>}/>
+   <MobileDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} links={dockLinks} current={pageId} more={<AccountMenuBody {...accountBody}/>}/>
    <main id="main" className={`workspace${reportPage?.id==='nivel1'&&skin==='mando'?' mando-home':''}`} tabIndex={-1}>
     <div className="utility-bar">
      <div className="breadcrumbs">
