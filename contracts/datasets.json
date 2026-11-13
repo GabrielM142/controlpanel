@@ -1917,6 +1917,65 @@
       "domain": []
     },
     {
+      "addon": "nova_stock_account",
+      "key": "stock_ops_month",
+      "version": 1,
+      "min_version": 1,
+      "model": "nova.stock.ops.month",
+      "company_scope": "strict",
+      "mode": "snapshot_replace",
+      "business_date": null,
+      "fields": {
+        "company_id": {
+          "type": "m2o",
+          "optional": false,
+          "sensitivity": []
+        },
+        "kind": {
+          "type": "string",
+          "optional": false,
+          "sensitivity": []
+        },
+        "month": {
+          "type": "date",
+          "optional": false,
+          "sensitivity": []
+        },
+        "moves": {
+          "type": "int",
+          "optional": false,
+          "sensitivity": []
+        },
+        "products": {
+          "type": "int",
+          "optional": false,
+          "sensitivity": []
+        },
+        "value_net": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "value_abs": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        },
+        "hours": {
+          "type": "decimal",
+          "optional": false,
+          "sensitivity": []
+        }
+      },
+      "capture": {
+        "fields": null,
+        "refs": []
+      },
+      "children": [],
+      "description": "Operaciones de bodega por mes: ajustes de inventario y horas de preparación de despachos",
+      "domain": []
+    },
+    {
       "addon": "nova_purchase",
       "key": "purchase_order",
       "version": 1,

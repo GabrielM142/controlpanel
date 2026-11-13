@@ -432,6 +432,21 @@ Capas de valoración y ajustes de valor. Alcance compañía: `strict`. Modo: `de
 | `stock_valuation_layer_id` | m2o |  |  |
 | `create_date` | datetime |  |  |
 
+## `stock_ops_month` v1 · `nova.stock.ops.month` (nova_stock_account)
+
+Operaciones de bodega por mes: ajustes de inventario y horas de preparación de despachos. Alcance compañía: `strict`. Modo: `snapshot_replace`.
+
+| Campo | Tipo | Opcional | Sensibilidad |
+|---|---|---|---|
+| `company_id` | m2o |  |  |
+| `kind` | string |  |  |
+| `month` | date |  |  |
+| `moves` | int |  |  |
+| `products` | int |  |  |
+| `value_net` | decimal |  |  |
+| `value_abs` | decimal |  |  |
+| `hours` | decimal |  |  |
+
 ## `purchase_order` v1 · `purchase.order` (nova_purchase)
 
 Órdenes de compra. Alcance compañía: `strict`. Modo: `delta`. Hijos: `purchase_order_line` por `order_id`
