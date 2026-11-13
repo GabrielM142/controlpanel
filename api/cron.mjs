@@ -10,6 +10,7 @@ import {loadConfig} from '../lib/config.mjs';
 import {createPool, withTransaction} from '../lib/db.mjs';
 import {defaultTransportFactory, syncRegistry, tick} from '../lib/ingest/worker.mjs';
 import {dispatchAlerts} from '../lib/alerts.mjs';
+import {processRebuildRequests} from '../lib/ingest/rebuild-requests.mjs';
 
 let state;
 const log = (level, event, data = {}) => console.log(JSON.stringify({ts: new Date().toISOString(), level, event, ...data}));
@@ -62,13 +63,15 @@ export default async function cron(req, res) {
     state ??= await init();
     await recoverInterrupted(state);
     const results = await tick(state.pool, state.role, state.opts);
+    // Business-unit rules edited in the panel: recalculate the history of that source.
+    const rebuilt = await processRebuildRequests(state.pool, state.role, log).catch(e => { log('warn', 'rebuild_requests_failed', {error: e.message}); return []; });
     // After a new close: threshold alerts to each company's Telegram (once per published version).
     const alerts = await dispatchAlerts(state.pool, withTransaction, {secretKey: state.config.secretKey, log,
       panelUrl: process.env.NOVA_PANEL_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')})
       .catch(e => { log('warn', 'alerts_dispatch_failed', {error: e.message}); return []; });
     log('info', 'cron_tick', {sources: results.length, ms: Date.now() - started});
     res.statusCode = 200;
-    res.end(JSON.stringify({ok: true, sources: results.length, results: results.map(r => r.status), alerts: alerts.length, ms: Date.now() - started}));
+    res.end(JSON.stringify({ok: true, sources: results.length, results: results.map(r => r.status), alerts: alerts.length, rebuilt: rebuilt.length, ms: Date.now() - started}));
   } catch (error) {
     state = undefined; // rebuild the pool on the next call
     log('error', 'cron_failed', {error: error.message});

@@ -555,6 +555,111 @@ export function createHandler({pool, config, now = () => new Date()}) {
     });
   });
 
+  // Company inputs Odoo does not hold: budgets, marketing campaigns and business-unit rules.
+  // Everyone in the company reads them (reports use them); admins replace them.
+  const BUDGET_KINDS = ['ventas', 'compras', 'gastos_fijos', 'marketing'];
+  const monthOf = v => {
+    const m = /^(\d{4})-(\d{2})(?:-\d{2})?$/.exec(String(v || '').trim());
+    if (!m || Number(m[2]) < 1 || Number(m[2]) > 12) return null;
+    return `${m[1]}-${m[2]}-01`;
+  };
+  const dateOf = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '').trim()) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) ? String(v).trim() : null);
+  const amountOf = v => { const n = Number(String(v ?? '').replace(/[$\s]/g, '').replace(/,(?=\d{3}(\D|$))/g, '')); return Number.isFinite(n) && n >= 0 ? n : null; };
+  const opt = (v, max) => { const s = str(v, max); return s ? s : null; };
+
+  route('GET', /^\/api\/inputs$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const budgets = (await c.query(`SELECT kind, to_char(month, 'YYYY-MM') AS month, unit_name, brand, amount::text AS amount
+          FROM app.budgets ORDER BY kind, month, unit_name NULLS FIRST, brand NULLS FIRST`)).rows;
+      const campaigns = (await c.query(`SELECT id, name, status, start_date::text, end_date::text, brand, unit_name, investment::text AS investment
+          FROM app.marketing_campaigns ORDER BY start_date, id`)).rows;
+      const sources = (await c.query(`SELECT id, name, rebuild_requested_at, rebuilt_at FROM app.connector_sources ORDER BY created_at`)).rows;
+      const rules = (await c.query(`SELECT r.id, r.source_id, r.match_type, r.match_value, r.unit_code, r.unit_name, r.channel, r.priority,
+            d.name AS match_name FROM app.business_unit_rules r
+          LEFT JOIN core.dim_unit_source d ON d.source_id = r.source_id AND d.match_type = r.match_type AND d.match_value = r.match_value
+          ORDER BY r.priority, r.id`)).rows;
+      const options = (await c.query('SELECT source_id, match_type, match_value, name FROM core.dim_unit_source ORDER BY match_type, name')).rows;
+      const brands = (await c.query(`SELECT DISTINCT brand FROM core.dim_product WHERE brand IS NOT NULL ORDER BY 1 LIMIT 500`)).rows.map(r => r.brand);
+      return {budgets, campaigns, sources, rules, options, brands, units: ['Mayorista Hogar', 'Mayorista Intorno', 'Retail JUJ', 'Retail Intorno'],
+        can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin};
+    });
+  });
+
+  route('PUT', /^\/api\/inputs\/budgets\/(ventas|compras|gastos_fijos|marketing)$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 512 * 1024);
+    if (!Array.isArray(b.rows) || b.rows.length > 5000) throw new HttpError(400, 'Envía hasta 5000 filas');
+    const seen = new Set();
+    const rows = b.rows.map((r, i) => {
+      const month = monthOf(r.month), amount = amountOf(r.amount);
+      if (!month) throw new HttpError(400, `Fila ${i + 1}: mes inválido (usa AAAA-MM)`);
+      if (amount === null) throw new HttpError(400, `Fila ${i + 1}: monto inválido`);
+      const row = {month, unit: opt(r.unit_name, 120), brand: opt(r.brand, 120), amount};
+      const key = `${row.month}|${row.unit || ''}|${row.brand || ''}`;
+      if (seen.has(key)) throw new HttpError(400, `Fila ${i + 1}: repetida (mismo mes, unidad y marca)`);
+      seen.add(key);
+      return row;
+    });
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query('DELETE FROM app.budgets WHERE kind = $1', [match[1]]);
+      for (const r of rows) await c.query(`INSERT INTO app.budgets(tenant_id, kind, month, unit_name, brand, amount, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`, [ctx.tenantId, match[1], r.month, r.unit, r.brand, r.amount, ctx.user.id]);
+      await audit(c, ctx, 'budget.replace', match[1], {rows: rows.length});
+      return {ok: true, rows: rows.length};
+    });
+  });
+
+  route('PUT', /^\/api\/inputs\/campaigns$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 256 * 1024);
+    if (!Array.isArray(b.rows) || b.rows.length > 2000) throw new HttpError(400, 'Envía hasta 2000 campañas');
+    const rows = b.rows.map((r, i) => {
+      const name = str(r.name, 160), start = dateOf(r.start_date), end = dateOf(r.end_date), investment = amountOf(r.investment ?? 0);
+      if (!name) throw new HttpError(400, `Fila ${i + 1}: falta el nombre de la campaña`);
+      if (!start || !end || end < start) throw new HttpError(400, `Fila ${i + 1}: fechas inválidas (AAAA-MM-DD, fin ≥ inicio)`);
+      if (investment === null) throw new HttpError(400, `Fila ${i + 1}: inversión inválida`);
+      const status = String(r.status || 'ejecutada').toLowerCase().startsWith('plan') ? 'planificada' : 'ejecutada';
+      return {name, status, start, end, brand: opt(r.brand, 120), unit: opt(r.unit_name, 120), investment};
+    });
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query('DELETE FROM app.marketing_campaigns');
+      for (const r of rows) await c.query(`INSERT INTO app.marketing_campaigns(tenant_id, name, status, start_date, end_date, brand, unit_name, investment, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [ctx.tenantId, r.name, r.status, r.start, r.end, r.brand, r.unit, r.investment, ctx.user.id]);
+      await audit(c, ctx, 'campaigns.replace', null, {rows: rows.length});
+      return {ok: true, rows: rows.length};
+    });
+  });
+
+  route('PUT', /^\/api\/inputs\/units$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 64 * 1024);
+    if (!Array.isArray(b.rules) || b.rules.length > 300) throw new HttpError(400, 'Envía hasta 300 reglas');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const sources = new Set((await c.query('SELECT id FROM app.connector_sources')).rows.map(r => r.id));
+      const rules = b.rules.map((r, i) => {
+        if (!sources.has(r.source_id)) throw new HttpError(400, `Regla ${i + 1}: fuente inválida`);
+        if (!['company', 'journal', 'pos_config', 'team'].includes(r.match_type)) throw new HttpError(400, `Regla ${i + 1}: tipo inválido`);
+        const value = str(String(r.match_value ?? ''), 40), name = str(String(r.unit_name ?? ''), 120), channel = str(String(r.channel ?? ''), 60) || 'General';
+        if (!value || !/^\d+$/.test(value)) throw new HttpError(400, `Regla ${i + 1}: elige qué equipo, diario, POS o empresa`);
+        if (!name) throw new HttpError(400, `Regla ${i + 1}: falta la unidad de negocio`);
+        const code = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'unidad';
+        const priority = Number.isInteger(Number(r.priority)) ? Math.min(9999, Math.max(1, Number(r.priority))) : 100;
+        return {source: r.source_id, type: r.match_type, value, code, name, channel, priority};
+      });
+      await c.query('DELETE FROM app.business_unit_rules');
+      for (const r of rules) await c.query(`INSERT INTO app.business_unit_rules(tenant_id, source_id, match_type, match_value, unit_code, unit_name, channel, priority, validated_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [ctx.tenantId, r.source, r.type, r.value, r.code, r.name, r.channel, r.priority, ctx.user.email]);
+      // The worker recalculates the history with the new rules on its next tick (a few minutes).
+      await c.query('UPDATE app.connector_sources SET rebuild_requested_at = now()');
+      await audit(c, ctx, 'units.replace', null, {rules: rules.length});
+      return {ok: true, rules: rules.length, rebuild: 'solicitado'};
+    });
+  });
+
   // Alert notifications (Telegram) per company; admins configure, the cron sends after each close.
   route('GET', /^\/api\/notify\/settings$/, async ({req}) => {
     const ctx = await tenantContext(req, 'admin');

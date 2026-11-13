@@ -1,0 +1,94 @@
+// Company inputs (budgets, campaigns, business-unit rules) feed the blocks Odoo cannot answer.
+// Real PostgreSQL via PGlite; reports are read through the API exactly as the panel does.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHandler} from '../server/app.mjs';
+import {processRebuildRequests} from '../lib/ingest/rebuild-requests.mjs';
+import {call, createWorld, PASSWORD} from './helpers/world.mjs';
+
+let w; let api; let ana; let vera;
+const H = (cookie, tenant) => ({cookie, 'x-nova-tenant': tenant, 'x-nova-request': '1'});
+const login = async email => (await call(api, 'POST', '/api/auth/login', {headers: {'x-nova-request': '1'}, body: {email, password: PASSWORD}}))
+  .headers['set-cookie'].split(';')[0];
+const report = async (page, qs = 'anio=2026') => (await call(api, 'GET', `/api/reports/${page}?${qs}`, {headers: H(ana, w.tenantA)})).body.widgets;
+const months = Array.from({length: 12}, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`);
+
+test.before(async () => {
+  w = await createWorld();
+  w.transports.juj.setVisible(3);
+  await w.ingest('juj');
+  api = createHandler({pool: w.pool, config: w.config});
+  [ana, vera] = [await login('ana@fixture.test'), await login('vera@fixture.test')];
+});
+test.after(async () => { await w.pool.end(); });
+
+test('without inputs the blocks say what to load (never an estimate)', async () => {
+  const mk = await report('marketing');
+  assert.equal(mk['marketing-01'].kind, 'missing');
+  assert.match(mk['marketing-01'].reason, /campañas/i);
+  assert.equal(mk['marketing-06'].kind, 'kpi', 'recompra comes from sales');
+  const c = await report('compras');
+  assert.match(c['compras-05'].reason, /presupuesto de compras/i);
+  const u = await report('retailjuj');
+  assert.match(u['retailjuj-02'].reason, /presupuesto/i);
+});
+
+test('budgets: admin only, validated, and used by every attainment block', async () => {
+  const denied = await call(api, 'PUT', '/api/inputs/budgets/ventas', {headers: H(vera, w.tenantA), body: {rows: [{month: '2026-01', amount: 1}]}});
+  assert.equal(denied.status, 403);
+  const bad = await call(api, 'PUT', '/api/inputs/budgets/ventas', {headers: H(ana, w.tenantA), body: {rows: [{month: '2026-13', amount: 1}]}});
+  assert.equal(bad.status, 400);
+  const sales = [...months.map(m => ({month: m, amount: '100'})), ...months.map(m => ({month: m, unit_name: 'Retail JUJ', amount: '20'}))];
+  assert.equal((await call(api, 'PUT', '/api/inputs/budgets/ventas', {headers: H(ana, w.tenantA), body: {rows: sales}})).status, 200);
+  assert.equal((await call(api, 'PUT', '/api/inputs/budgets/compras', {headers: H(ana, w.tenantA), body: {rows: months.map(m => ({month: m, amount: 50}))}})).status, 200);
+  assert.equal((await call(api, 'PUT', '/api/inputs/budgets/gastos_fijos', {headers: H(ana, w.tenantA), body: {rows: months.map(m => ({month: m, unit_name: 'Retail JUJ', amount: 1}))}})).status, 200);
+  const n1 = await report('nivel1');
+  assert.equal(n1['nivel1-02'].kind, 'kpi');
+  assert.equal(n1['nivel1-02'].metric, 'budget_attainment');
+  assert.equal(n1['nivel1-08'].kind, 'table');
+  assert.ok(n1['nivel1-08'].rows.some(r => r[0] === 'Retail JUJ'));
+  const unit = await report('retailjuj');
+  assert.equal(unit['retailjuj-02'].kind, 'metric');
+  assert.match(unit['retailjuj-02'].note, /presupuestados/);
+  assert.notEqual(unit['retailjuj-04'].reason || '', 'Sin gastos fijos de la unidad: cárgalos (tipo gastos_fijos) en Configuración → Presupuestos y unidades.');
+  const c = await report('compras');
+  assert.equal(c['compras-05'].kind, 'kpi');
+  const inputs = await call(api, 'GET', '/api/inputs', {headers: H(vera, w.tenantA)});
+  assert.equal(inputs.status, 200, 'everyone in the company reads the inputs');
+  assert.equal(inputs.body.budgets.filter(b => b.kind === 'ventas').length, 24);
+  assert.equal(inputs.body.can_edit, false);
+});
+
+test('campaigns feed investment, sales, captured customers and ROI', async () => {
+  const bad = await call(api, 'PUT', '/api/inputs/campaigns', {headers: H(ana, w.tenantA), body: {rows: [{name: 'X', start_date: '2026-05-01', end_date: '2026-04-01'}]}});
+  assert.equal(bad.status, 400);
+  const ok = await call(api, 'PUT', '/api/inputs/campaigns', {headers: H(ana, w.tenantA), body: {rows: [
+    {name: 'Lanzamiento', status: 'ejecutada', start_date: '2026-01-01', end_date: '2026-12-31', investment: '10'},
+    {name: 'Navidad', status: 'planificada', start_date: '2026-12-01', end_date: '2026-12-24', investment: '5'}]}});
+  assert.equal(ok.status, 200);
+  const mk = await report('marketing');
+  assert.equal(mk['marketing-01'].kind, 'kpi');
+  assert.equal(mk['marketing-01'].raw, '10');
+  assert.equal(mk['marketing-02'].value, '1');
+  assert.equal(mk['marketing-07'].rows.length, 1, 'a campaign outside the period is not counted');
+  assert.equal(mk['marketing-13'].kind, 'text');
+});
+
+test('unit rules from the panel are recalculated by the worker', async () => {
+  const before = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  const source = before.body.sources[0].id;
+  const rules = before.body.rules.filter(r => r.source_id === source).map(r => ({...r}));
+  assert.ok(rules.length >= 2);
+  const denied = await call(api, 'PUT', '/api/inputs/units', {headers: H(vera, w.tenantA), body: {rules}});
+  assert.equal(denied.status, 403);
+  const res = await call(api, 'PUT', '/api/inputs/units', {headers: H(ana, w.tenantA), body: {rules}});
+  assert.equal(res.status, 200);
+  const pending = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  assert.ok(pending.body.sources.some(s => s.rebuild_requested_at));
+  const done = await processRebuildRequests(w.pool, 'nova_worker');
+  assert.deepEqual(done, [source]);
+  const after = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  assert.ok(after.body.sources.every(s => !s.rebuild_requested_at));
+  const lg = await report('logistica');
+  assert.equal(lg['logistica-08'].kind, 'bars');
+});

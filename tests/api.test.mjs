@@ -183,7 +183,11 @@ test('MCP: tools listed; dashboard with same cut and filters as UI', async () =>
 test('crypto, secret references and password hashing', async () => {
   const c = encryptSecret('k', SECRET_KEY);
   assert.notEqual(encryptSecret('k', SECRET_KEY), c, 'random IV');
-  assert.throws(() => decryptSecret(c.replace(/.$/, c.endsWith('A') ? 'B' : 'A'), SECRET_KEY));
+  // Tamper the first character of the auth tag: always 6 significant bits (the last character of a
+  // base64url field may only carry padding bits, which made this assertion fail at random).
+  const parts = c.split('.');
+  parts[2] = (parts[2][0] === 'A' ? 'B' : 'A') + parts[2].slice(1);
+  assert.throws(() => decryptSecret(parts.join('.'), SECRET_KEY));
   assert.equal(resolveSecret({secret_ref: 'env:NOVA_TEST_KEY'}, SECRET_KEY, {NOVA_TEST_KEY: 'x'}), 'x');
   assert.throws(() => resolveSecret({secret_ref: 'file:/etc/passwd'}, SECRET_KEY));
   const h = await hashPassword('a-long-password!');

@@ -301,3 +301,23 @@
 .live-summary{display:grid;gap:8px;font-size:13px;line-height:1.65;color:var(--text-2)}
 .live-summary p{margin:0}
 .live-summary p:first-child{color:var(--text)}
+
+/* Presupuestos y unidades (company inputs) */
+.om-inputs{display:grid;gap:16px}
+.om-in-table{width:100%;border-collapse:collapse;font-size:13px}
+.om-in-table th,.om-in-table td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.om-in-table th.num,.om-in-table td.num{text-align:right;font-family:var(--font-num)}
+.om-in-table select,.om-in-table input{width:100%;min-width:120px;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--text);font:inherit}
+.om-in-table td.num input{min-width:70px;text-align:right}
+.om-in-table select:focus-visible,.om-in-table input:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.om-in-kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.om-in-kind{display:grid;gap:4px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);cursor:pointer;transition:border-color .2s,transform .2s}
+.om-in-kind small{color:var(--text-3);font-size:12px;line-height:1.4}
+.om-in-kind:hover{transform:translateY(-1px)}
+.om-in-kind.is-active{border-color:var(--brand)}
+.om-in-kind:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.om-in-file{position:relative;overflow:hidden;cursor:pointer}
+.om-in-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.om-in-file:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+@media (max-width:767px){.om-in-kinds{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){.om-in-kind{transition:none}.om-in-kind:hover{transform:none}}
