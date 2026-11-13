@@ -126,20 +126,50 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
  </div>;
  const statusText=live?(published?`Datos al cierre del ${published.business_date}${closeAt?` · ${hhmm(closeAt)}`:''}${stale?' · desactualizado':''}`:'Sin datos publicados todavía'):'Datos de demostración · sin conexión a Odoo';
 
- // Teléfono: cabecera con mini-Pulso, nivel y racha; decisiones deslizables; Omega; novedades.
- if(vp==='phone')return <div className="mx-cmd mx-phone">
-  <header className="mx-phone-head">
-   <MiniPulse value={pulse} tone={pulseTone}/>
-   <div className="mx-phone-id"><span className="mx-hud-title">CENTRO DE MANDO</span><span className="mx-muted">{tenantName}</span>
-    {motivation&&<span className="mx-phone-lv">NV {motivation.level.number} · {motivation.level.name} · <span className={motivation.streak?'fin-risk':''}>racha {motivation.streak} {motivation.streak===1?'día':'días'}</span></span>}</div>
-  </header>
-  <p className={`mx-phone-status${stale?' is-stale':''}`}>{statusText}</p>
-  <SwipeDeck decisions={decisions} live={live} onDecide={(d,ok)=>act(d.id,ok)} xpFor={motivation?.xpFor}/>
-  <div className="mx-phone-kpis">{nodes.filter(n=>['ingresos','caja','utilidad','soporte'].includes(n.id)).map(n=><div key={n.id} className="mx-tile"><span className="mx-hud-title mx-muted">{n.label}</span><strong className={`fin-${n.fin}`}>{n.value}</strong><span className="mx-muted">{n.delta}</span></div>)}</div>
-  {omegaPanel}
-  <NewsTicker items={news}/>
-  {flow.dialog}{flow.toast}
- </div>;
+ // Teléfono: cabina HUD. Reactor al centro con los 6 indicadores alrededor (arriba y abajo),
+ // Enfoque del indicador tocado, Omega por voz, misiones deslizables y novedades.
+ if(vp==='phone'){
+  const byId=(id:string)=>nodes.find(n=>n.id===id)!;
+  const top=['costos','ingresos','meta'].map(byId),bottom=['utilidad','soporte','caja'].map(byId);
+  const node=(n:OrbitNode)=><button key={n.id} type="button" className={`mx-ph-node fin-${n.fin}${sel===n.id?' is-on':''}`} aria-pressed={sel===n.id}
+   aria-label={`${n.label}: ${n.value}, ${n.delta}`} onClick={()=>setSel(n.id)}>
+   <span className="mx-ph-node-label">{n.label}</span><strong>{n.value}</strong><span className="mx-ph-node-delta">{n.delta}</span></button>;
+  return <div className="mx-cmd mx-phone">
+   <header className="mx-ph-head">
+    <span className="mx-cmd-mark" aria-hidden="true">Ω</span>
+    <div className="mx-ph-id"><span className="mx-hud-title">CENTRO DE MANDO</span><span className="mx-muted">{tenantName}</span></div>
+    <time className="mx-ph-clock" dateTime={now.toISOString()}>{hhmm(now)}</time>
+   </header>
+   <div className="mx-ph-chips">
+    <span className={`mx-ph-status${stale?' is-stale':''}`}><i aria-hidden="true"/>{statusText}</span>
+    {motivation&&<LevelChip m={motivation} compact/>}
+   </div>
+   <section className="mx-ph-cockpit" aria-label="Pulso de la empresa e indicadores del cierre">
+    <div className="mx-ph-row">{top.map(node)}</div>
+    <div className="mx-ph-core">
+     <svg className="mx-ph-links" viewBox="0 0 300 300" aria-hidden="true" preserveAspectRatio="none">
+      <path d="M50 0 L110 92"/><path d="M150 0 L150 52"/><path d="M250 0 L190 92"/>
+      <path d="M50 300 L110 208"/><path d="M150 300 L150 248"/><path d="M250 300 L190 208"/>
+     </svg>
+     <ArcReactor value={pulse} size={300} delta={ise&&ise.value!=='—'?(ise.deltaLabel||'').slice(0,32).toLowerCase():undefined} tone={pulseTone}/>
+    </div>
+    <div className="mx-ph-row">{bottom.map(node)}</div>
+   </section>
+   <div className="mx-panel mx-focus mx-ph-focus" aria-live="polite">
+    <span className="mx-hud-title mx-muted">ENFOQUE · toca un indicador</span>
+    <strong className={`mx-focus-title fin-${focusNode.fin}`}>{focusNode.label} · {focusNode.value}</strong>
+    <FocusVisual values={focusSeries} fin={focusNode.fin} kpi={focusKpi[sel]} meta={sel==='meta'}/>
+    <p className="mx-focus-text">{focusText}</p>
+   </div>
+   {omegaPanel}
+   <section className="mx-ph-missions" aria-label="Misiones de hoy">
+    <div className="mx-panel-head"><span className="mx-hud-title">MISIONES DE HOY</span><span className="mx-muted">{pending.length?`${pending.length} por resolver`:'Todo resuelto'}</span></div>
+    <SwipeDeck decisions={decisions} live={live} onDecide={(d,ok)=>act(d.id,ok)} xpFor={motivation?.xpFor}/>
+   </section>
+   <NewsTicker items={news}/>
+   {flow.dialog}{flow.toast}
+  </div>;
+ }
 
  // Tableta: reactor con 4 indicadores en 2×2 y pestañas Misiones / Soporte / Skills.
  if(vp==='tablet'){
