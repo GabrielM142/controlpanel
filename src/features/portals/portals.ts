@@ -7,7 +7,7 @@ export type PortalId='mando'|'inteligencia'|'unidades'|'planificacion'|'decision
 export type Portal={id:PortalId;label:string;icon:LucideIcon;ids:string[];direct?:string;question:string;mobile?:boolean};
 
 export const PORTALS:Portal[]=[
- {id:'mando',label:'Mando',icon:Gauge,ids:['nivel1'],direct:'nivel1',mobile:true,question:'¿Cómo está la empresa ahora mismo?'},
+ {id:'mando',label:'Mando',icon:Gauge,ids:['nivel1','cartelera'],direct:'nivel1',mobile:true,question:'¿Cómo está la empresa ahora mismo?'},
  {id:'inteligencia',label:'Inteligencia',icon:Radar,mobile:true,ids:['comercial','financiero','compras','inventarios','clientes','logistica','marketing','riesgos','bodegas','iris'],
   question:'¿Dónde gano, dónde pierdo y qué está cambiando en cada área?'},
  {id:'unidades',label:'Unidades',icon:Layers3,ids:['mayoristahogar','mayoristaintorno','retailjuj','retailintorno'],question:'¿Cómo va cada unidad de negocio?'},

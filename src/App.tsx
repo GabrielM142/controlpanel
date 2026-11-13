@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType,type ReactNode} from 'react';
-import {BellRing,ShieldCheck,Target,Banknote,Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {BellRing,ShieldCheck,Target,Banknote,Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,Clapperboard,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,RenameContext,ReportNodes,blockIds} from './components/Report';
@@ -29,6 +29,8 @@ import ThemeView from './features/theme/ThemeView';
 import {BrandThemeProvider,useBrandTheme} from './features/theme/useBrandTheme';
 import DireccionHero from './features/omega/DireccionHero';
 import CommandCenter from './features/omega/CommandCenter';
+import Billboard from './features/billboard/Billboard';
+import {useTrackView} from './features/billboard/useViews';
 import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
 import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
@@ -64,6 +66,7 @@ const LIVE_FILTERS=new Set(['anio','mes','canal','unidad','marca','categoria','p
 
 type VirtualPage={id:string;group:string;subgroup?:string;label:string;question:string;component:ComponentType;icon:LucideIcon;kicker?:string;paused?:boolean};
 const virtualPages:VirtualPage[]=[
+ {id:'cartelera',group:'Mando',label:'Cartelera',question:'¿Qué reviso primero hoy?',component:()=>null,icon:Clapperboard},
  {id:'bodegas',group:'Operación',label:'Valorización por bodega',question:'¿Cuánto vale mi inventario en cada bodega y dónde está concentrado?',component:WarehouseView,icon:Warehouse},
  {id:'decisiones',group:'Gestión',label:'Decisiones',question:'¿Qué espera tu decisión hoy?',component:DecisionsView,icon:Signature},
  {id:'omega',group:'Omega',label:'Pregúntale a Omega',question:'Pregunta como hablas: Omega responde con las cifras del último cierre y cita sus fuentes.',component:AskOmegaView,icon:Sparkles},
@@ -94,7 +97,7 @@ for(const pt of PORTALS)if(!pt.direct)virtualPages.push({id:`portal-${pt.id}`,gr
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={plataforma:ShieldCheck,notificaciones:BellRing,truekens:Coins,iris:Target,flujo:Banknote,presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={cartelera:Clapperboard,plataforma:ShieldCheck,notificaciones:BellRing,truekens:Coins,iris:Target,flujo:Banknote,presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // Fase M: los portales (src/features/portals) reemplazan la lista larga del menú. Ajustes y
 // Super admin van en el menú del avatar. Ninguna vista se pierde: todas siguen en su ruta y en Ctrl K.
@@ -131,13 +134,18 @@ function AppShell(){
   api<{modules:string[]|null}>('/api/plan',{tenant:live.tenantId}).then(r=>{if(!off)setPlanModules(r.modules);}).catch(()=>{});
   return()=>{off=true;};
  },[live.live,live.tenantId]);
- const [pageId,setPageId]=useState(getPage);
+ // Fase M4: sin ruta en la URL, la gerencia (tema Mando) en escritorio entra por la Cartelera.
+ const bootNoHash=useRef(!location.hash.slice(1));
+ const [pageId,setPageId]=useState(()=>bootNoHash.current&&document.documentElement.dataset.skin==='mando'&&window.innerWidth>=1280?'cartelera':getPage());
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
  // Light/dark is a mode of the company theme (useBrandTheme); the header toggle keeps working.
  const brandTheme=useBrandTheme();
  const {skin}=useSkin(live.live?live.membership?.role:null);
+ // Si el rol resulta no ser gerencia (tema Nueva era), el inicio vuelve a Dirección.
+ useEffect(()=>{if(bootNoHash.current&&skin!=='mando')setPageId(p=>p==='cartelera'&&!location.hash.slice(1)?'nivel1':p);},[skin]);
+ useTrackView(live.tenantId||activeTenant.id||'demo',pageId,!pageId.startsWith('portal-')&&pageId!=='cartelera');
  const theme:'light'|'dark'=brandTheme.theme.mode==='light'?'light':'dark';
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');
@@ -397,7 +405,12 @@ function AppShell(){
      </section>}
      {reportPage&&!liveRisks&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
-     {virtualPage&&pageId.startsWith('portal-')?<PortalPage portal={portalById.get(pageId.slice(7) as PortalId)!} items={portalItems(portalById.get(pageId.slice(7) as PortalId)!)} onOpen={navigate}/>
+     {virtualPage&&pageId==='cartelera'?<Billboard live={live.live} tenantKey={live.tenantId||activeTenant.id||'demo'} userName={live.live&&live.user?live.user.name:'Gerencia'}
+       closeLabel={live.live?(live.status?.published?`CIERRE DEL ${live.status.published.business_date}`:'SIN CIERRE PUBLICADO'):'DATOS DE DEMOSTRACIÓN'}
+       rows={PORTALS.filter(pt=>pt.id!=='mando'&&pt.id!=='omega').map(pt=>({portal:pt,items:portalItems(pt)}))}
+       info={id=>{if(!allValidIds.has(id)||!allowed(id))return null;const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);return {label:labelFor(id,rp?.label||vp?.label||id),question:rp?.question||vp?.question||'',icon:icons[id]||LayoutDashboard};}}
+       onNavigate={navigate} onAsk={askOmega}/>
+      :virtualPage&&pageId.startsWith('portal-')?<PortalPage portal={portalById.get(pageId.slice(7) as PortalId)!} items={portalItems(portalById.get(pageId.slice(7) as PortalId)!)} onOpen={navigate}/>
       :virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
