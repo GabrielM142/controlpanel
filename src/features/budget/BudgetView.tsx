@@ -70,7 +70,10 @@ export default function BudgetView(){
   // average of the months that do have it, so a short history still yields a full year.
   const out:Record<string,number[]>={};
   const pool=by==='total'?{Empresa:Object.values(base).reduce((acc,v)=>acc.map((x,i)=>x+v[i]),Array(12).fill(0))}:base;
-  for(const [k,v] of Object.entries(pool)){
+  // The month of the last close (and later ones) is incomplete in the base year: not used as is.
+  const cut=data?.cutoff||'';const partialFrom=Number(cut.slice(0,4))===year-1?Number(cut.slice(5,7))-1:12;
+  for(const [k,raw] of Object.entries(pool)){
+   const v=raw.map((x,i)=>i>=partialFrom?0:x);
    const known=v.filter(x=>x>0);const avg=known.length?known.reduce((a,b)=>a+b,0)/known.length:0;
    out[k]=v.map(x=>Math.round((x>0?x:avg)*(1+growth/100)));
   }
@@ -109,7 +112,7 @@ export default function BudgetView(){
   </section>
 
   <section className="panel table-panel" aria-labelledby="om-b-grid" aria-busy={busy==='load'}>
-   <header className="panel-heading"><h2 id="om-b-grid">{k.label} {year} · {LEVEL[by]}</h2><span className="om-budget-total">{money(yearTotal)}{baseTotal?<small> · real {year-1}: {money(baseTotal)} ({pct(baseTotal?(yearTotal/baseTotal-1)*100:null)})</small>:null}</span></header>
+   <header className="panel-heading"><h2 id="om-b-grid">{k.label} {year} · {LEVEL[by]}</h2><span className="om-budget-total">{money(yearTotal)}{baseTotal?<small> · real {year-1}: {money(baseTotal)}{yearTotal?` (${pct((yearTotal/baseTotal-1)*100)})`:''}</small>:null}</span></header>
    <div className="panel-body"><div className="table-scroll"><table className="om-in-table om-budget-grid">
     <thead><tr><th>{by==='unit'?'Unidad':by==='brand'?'Marca':'Concepto'}</th>{MONTHS.map(m=><th key={m} className="num">{m}</th>)}<th className="num">Total</th>{edit&&by!=='total'&&<th><span className="sr-only">Quitar</span></th>}</tr></thead>
     <tbody>{keys.map(key=><tr key={key}><td><b>{key}</b>{base[key]?<small className="om-budget-hint">real {year-1}: {money(base[key].reduce((a,b)=>a+b,0))}</small>:null}</td>
