@@ -12,6 +12,11 @@ import CashflowView from './features/cashflow/CashflowView';
 import ReportSetup from './features/inputs/ReportSetup';
 import RisksLive from './features/risks/RisksLive';
 import {useSkin} from './features/theme/useSkin';
+import {ADMIN_IDS,PORTALS,PORTAL_PAGE_IDS,SETTINGS_IDS,portalById,portalEntry,portalOf,rememberPortal,type Portal,type PortalId} from './features/portals/portals';
+import PortalDock from './features/portals/PortalDock';
+import PortalPage,{type PortalItem,type PortalStatus} from './features/portals/PortalPage';
+import MobileDock from './features/portals/MobileDock';
+import AvatarMenu,{AccountMenuBody} from './features/portals/AvatarMenu';
 import IrisView from './features/marketing/IrisView';
 import TruekensView from './features/truekens/TruekensView';
 import NotificationsView from './features/notifications/NotificationsView';
@@ -83,67 +88,29 @@ const virtualPages:VirtualPage[]=[
  {id:'trueque',group:'Factory',label:'Nueva Solicitud',question:'Chatea con Omega IA para describir el módulo que necesitas. Al finalizar lo enviamos al equipo OMEGA.',component:TruequeChat,icon:Wand2},
  {id:'trueque-list',group:'Factory',label:'Mis Solicitudes',question:'Historial de módulos solicitados a OMEGA con su estado actual.',component:TruequeList,icon:ListChecks},
 ];
+const PortalBody=()=>null;
+for(const pt of PORTALS)if(!pt.direct)virtualPages.push({id:`portal-${pt.id}`,group:'Portales',label:pt.label,question:pt.question,component:PortalBody,icon:pt.icon});
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
 const icons:Record<string,LucideIcon>={plataforma:ShieldCheck,notificaciones:BellRing,truekens:Coins,iris:Target,flujo:Banknote,presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
-// OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
-// its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
-type NavSub={label:string;ids:string[]};
-type NavSection={label:string;subs:NavSub[]};
-// Grouped by the question a manager asks (results -> operation -> units -> action -> setup).
-// The 13 reports and every auxiliary view stay; only their grouping changes.
-const NAV:NavSection[]=[
- {label:'Ejecutivo',subs:[
-  {label:'Dirección',ids:['nivel1']},
-  {label:'Ventas',ids:['comercial','clientes','marketing','iris']},
-  {label:'Finanzas y riesgo',ids:['financiero','riesgos']},
- ]},
- {label:'Operación',subs:[
-  {label:'Compras',ids:['compras']},
-  {label:'Inventarios',ids:['inventarios']},
-  {label:'Valorización por bodega',ids:['bodegas']},
-  {label:'Logística',ids:['logistica']},
- ]},
- {label:'Unidades',subs:[
-  {label:'Unidades de negocio',ids:['mayoristahogar','mayoristaintorno','retailjuj','retailintorno']},
- ]},
- {label:'Planificación',subs:[
-  {label:'Flujo de efectivo',ids:['flujo']},
-  {label:'Presupuesto',ids:['presupuesto']},
- ]},
- {label:'Gestión',subs:[
-  {label:'Decisiones',ids:['decisiones']},
-  {label:'Notificaciones',ids:['notificaciones']},
-  {label:'Tickets de soporte',ids:['tickets']},
-  {label:'Tareas y notas',ids:['tasks','notes']},
- ]},
- {label:'Plataforma OMEGA',subs:[
-  {label:'Super admin',ids:['plataforma']},
- ]},
- {label:'Configuración',subs:[
-  {label:'Fuentes de datos',ids:['sources']},
-  {label:'Omega IA',ids:['omega-ia']},
-  {label:'Consumo de Truekens',ids:['truekens']},
-  {label:'Umbrales',ids:['control']},
-  {label:'Presupuestos y unidades',ids:['insumos']},
-  {label:'Tema de la empresa',ids:['tema']},
-  {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},
- ]},
-];
+// Fase M: los portales (src/features/portals) reemplazan la lista larga del menú. Ajustes y
+// Super admin van en el menú del avatar. Ninguna vista se pierde: todas siguen en su ruta y en Ctrl K.
+const SECTION_SETTINGS='Ajustes';
+const SECTION_ADMIN='Plataforma OMEGA';
 
 // Unit pages are positions: demo shows generic names; live shows each company's configured units.
 const UNIT_PAGE_IDS=['mayoristahogar','mayoristaintorno','retailjuj','retailintorno'];
 const DEMO_UNIT_LABEL:Record<string,string>={mayoristahogar:'Mayorista 1',mayoristaintorno:'Mayorista 2',retailjuj:'Retail 1',retailintorno:'Retail 2'};
 const PAGE_MODULE:Record<string,string>={'trueque':'factory','trueque-list':'factory',mayoristahogar:'unidades',mayoristaintorno:'unidades',retailjuj:'unidades',retailintorno:'unidades'};
 const ROLE_LABEL:Record<string,string>={owner:'Propietario',admin:'Administrador',analyst:'Analista',viewer:'Lectura'};
-function locate(id:string):{section:string;sub?:string}{
- if(id==='omega')return {section:'Pregúntale a Omega'};
- for(const sec of NAV)for(const sub of sec.subs)if(sub.ids.includes(id))return {section:sec.label,sub:sub.ids.length>1?sub.label:undefined};
- return {section:'Factory'};
+function locate(id:string):{section:string;sub?:string;portal:Portal|null}{
+ const pt=portalOf(id);
+ if(pt)return {section:pt.label,portal:pt,sub:pt.id==='market'&&(id==='trueque'||id==='trueque-list')?'Factory':undefined};
+ if(ADMIN_IDS.includes(id))return {section:SECTION_ADMIN,portal:null};
+ return {section:SECTION_SETTINGS,portal:null};
 }
-const findSub=(id:string,_group?:string)=>locate(id).sub;
 
 const allValidIds=new Set([...report.pages.map(p=>p.id),...virtualPages.map(p=>p.id)]);
 const getPage=()=>{const h=location.hash.slice(1);return allValidIds.has(h)?h:'nivel1';};
@@ -178,8 +145,6 @@ function AppShell(){
  const [alertsOpen,setAlertsOpen]=useState(false);
  const [paletteOpen,setPaletteOpen]=useState(false);
  const [presentation,setPresentation]=useState(false);
- const [expanded,setExpanded]=useState<Set<string>>(()=>{const all=NAV.map(n=>`sec:${n.label}`);try{const raw=localStorage.getItem('nova.nav');if(raw){const saved=new Set<string>(JSON.parse(raw));if([...saved].some(k=>k.startsWith('sec:')))return saved;}}catch{}return new Set(all);});
- const drawer=useRef<HTMLDialogElement>(null);
 
  const isVirtual=virtualIds.has(pageId);
  const virtualPage=isVirtual?virtualById.get(pageId)!:null;
@@ -234,24 +199,19 @@ function AppShell(){
  // Breadcrumb targets: first view of the section and of the group; siblings = views of the same group
  // (or of the section when the view has no group), so the current crumb can switch between them.
  const navLabel=(id:string)=>report.pages.find(p=>p.id===id)?.label||virtualById.get(id)?.label||id;
- const secDef=NAV.find(s=>s.label===loc.section);
- const subDef=secDef?.subs.find(s=>s.ids.includes(pageId));
- const sectionFirst=secDef?.subs[0]?.ids[0];
- const subFirst=subDef&&subDef.ids.length>1?subDef.ids[0]:undefined;
- const siblings=(subDef&&subDef.ids.length>1?subDef.ids:secDef?secDef.subs.flatMap(s=>s.ids):[pageId]).map(id=>({id,label:navLabel(id)}));
+ const sectionFirst=loc.portal?portalEntry(loc.portal):undefined;
+ const subFirst=undefined as string|undefined;
+ const siblings=(loc.portal&&!pageId.startsWith('portal-')?loc.portal.ids:loc.portal?[]:loc.section===SECTION_SETTINGS?SETTINGS_IDS:[pageId]).map(id=>({id,label:navLabel(id)}));
 
- const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);window.scrollTo({top:0,behavior:'instant'});},[]);
+ const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);const pt=portalOf(id);if(pt){rememberPortal(pt.id);ls.set('nova.nav',JSON.stringify([`portal:${pt.id}`]));}window.scrollTo({top:0,behavior:'instant'});},[]);
 
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
  useEffect(()=>{document.title=`${pageLabel} · OMEGA · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
  const liveVersion=versionKey(live.status);
  useEffect(()=>{if(!live.live||!live.tenantId){setLiveOptions({});return;}if(liveVersion===null)return;let off=false;cachedGet<Record<string,string[]>>(live.tenantId,'/api/filters',liveVersion).then(o=>{if(!off)setLiveOptions(o);}).catch(()=>{});return()=>{off=true;};},[live.live,live.tenantId,liveVersion]);
- useEffect(()=>{if(menuOpen)drawer.current?.showModal();else drawer.current?.close();},[menuOpen]);
  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),6000);return()=>clearTimeout(t);},[notice]);
  useEffect(()=>{const handler=(e:Event)=>setNotice((e as CustomEvent<string>).detail);window.addEventListener('report-notice',handler);return()=>window.removeEventListener('report-notice',handler);},[]);
 
- useEffect(()=>{setExpanded(prev=>{const next=new Set(prev);next.add(`sec:${loc.section}`);if(currentSub)next.add(`sub:${loc.section}::${currentSub}`);return next;});},[loc.section,currentSub]);
- useEffect(()=>{ls.set('nova.nav',JSON.stringify([...expanded]));},[expanded]);
 
  useEffect(()=>{ls.set('nova.ruler',rulerOn?'on':'off');},[rulerOn]);
  useEffect(()=>{if(!rulerOn)return;const move=(e:MouseEvent)=>setRulerY(e.clientY);window.addEventListener('mousemove',move);return()=>window.removeEventListener('mousemove',move);},[rulerOn]);
@@ -269,7 +229,6 @@ function AppShell(){
   if(e.key==='Escape'){setPresentation(false);return;}
   if(e.key==='d'||e.key==='D'){navigate('decisiones');}else if(e.key==='p'||e.key==='P'){setPresentation(v=>!v);}else if(e.key==='?'){setNotice('Atajos: Ctrl K buscar o preguntar · D decisiones · P presentar al directorio · Esc salir de presentación.');}};
   window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[navigate]);
- const toggleKey=useCallback((k:string)=>{setExpanded(prev=>{const next=new Set(prev);if(next.has(k))next.delete(k);else next.add(k);return next;});},[]);
 
  const [syncing,setSyncing]=useState(false);
  const [refreshedAt,setRefreshedAt]=useState<number|null>(null);
@@ -296,9 +255,10 @@ function AppShell(){
  },[]);
 
  const paletteItems=useMemo<PaletteItem[]>(()=>[
-  ...report.pages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:labelFor(p.id,p.label),group:p.group,subgroup:findSub(p.id,p.group),keywords:p.question})),
-  ...virtualPages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:p.label,group:p.group,subgroup:p.subgroup,keywords:p.question})),
- ],[]);
+  ...virtualPages.filter(p=>p.id.startsWith('portal-')).map(p=>({id:p.id,label:`Portal ${p.label}`,group:'Portales',keywords:p.question})),
+  ...report.pages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:labelFor(p.id,p.label),group:locate(p.id).section,keywords:`${p.group} ${p.question}`})),
+  ...virtualPages.filter(p=>!p.id.startsWith('portal-')&&allowed(p.id)).map(p=>({id:p.id,label:p.label,group:locate(p.id).section,subgroup:locate(p.id).sub,keywords:`${p.group} ${p.question}`})),
+ ],[unitNames,planModules,live.live,live.user]);
 
  const {activeAlerts}=useThresholds();
  const noticeItems=useNotifications().data?.items;
@@ -309,67 +269,43 @@ function AppShell(){
  const {pending:pendingDecisions}=useDecisions();
  const openTickets=live.live?0:demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
  const badgeFor=(id:string)=>id==='notificaciones'&&unreadNotices?<small className="om-badge om-badge--bad">{unreadNotices}</small>:id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
+ const activeAlertsByPage=useMemo(()=>{const m:Record<string,'r'|'a'>={};for(const r of activeAlerts){const prev=m[r.linkedPageId];if(r.tone==='r'||!prev)m[r.linkedPageId]=r.tone==='r'?'r':'a';}return m;},[activeAlerts]);
+ const statusFor=(id:string):{status:PortalStatus;badge?:number}=>{
+  if(id==='decisiones')return pendingDecisions?{status:'revisar',badge:pendingDecisions}:{status:'estable'};
+  if(id==='notificaciones')return unreadNotices?{status:(noticeItems||[]).some(n=>!n.read_at&&n.severity==='critica')?'atencion':'revisar',badge:unreadNotices}:{status:'estable'};
+  if(id==='tickets'&&openTickets)return {status:'revisar',badge:openTickets};
+  if(live.live){const mine=(noticeItems||[]).filter(n=>!n.read_at&&n.page_id===id);
+   if(mine.some(n=>n.severity==='critica'))return {status:'atencion',badge:mine.length};
+   if(mine.length)return {status:'revisar',badge:mine.length};return {status:'estable'};}
+  const t=activeAlertsByPage[id];return {status:t==='r'?'atencion':t==='a'?'revisar':'estable'};
+ };
+ const portalBadge=(pt:Portal)=>pt.ids.reduce((n,id)=>n+(allowed(id)&&statusFor(id).status!=='estable'?(statusFor(id).badge||1):0),0);
+ const portalItems=(pt:Portal):PortalItem[]=>pt.ids.filter(allowed).map(id=>{const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);
+  return {id,label:labelFor(id,rp?.label||vp?.label||id),question:rp?renames.reduce((q,[a,b])=>q.split(a).join(b),rp.question):vp?.question||'',icon:icons[id]||LayoutDashboard,...statusFor(id),
+   note:id==='trueque'||id==='trueque-list'?'Factory':undefined};});
+ const portalAllowed=(pt:Portal)=>pt.ids.some(allowed);
+ const openPortal=(id:string)=>navigate(id);
+ const accountName=live.live&&live.user?live.user.name:activeTenant.name;
+ const accountRole=live.live?(ROLE_LABEL[live.membership?.role||'']||''):'Demo · datos de ejemplo';
+ const menuLinks=(ids:string[])=>ids.filter(allowed).map(id=>({id,label:virtualById.get(id)!.label,icon:icons[id]||LayoutDashboard}));
+ const accountBody={name:accountName,role:accountRole,settings:menuLinks(SETTINGS_IDS),admin:menuLinks(ADMIN_IDS),onOpen:navigate,
+  onLogout:live.live?()=>live.logout():undefined,tenantSwitcher:<TenantSwitcher/>};
  function NavItem({p}:{p:ReportPage|VirtualPage}){if(!allowed(p.id))return null;const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{labelFor(p.id,p.label)}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
-  const truequePages=virtualPages.filter(p=>p.group==='Factory');
-  const byId=(id:string)=>report.pages.find(p=>p.id===id)||virtualById.get(id);
-  return <>
-   <div className="omega-brand">
-    <span className="omega-mark" aria-hidden="true">Ω</span>
-    <div><strong>OMEGA</strong><small>La última palabra en tus datos</small></div>
-    {brandTheme.theme.logo&&<img className="omega-co-logo" src={brandTheme.theme.logo} alt={`Logo de ${activeTenant.name}`}/>}
-   </div>
-   <TenantSwitcher/>
-   <nav aria-label="Menú principal" className="omega-nav">
-    <button type="button" className="omega-ask-nav" aria-current={pageId==='omega'?'page':undefined} onClick={()=>navigate('omega')}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>
-    {NAV.filter(sec=>sec.subs.some(sub=>sub.ids.some(id=>allowed(id)))).map(sec=>{
-     const secKey=`sec:${sec.label}`;const open=expanded.has(secKey);
-     return <div key={sec.label}>
-      <div className={`nav-group omega-section ${open?'open':'closed'}${loc.section===sec.label?' is-active':''}`}>
-       <button type="button" className="nav-group-header omega-section-head" aria-expanded={open} onClick={()=>toggleKey(secKey)}><span>{sec.label}</span><ChevronDown size={12} className={open?'':'rotate-neg90'}/></button>
-       {open&&<div className="nav-group-body">{sec.subs.map(sub=>{
-        const pages=(sub.ids.map(byId).filter(Boolean) as (ReportPage|VirtualPage)[]).filter(p=>allowed(p.id));
-        if(!pages.length)return null;
-        if(pages.length===1)return <NavItem key={sub.label} p={pages[0]}/>;
-        const subKey=`sub:${sec.label}::${sub.label}`;const subOpen=expanded.has(subKey)||sub.ids.includes(pageId);
-        return <div className={`nav-sub ${subOpen?'open':'closed'}`} key={sub.label}>
-         <button type="button" className="nav-sub-header" aria-expanded={subOpen} onClick={()=>toggleKey(subKey)}><ChevronRight size={11} className={subOpen?'rotate-90':''}/><span>{sub.label}</span></button>
-         {subOpen&&pages.map(p=><NavItem key={p.id} p={p}/>)}
-        </div>;
-       })}</div>}
-      </div>
-     </div>;
-    })}
-    <div className="nav-trueque">
-     <div className="nav-trueque-head"><Sparkles size={12}/><span>Factory</span></div>
-     {truequePages.map(p=><NavItem key={p.id} p={p}/>)}
-     <div className="nav-trueque-foot">Módulos a medida para tu ERP</div>
-    </div>
-   </nav>
-   <SidebarFoot/>
-  </>;
- }
-
- function SidebarFoot(){
-  return <div className="sidebar-foot nova-foot omega-foot">
-   <span className="omega-avatar" aria-hidden="true">{live.live&&live.user?live.user.name.trim().slice(0,2).toUpperCase():activeTenant.monogram}</span>
-   <div><strong>{live.live&&live.user?live.user.name:activeTenant.name}</strong><span>{live.live?(ROLE_LABEL[live.membership?.role||'']||''):'Demo · datos de ejemplo'}</span></div>
-  </div>;
+  return <PortalDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge}>
+   <AvatarMenu initials={(accountName||'OM').trim().slice(0,2).toUpperCase()} {...accountBody}/>
+  </PortalDock>;
  }
 
  return <NavigateContext.Provider value={navigate}>
   <a className="skip-link" href="#main" onClick={e=>{e.preventDefault();document.getElementById("main")?.focus();}}>Ir al reporte</a>
   <div className="app-shell">
-   <aside className="sidebar"><Sidebar/></aside>
-   <dialog className="mobile-drawer" ref={drawer} onCancel={()=>setMenuOpen(false)} onClick={e=>{if(e.target===drawer.current)setMenuOpen(false);}}>
-    <button className="drawer-close" aria-label="Cerrar menú" onClick={()=>setMenuOpen(false)}><X size={20}/></button>
-    <Sidebar/>
-   </dialog>
+   <aside className="sidebar portal-shell"><Sidebar/></aside>
+   <MobileDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} more={<AccountMenuBody {...accountBody}/>}/>
    <main id="main" className="workspace" tabIndex={-1}>
     <div className="utility-bar">
      <div className="breadcrumbs">
-      <button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(true)}><Menu size={21}/></button>
       <nav className="om-crumbs" aria-label="Ruta">
        <button type="button" className="om-crumb" onClick={()=>navigate('nivel1')}>OMEGA</button>
        {loc.section!==pageLabel&&sectionFirst&&<><ChevronRight size={12} aria-hidden="true"/><button type="button" className="om-crumb" onClick={()=>navigate(sectionFirst)}>{loc.section}</button></>}
@@ -422,7 +358,7 @@ function AppShell(){
        {icon:isFullscreen?Minimize2:Maximize2,label:isFullscreen?'Salir de pantalla completa':'Pantalla completa',onClick:toggleFullscreen},
       ]}/>
       <button type="button" className="omega-present hide-mobile" aria-pressed={presentation} onClick={()=>setPresentation(v=>!v)}><Play size={14}/>{presentation?'Salir de presentación':'Presentar al directorio'}</button>
-      {live.user?<button type="button" className="avatar hide-mobile-small" title={`${live.user.name} · cerrar sesión`} aria-label="Cerrar sesión" onClick={()=>live.logout()}>{live.user.name.slice(0,2).toUpperCase()}<LogOut size={10}/></button>:<span className="avatar hide-mobile-small">JUJ</span>}
+      <span className="hide-desktop"><AvatarMenu initials={(accountName||'OM').trim().slice(0,2).toUpperCase()} {...accountBody}/></span>
      </div>
     </div>
     <header className="page-header">
@@ -458,7 +394,8 @@ function AppShell(){
      </section>}
      {reportPage&&!liveRisks&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
-     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
+     {virtualPage&&pageId.startsWith('portal-')?<PortalPage portal={portalById.get(pageId.slice(7) as PortalId)!} items={portalItems(portalById.get(pageId.slice(7) as PortalId)!)} onOpen={navigate}/>
+      :virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
     </div>

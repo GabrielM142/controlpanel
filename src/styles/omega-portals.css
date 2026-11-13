@@ -1,0 +1,100 @@
+/* ============================================================
+   OMEGA · Fase M2 — navegación por portales (§2). Solo var(--…).
+   Escritorio ≥ 1280: dock con icono y etiqueta · tableta 768–1279:
+   dock compacto (etiqueta flotante) · teléfono < 768: dock inferior.
+   ============================================================ */
+:root { --dock-w: 96px; }
+@media (max-width: 1279px) { :root { --dock-w: 76px; } }
+
+.sidebar.portal-shell { width: var(--dock-w) !important; padding: 0; overflow: visible; display: flex; z-index: 40; }
+.app-shell .workspace { margin-left: var(--dock-w); width: calc(100% - var(--dock-w)); }
+
+.portal-dock { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; height: 100%; padding: 16px 8px; box-sizing: border-box; }
+.portal-dock ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; flex: 1; overflow-y: auto; scrollbar-width: none; }
+.portal-dock-logo { width: 48px; height: 48px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--brand) 50%, transparent); background: transparent;
+  color: var(--brand); font: 700 26px var(--font-display); display: grid; place-items: center; box-shadow: 0 0 24px color-mix(in srgb, var(--brand) 35%, transparent); cursor: pointer; margin-bottom: 6px; }
+.portal-dock-item { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 1px solid transparent; border-radius: 16px;
+  background: transparent; color: var(--text-3); cursor: pointer; transition: color var(--motion) var(--ease), background var(--motion) var(--ease), border-color var(--motion) var(--ease), transform var(--motion) var(--ease); }
+.portal-dock-item:hover { color: var(--text); background: var(--surface); transform: translateY(-1px); }
+.portal-dock-item.is-active { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--brand) 25%, transparent); }
+.portal-dock-item.is-active::before { content: ''; position: absolute; left: -8px; top: 22%; bottom: 22%; width: 3px; border-radius: 0 3px 3px 0; background: var(--brand); box-shadow: 0 0 10px var(--brand); }
+.portal-dock-icon { display: grid; place-items: center; width: 28px; height: 28px; font: 700 22px var(--font-display); }
+.portal-dock-item.is-omega .portal-dock-icon { color: var(--fin-ai); text-shadow: 0 0 14px color-mix(in srgb, var(--fin-ai) 70%, transparent); }
+.portal-dock-label { font: 600 11px var(--font-ui); letter-spacing: .02em; text-align: center; line-height: 1.2; }
+.portal-dock-badge { position: absolute; top: 4px; right: 10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--fin-loss); color: var(--on-loss);
+  font: 700 10px/18px var(--font-ui); text-align: center; }
+.portal-dock-foot { padding-top: 8px; }
+
+/* Tableta: solo iconos; la etiqueta aparece al pasar el cursor o con foco */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .portal-dock-label { position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 6px 10px; border-radius: 10px;
+    background: var(--surface-solid); border: 1px solid var(--line); color: var(--text); opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) var(--ease); z-index: 60; }
+  .portal-dock-item:hover .portal-dock-label, .portal-dock-item:focus-visible .portal-dock-label { opacity: 1; }
+}
+
+/* Página de portal: tarjetas grandes */
+.portal-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+@media (min-width: 768px) and (max-width: 1279px) { .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.portal-card { width: 100%; min-height: 210px; display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 20px; border-radius: 18px; cursor: pointer; color: var(--text);
+  background: linear-gradient(160deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); font: inherit; }
+.portal-card:hover { box-shadow: 0 22px 50px color-mix(in srgb, var(--bg) 70%, transparent); border-color: var(--line-strong); }
+.portal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.portal-card-icon { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); }
+.portal-card-status { font: 700 11px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; }
+.portal-card-status.st-estable { color: var(--fin-income); background: color-mix(in srgb, var(--fin-income) 14%, transparent); }
+.portal-card-status.st-revisar { color: var(--fin-goal); background: color-mix(in srgb, var(--fin-goal) 14%, transparent); }
+.portal-card-status.st-atencion { color: var(--fin-loss-text); background: color-mix(in srgb, var(--fin-loss) 16%, transparent); }
+.portal-card.st-atencion { border-color: color-mix(in srgb, var(--fin-loss) 40%, transparent); }
+.portal-card-title { font: 700 22px var(--font-display); line-height: 1.15; }
+.portal-card-q { font-size: 14px; line-height: 1.5; color: var(--text-2); flex: 1; }
+.portal-card-note { font-size: 12px; color: var(--text-3); }
+.portal-card-go { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--brand); }
+
+/* Menú del avatar */
+.acct-menu { position: relative; }
+.acct-menu-btn { cursor: pointer; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: 700 13px var(--font-ui); }
+.acct-menu-pop { position: absolute; z-index: 200; left: calc(100% + 12px); bottom: 0; width: 290px; max-height: 80vh; overflow-y: auto; padding: 14px; border-radius: 18px;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); box-shadow: 0 24px 60px color-mix(in srgb, var(--bg) 80%, transparent); }
+.utility-bar .acct-menu-pop { left: auto; right: 0; bottom: auto; top: calc(100% + 8px); }
+.acct-menu-body { display: grid; gap: 8px; }
+.acct-menu-who { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.acct-menu-who strong { color: var(--text); font-size: 14px; } .acct-menu-who span { color: var(--text-3); font-size: 12px; }
+.acct-menu-h { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font: 600 11px var(--font-hud, var(--font-ui)); letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+.acct-menu-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.acct-menu-body ul button, .acct-menu-out { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 10px; background: transparent; color: var(--text-2); font: 500 13px var(--font-ui); text-align: left; cursor: pointer; }
+.acct-menu-body ul button:hover, .acct-menu-out:hover { background: var(--surface-2); color: var(--text); }
+.acct-menu-out { margin-top: 6px; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; color: var(--fin-loss-text); }
+
+/* Teléfono: dock inferior flotante con el orbe de Omega al centro */
+.mobile-dock, .hide-desktop { display: none; }
+@media (max-width: 767px) {
+  .sidebar.portal-shell { display: none !important; }
+  .app-shell .workspace { margin-left: 0; width: 100%; padding-bottom: 104px; }
+  .hide-desktop { display: inline-flex; }
+  .mobile-dock { display: flex; position: fixed; z-index: 120; left: 12px; right: 12px; bottom: 12px; height: 70px; align-items: center; justify-content: space-around;
+    border-radius: 24px; background: color-mix(in srgb, var(--surface-solid) 92%, transparent); border: 1px solid var(--line-strong);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 18px 40px color-mix(in srgb, var(--bg) 80%, transparent); }
+  .mdock-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 52px; min-height: 52px; justify-content: center; border: 0; background: transparent; color: var(--text-3); font: 600 10px var(--font-ui); cursor: pointer; }
+  .mdock-item.is-active { color: var(--brand); }
+  .mdock-item i { position: absolute; top: 2px; right: 6px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--fin-loss); color: var(--on-loss); font: 700 9px/16px var(--font-ui); font-style: normal; }
+  .mdock-orb { width: 64px; height: 64px; margin-top: -30px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fin-ai) 70%, transparent); cursor: pointer;
+    background: radial-gradient(circle, color-mix(in srgb, var(--fin-ai) 85%, var(--bg)) 0, color-mix(in srgb, var(--fin-ai) 30%, var(--bg)) 75%); color: var(--text); font: 700 26px var(--font-display);
+    box-shadow: 0 0 26px color-mix(in srgb, var(--fin-ai) 60%, transparent); }
+  .mdock-orb.is-active { outline: 2px solid var(--fin-ai); outline-offset: 3px; }
+  .ai-bubble { display: none !important; } /* el orbe Ω del dock abre a Omega */
+  .toast { bottom: 96px !important; }
+}
+.mdock-sheet { border: 1px solid var(--line-strong); border-radius: 22px 22px 0 0; background: var(--surface-solid); color: var(--text); padding: 16px; width: 100%; max-width: 100%;
+  margin: auto 0 0; box-sizing: border-box; max-height: 82dvh; overflow-y: auto; }
+.mdock-sheet::backdrop { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(3px); }
+.mdock-sheet header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.mdock-sheet-portals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.mdock-sheet-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 12px var(--font-ui); cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-dock-item, .portal-dock-label { transition: none !important; }
+  .portal-dock-item:hover { transform: none; }
+}
+@media print { .portal-dock, .mobile-dock { display: none !important; } }
