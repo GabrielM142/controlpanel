@@ -300,8 +300,9 @@ function AppShell(){
 
  const {activeAlerts}=useThresholds();
  const noticeItems=useNotifications().data?.items;
- const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=live.live?(noticeItems||[]).filter(n=>!n.read_at&&n.severity==='critica').length:businessAlerts(false).filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts,live.live,noticeItems]);
- const bellTotal=useMemo(()=>(live.live?(noticeItems||[]).filter(n=>!n.read_at).length:businessAlerts(false).length)+activeAlerts.length,[activeAlerts,live.live,noticeItems]);
+ const criticalAlerts=useMemo(()=>{const dyn=live.live?0:activeAlerts.filter(r=>r.tone==='r').length;const stat=live.live?(noticeItems||[]).filter(n=>!n.read_at&&n.severity==='critica').length:businessAlerts(false).filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts,live.live,noticeItems]);
+ // Live: exceeded thresholds already arrive as notifications (one per close), so they are not added twice.
+ const bellTotal=useMemo(()=>live.live?(noticeItems||[]).filter(n=>!n.read_at).length:businessAlerts(false).length+activeAlerts.length,[activeAlerts,live.live,noticeItems]);
 
  const {pending:pendingDecisions}=useDecisions();
  const openTickets=live.live?0:demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
