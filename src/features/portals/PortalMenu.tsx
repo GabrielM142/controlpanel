@@ -12,7 +12,9 @@ export default function PortalMenu({portals,links,badge,active,current,onOpen,cl
  const [open,setOpen]=useState<Set<PortalId>>(()=>new Set(active?[active]:[]));
  useEffect(()=>{if(active)setOpen(new Set([active]));},[active]);
  const ref=useRef<HTMLUListElement>(null);
- useEffect(()=>{ref.current?.querySelector('.is-current')?.scrollIntoView({block:'nearest'});},[current]);
+ // Solo desplaza en vertical (scrollIntoView también movía el menú de lado y cortaba los iconos).
+ useEffect(()=>{const u=ref.current;const el=u?.querySelector<HTMLElement>('.is-current');if(!u)return;u.scrollLeft=0;if(!el)return;
+  const ur=u.getBoundingClientRect(),er=el.getBoundingClientRect();if(er.top<ur.top)u.scrollTop-=ur.top-er.top+8;else if(er.bottom>ur.bottom)u.scrollTop+=er.bottom-ur.bottom+8;},[current,open]);
  const toggle=(id:PortalId)=>setOpen(s=>{const n=new Set(s);if(n.has(id))n.delete(id);else n.add(id);return n;});
  return <ul className={`portal-menu${className?` ${className}`:''}`} ref={ref}>{portals.map(p=>{const Icon=p.id==='omega'?null:p.icon;const n=badge(p);const on=active===p.id;const ls=links(p);
   const many=ls.length>1;const isOpen=many&&open.has(p.id);const listId=`pm-${p.id}`;

@@ -206,3 +206,43 @@
   .mdock-item i { right: calc(50% - 22px); }
   .mdock-orb { width: 58px; height: 58px; }
 }
+
+/* ── Pulido del menú completo: alineación, acento del portal activo y contadores más finos ── */
+.portal-dock.is-expanded ul.portal-menu { overflow-x: clip; }
+.portal-menu-group { position: relative; }
+.portal-menu-row { gap: 0; border-radius: 12px; transition: background var(--motion) var(--ease); }
+.portal-menu-row:hover { background: var(--surface); }
+.portal-menu-head, .portal-menu-head:hover { background: none; border: 0; }
+.portal-menu-head { gap: 12px; min-height: 40px; padding: 0 6px 0 12px; color: var(--text-2, var(--text)); font-weight: 650; letter-spacing: .07em; }
+.portal-menu-head .portal-dock-icon { width: 20px; height: 20px; flex: none; color: var(--text-3); }
+.portal-menu-row:hover .portal-menu-head .portal-dock-icon { color: var(--text); }
+.portal-menu-caret { width: 30px; height: 40px; border-radius: 0 12px 12px 0; }
+.portal-menu-caret:hover, .portal-menu-caret:focus-visible { background: none; }
+/* Portal activo: fondo suave del color de marca y barra de acento a la izquierda (sin caja cortada) */
+.portal-menu-group.is-active > .portal-menu-row { background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 16%, transparent), color-mix(in srgb, var(--brand) 4%, transparent)); }
+.portal-menu-group.is-active > .portal-menu-row .portal-menu-head { color: var(--text); background: none; border: 0; }
+.portal-menu-group.is-active > .portal-menu-row .portal-menu-head .portal-dock-icon { color: var(--brand); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--brand) 60%, transparent)); }
+.portal-menu-group.is-active > .portal-menu-row::before { content: ''; position: absolute; left: 0; top: 8px; height: 24px; width: 3px; border-radius: 0 3px 3px 0; background: var(--brand); box-shadow: 0 0 10px var(--brand); }
+.portal-menu-group.is-active .portal-menu-caret { color: var(--brand); }
+/* Contadores: pastilla fina con borde; rojo solo como señal, no como bloque */
+.portal-menu-count { min-width: 22px; height: 20px; padding: 0 7px; font: 700 11px/18px var(--font-num, var(--font-ui)); color: var(--fin-loss-text, var(--fin-loss));
+  background: color-mix(in srgb, var(--fin-loss) 16%, transparent); border: 1px solid color-mix(in srgb, var(--fin-loss) 45%, transparent); }
+.portal-flyout-badge { min-width: 20px; height: 18px; padding: 0 6px; font: 700 10.5px/16px var(--font-num, var(--font-ui)); color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, transparent); border: 1px solid color-mix(in srgb, var(--brand) 40%, transparent); }
+/* Vistas: guía vertical alineada con el icono, punto de estado y vista actual resaltada */
+.portal-menu-group > ul { margin: 2px 0 6px 21px; padding-left: 12px; border-left: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line)); }
+.portal-menu-group .portal-flyout-item { min-height: 32px; padding: 4px 8px; border-radius: 9px; color: var(--text-2, var(--text)); }
+.portal-menu-group .portal-flyout-item:hover { background: var(--surface); color: var(--text); }
+.portal-menu-group .portal-flyout-item.is-current { position: relative; color: var(--text); font-weight: 650; background: color-mix(in srgb, var(--brand) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent); }
+.portal-menu-group .portal-flyout-item.is-current::before { content: ''; position: absolute; left: -13px; top: 50%; width: 9px; height: 1px; background: var(--brand); }
+.portal-menu-group .portal-flyout-dot { width: 7px; height: 7px; }
+/* Separador sutil antes de Omega, Market y Mi espacio */
+.portal-menu-group:has(> .portal-menu-row .is-omega) { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.portal-menu-head.is-omega .portal-dock-icon { color: var(--fin-ai); font-size: 17px; }
+@media (min-width: 1024px) and (max-height: 820px) {
+  .portal-menu-head { min-height: 34px; }
+  .portal-menu-caret { height: 34px; }
+  .portal-menu-group > ul { margin-bottom: 4px; }
+  .portal-menu-group .portal-flyout-item { min-height: 28px; padding: 3px 8px; }
+  .portal-menu-group.is-active > .portal-menu-row::before { top: 6px; height: 22px; }
+}
+.portal-dock .portal-menu-group > ul { width: auto; flex: none; overflow: visible; }
