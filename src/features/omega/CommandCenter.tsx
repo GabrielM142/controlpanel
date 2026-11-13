@@ -157,9 +157,11 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
       <span className="mx-hud-title mx-muted">{n.label}</span><strong className={`fin-${n.fin}`}>{n.value}</strong><span className="mx-muted">{n.delta}</span></button>)}</div>
     </section>
     <section className="mx-panel mx-tabs-panel">
-     <div className="mx-tabs" role="tablist" aria-label="Centro de mando">
+     <div className="mx-tabs" role="tablist" aria-label="Centro de mando" onKeyDown={e=>{const order=['misiones','soporte','skills'] as const;const i=order.indexOf(tab);
+      const n=e.key==='ArrowRight'?order[(i+1)%3]:e.key==='ArrowLeft'?order[(i+2)%3]:e.key==='Home'?order[0]:e.key==='End'?order[2]:null;
+      if(n){e.preventDefault();setTab(n);document.getElementById(`mx-tab-${n}`)?.focus();}}}>
       {([['misiones',`Misiones${pending.length?` · ${pending.length}`:''}`],['soporte','Soporte'],['skills','Skills']] as const).map(([id,l])=>
-       <button key={id} type="button" role="tab" id={`mx-tab-${id}`} aria-selected={tab===id} aria-controls={`mx-tabp-${id}`} className={`mx-tab${tab===id?' is-on':''}`} onClick={()=>setTab(id)}>{l}</button>)}
+       <button key={id} type="button" role="tab" id={`mx-tab-${id}`} aria-selected={tab===id} aria-controls={tab===id?`mx-tabp-${id}`:undefined} tabIndex={tab===id?0:-1} className={`mx-tab${tab===id?' is-on':''}`} onClick={()=>setTab(id)}>{l}</button>)}
      </div>
      <div role="tabpanel" id={`mx-tabp-${tab}`} aria-labelledby={`mx-tab-${tab}`} className="mx-tabpanel">
       {tab==='misiones'&&missionsPanel}
