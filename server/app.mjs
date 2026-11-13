@@ -7,7 +7,7 @@ import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '.
 import {alertMessage, evaluateAlerts, sendTelegram} from '../lib/alerts.mjs';
 import {cashflowBase} from '../lib/cashflow.mjs';
 import {seedCompany} from '../lib/seed.mjs';
-import {assertCanSpend, monthUsage, recordUsage, tenantPlan, truekenSettings} from '../lib/truekens.mjs';
+import {assertCanSpend, monthUsage, recordUsage, tenantPlan, truekenSettings, publicPlan} from '../lib/truekens.mjs';
 import {KINDS as NOTIFY_KINDS, notify} from '../lib/notifications.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
@@ -1065,7 +1065,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const ctx = await tenantContext(req);
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
       const plan = await tenantPlan(c, ctx.tenantId);
-      return {...plan, used: await monthUsage(c)};
+      return {...publicPlan(plan), used: await monthUsage(c)};
     });
   });
 
@@ -1074,14 +1074,15 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const {month, from, to} = monthRange(mes);
     const p = [from, to];
     const who = mine ? `AND a.user_id = $${p.push(ctx.user.id)}` : '';
+    // Tenants see Truekens only: real tokens and the factor stay inside OMEGA (super admin).
     const byUser = (await c.query(`SELECT coalesce(u.name, 'Usuario eliminado') AS name, u.email, count(*)::int AS questions,
-        coalesce(sum(a.input_tokens), 0)::int AS input, coalesce(sum(a.output_tokens), 0)::int AS output, coalesce(sum(a.truekens), 0)::float AS truekens
+        coalesce(sum(a.truekens), 0)::float AS truekens
       FROM app.ai_usage a LEFT JOIN app.users u ON u.id = a.user_id WHERE a.at >= $1::date AND a.at < $2::date ${who}
       GROUP BY 1, 2 ORDER BY truekens DESC`, p)).rows;
     const byPage = (await c.query(`SELECT coalesce(a.page_id, 'omega') AS page_id, a.feature, count(*)::int AS questions, coalesce(sum(a.truekens), 0)::float AS truekens
       FROM app.ai_usage a WHERE a.at >= $1::date AND a.at < $2::date ${who} GROUP BY 1, 2 ORDER BY truekens DESC`, p)).rows;
     const entries = (await c.query(`SELECT a.at, coalesce(u.name, '—') AS user_name, a.page_id, a.feature, a.question, a.provider, a.model,
-        a.input_tokens, a.output_tokens, a.multiplier::float AS multiplier, a.truekens::float AS truekens
+        a.truekens::float AS truekens
       FROM app.ai_usage a LEFT JOIN app.users u ON u.id = a.user_id WHERE a.at >= $1::date AND a.at < $2::date ${who}
       ORDER BY a.at DESC LIMIT 500`, p)).rows;
     return {month, byUser, byPage, entries};
@@ -1092,14 +1093,14 @@ export function createHandler({pool, config, now = () => new Date()}) {
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
       const plan = await tenantPlan(c, ctx.tenantId);
       const used = await monthUsage(c);
-      return {plan, used, scope: manager ? 'empresa' : 'propio', ...(await truekenQuery(c, ctx, query.mes, !manager))};
+      return {plan: publicPlan(plan), used, scope: manager ? 'empresa' : 'propio', ...(await truekenQuery(c, ctx, query.mes, !manager))};
     });
   });
   route('GET', /^\/api\/truekens\.csv$/, async ({req, query}) => {
     const ctx = await tenantContext(req, 'admin');
     const data = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, c => truekenQuery(c, ctx, query.mes, false));
-    const rows = [['fecha', 'usuario', 'vista', 'pregunta', 'proveedor', 'modelo', 'tokens_entrada', 'tokens_salida', 'factor', 'truekens'],
-      ...data.entries.map(e => [new Date(e.at).toISOString(), e.user_name, e.page_id || '', e.question || '', e.provider || '', e.model || '', e.input_tokens ?? '', e.output_tokens ?? '', e.multiplier ?? '', e.truekens ?? ''])];
+    const rows = [['fecha', 'usuario', 'vista', 'pregunta', 'proveedor', 'modelo', 'truekens'],
+      ...data.entries.map(e => [new Date(e.at).toISOString(), e.user_name, e.page_id || '', e.question || '', e.provider || '', e.model || '', e.truekens ?? ''])];
     return {status: 200, raw: toCsv(rows), headers: {'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="truekens-${data.month}.csv"`}};
   });
 

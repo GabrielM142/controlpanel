@@ -107,8 +107,9 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 - SaaS multiempresa: Plataforma OMEGA (super admin `platform_admin`) con planes por empresa (estado,
   módulos, skills, cuota de Truekens), alta de empresas y usuarios, y consumo global. Los módulos del
   plan ocultan y bloquean reportes. Las 4 páginas de unidad muestran las unidades de cada empresa.
-- Truekens = (tokens reales de entrada + salida) × factor de la plataforma (hoy ×1); registro por
-  usuario, vista, pregunta y modelo con CSV de evidencia; cuota mensual con bloqueo y avisos 80/100%.
+- Truekens = (tokens reales de entrada + salida) × factor de la plataforma (×7, migración 0024).
+  El factor y los tokens reales son internos: la empresa solo ve Truekens (registro por usuario, vista,
+  pregunta y modelo, CSV de evidencia); el Super admin ve el detalle. Cuota mensual con bloqueo y avisos 80/100%.
 - Notificaciones en el servidor (cierres, umbrales, tickets, Truekens, presupuesto) con centro de
   gestión, leídas y preferencias por usuario.
 - Valores sugeridos cargados en staging: 4 unidades (equipos de venta), presupuesto de 14 meses

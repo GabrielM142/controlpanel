@@ -35,13 +35,19 @@ test('Truekens = real tokens × platform factor; ledger per user; quota blocks a
   const mine = await call(api, 'GET', '/api/truekens', {headers: H(vera, w.tenantA)});
   assert.equal(mine.body.scope, 'propio');
   assert.equal(mine.body.entries[0].question, '¿Cómo van las ventas?');
-  assert.equal(mine.body.entries[0].input_tokens, 1000);
+  assert.equal(mine.body.entries[0].truekens, 3003);
+  // The conversion factor and the real tokens never reach the tenant: only Truekens.
+  assert.equal(mine.body.plan.multiplier, undefined);
+  assert.equal(mine.body.entries[0].input_tokens, undefined);
+  assert.equal(mine.body.entries[0].multiplier, undefined);
+  assert.equal((await call(api, 'GET', '/api/plan', {headers: H(vera, w.tenantA)})).body.multiplier, undefined);
   const all = await call(api, 'GET', '/api/truekens', {headers: H(ana, w.tenantA)});
   assert.equal(all.body.scope, 'empresa');
   assert.equal(all.body.byUser[0].truekens, 3003);
   const csv = await call(api, 'GET', '/api/truekens.csv', {headers: H(ana, w.tenantA)});
   assert.equal(csv.status, 200);
   assert.match(String(csv.raw ?? csv.body), /truekens/);
+  assert.doesNotMatch(String(csv.raw ?? csv.body), /factor|tokens_/);
   // Quota: 3003 already used; a quota of 3000 blocks the next question and the 100% notice exists.
   assert.equal((await call(api, 'PUT', `/api/platform/tenants/${w.tenantA}/plan`, {headers: P(ana), body: {trueken_quota: 3000, status: 'activa', modules: null, skills: []}})).status, 200);
   const blocked = await call(api, 'POST', '/api/ai/report', {headers: H(vera, w.tenantA), body: {page_id: 'comercial', question: 'hola'}});
