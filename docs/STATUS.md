@@ -87,18 +87,19 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   contra Odoo: ventas 2026 al centavo, compras 0,1 %, despachos ±30 por zona horaria, inventario 0,01 %.
 - Margen contable: costo que Odoo contabiliza en cada entrega (cuenta de salida de la categoría) →
   margen bruto 2026 8,5 %. Hallazgo: 65.713 unidades entregadas sin facturar (~$153 mil a costo).
-- Reportes con datos reales: 139 de 166 bloques (antes 78). Financiero 35/35, Inventarios 19/19,
-  Clientes 15/15, Logística 17/18, Comercial 17/18, Compras 17/19, Dirección 11/13, Unidades 2/4.
+- Bloques conectados: 166 de 166. Con los datos de Odoo de staging, 145 muestran cifras reales; el resto
+  espera insumos que se cargan en Configuración → Presupuestos y unidades (CSV de presupuesto de ventas,
+  compras, gastos fijos y marketing; campañas; reglas de unidades, con recálculo automático en el cron).
+- Verificado de punta a punta en producción con insumos de prueba (160/166; luego borrados): los 6 que no
+  se llenaron dependen de staging (productos sin marca; 3 unidades sin ventas). Pruebas: tests/inputs.test.mjs.
 - Financiero sale del dataset `account_balance_month` (saldo mensual por cuenta, snapshot) con el plan
   de cuentas ecuatoriano (601 venta, 602 administración, 603 financieros). En staging falta, al parecer,
-  el asiento de apertura: caja y patrimonio negativos.
+  el asiento de apertura: caja y patrimonio negativos. Logística usa `stock_ops_month` (ajustes y preparación).
 - ISE calculado con una fórmula propuesta por OMEGA (marcada en el panel): falta aprobación del cliente.
 - Tareas, notas, umbrales y decisiones guardados en el servidor; umbrales evaluados en cada cierre.
 - Omega IA por empresa (Anthropic u OpenAI, clave cifrada); probada con la clave OpenAI del cliente.
-- Los 27 bloques restantes esperan información que no existe en Odoo: Marketing (13; CRM con 0
-  oportunidades y 0 campañas), presupuestos (meta mensual en Umbrales, compras, por unidad; sin módulo de
-  presupuesto) y reglas de unidades de negocio (toda la venta en un solo equipo y una bodega).
-  También faltan los datos del Odoo central de soporte (Tickets).
+- Falta del cliente: presupuestos, campañas, reglas de unidades de JUJ, marcas en los productos y los
+  datos del Odoo central de soporte (Tickets).
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
 ## Próximos pasos concretos
