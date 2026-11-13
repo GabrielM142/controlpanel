@@ -16,11 +16,11 @@ export function TokensChip(){
   </button>
   {open&&<div className="tokens-panel" role="dialog" aria-label="Consumo de tokens">
    <div className="tokens-panel-head">
-    <div><strong>{t.plan}</strong><span>Renueva el {t.nextReset} · No acumulables</span></div>
+    <div><strong>{t.plan}</strong><span>{t.simulated?`Renueva el ${t.nextReset} · No acumulables`:`Límite: ${t.monthlyBudget} preguntas por hora por usuario · lo cobra tu proveedor de IA`}</span></div>
     <button type="button" aria-label="Cerrar" onClick={()=>setOpen(false)}><X size={14}/></button>
    </div>
    <div className="tokens-panel-body">
-    <div className="tokens-summary"><span>Usados</span><strong>{t.used}</strong><em>de {t.monthlyBudget}</em></div>
+    <div className="tokens-summary"><span>{t.simulated?'Usados':'En la última hora'}</span><strong>{t.used}</strong><em>de {t.monthlyBudget}</em></div>
     <div className="tokens-summary-bar"><span style={{width:`${t.percentUsed}%`}} className={`tone-${tone}`}/></div>
     <div className="tokens-history-title"><History size={11}/><span>Últimos consumos</span></div>
     {t.history.length===0

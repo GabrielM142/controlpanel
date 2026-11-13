@@ -20,7 +20,7 @@ const DEMO_APPROVALS:Omit<Decision,'status'>[]=[
 ];
 
 type Ctx={decisions:Decision[];pending:number;decide:(id:string,status:DecisionStatus)=>void;undo:(id:string)=>void;
- addFromOmega:(d:{title:string;detail:string;recommendation:string;pageId?:string})=>string};
+ addFromOmega:(d:{title:string;detail:string;recommendation:string;pageId?:string})=>string;error:string|null};
 const DecisionsCtx=createContext<Ctx|null>(null);
 const KEY='nova.omega.decisions';
 const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return {status:v.status||{},added:Array.isArray(v.added)?v.added:[]};}catch{return {status:{},added:[]};}};
@@ -30,6 +30,7 @@ export function DecisionsProvider({children}:{children:ReactNode}){
  const {live,tenantId}=useLive();
  const [store,setStore]=useState<{status:Record<string,DecisionStatus>;added:Omit<Decision,'status'>[]}>(()=>live?{status:{},added:[]}:read());
  const [history,setHistory]=useState<Record<string,DecisionStatus>>({});
+ const [error,setError]=useState<string|null>(null);
  useEffect(()=>{if(live)return;try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}},[store,live]);
  useEffect(()=>{
   if(!live||!tenantId)return;let off=false;
@@ -38,11 +39,11 @@ export function DecisionsProvider({children}:{children:ReactNode}){
    setStore({status:Object.fromEntries(r.decisions.map(d=>[d.id,d.status])),
     added:r.decisions.filter(d=>d.kind==='omega'&&d.title).map(d=>({id:d.id,kind:'omega' as const,title:d.title!,detail:d.detail||'',recommendation:d.recommendation||'',
      priority:d.priority,age:new Date(d.created_at).toLocaleDateString('es-EC'),owner:d.decided_by_name||'Gerencia',pageId:d.page_id||undefined,source:d.source||'Pregúntale a Omega'}))});
-  }).catch(()=>{});
+  }).catch(e=>setError((e as Error).message));
   return()=>{off=true;};
  },[live,tenantId]);
  const saveStatus=useCallback((id:string,status:DecisionStatus,title?:string)=>{
-  if(live&&tenantId)api(`/api/decisions/${encodeURIComponent(id)}`,{tenant:tenantId,method:'PATCH',body:{status,title}}).catch(()=>{});
+  if(live&&tenantId)api(`/api/decisions/${encodeURIComponent(id)}`,{tenant:tenantId,method:'PATCH',body:{status,title}}).then(()=>setError(null)).catch(e=>setError(`No se guardó la decisión: ${(e as Error).message}`));
  },[live,tenantId]);
 
  const base=useMemo<Omit<Decision,'status'>[]>(()=>[
@@ -75,10 +76,10 @@ export function DecisionsProvider({children}:{children:ReactNode}){
   const item:Omit<Decision,'status'>={id,kind:'omega',title:d.title,detail:d.detail,recommendation:d.recommendation,priority:'media',age:'ahora',owner:'Gerencia',pageId:d.pageId,source:'Pregúntale a Omega'};
   setStore(s=>({...s,added:[item,...s.added].slice(0,20)}));
   if(live&&tenantId)api<{id:string}>('/api/decisions',{tenant:tenantId,method:'POST',body:{title:d.title,detail:d.detail,recommendation:d.recommendation,page_id:d.pageId}})
-   .then(row=>setStore(s=>({...s,added:s.added.map(x=>x.id===id?{...x,id:row.id}:x)}))).catch(()=>{});
+   .then(row=>setStore(s=>({...s,added:s.added.map(x=>x.id===id?{...x,id:row.id}:x)}))).catch(e=>setError(`No se guardó en la bandeja: ${(e as Error).message}`));
   return id;
  },[live,tenantId]);
- const value=useMemo(()=>({decisions,pending:decisions.filter(d=>d.status==='pendiente').length,decide,undo,addFromOmega}),[decisions,decide,undo,addFromOmega]);
+ const value=useMemo(()=>({decisions,pending:decisions.filter(d=>d.status==='pendiente').length,decide,undo,addFromOmega,error}),[decisions,decide,undo,addFromOmega,error]);
  return <DecisionsCtx.Provider value={value}>{children}</DecisionsCtx.Provider>;
 }
 

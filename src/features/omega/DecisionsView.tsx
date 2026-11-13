@@ -6,6 +6,7 @@ import {fmtMoney} from './data';
 import {useDecisionFlow} from './DireccionHero';
 import {useDecisions,type Decision} from './useDecisions';
 import {Chip,Eyebrow,OmegaGlyph} from './ui';
+import {useLive} from '../live/LiveData';
 
 const TABS=[
  {id:'pendiente',label:'Pendientes'},{id:'compra',label:'Compras'},{id:'descuento',label:'Descuentos'},
@@ -29,13 +30,15 @@ export default function DecisionsView(){
  const atStake=pending.reduce((s,d)=>s+(d.amount||0),0);
  const resolved=decisions.filter(d=>d.status!=='pendiente').length;
  const current=decisions.find(d=>d.id===openId)||null;
+ const {live}=useLive();
+ const decErr=useDecisions().error;
 
  return <div className="om-decisions">
   <section className="om-kpis" aria-label="Resumen de la bandeja">
    <article className="om-card om-kpi om-kpi--ai"><Eyebrow>Abiertas</Eyebrow><strong className="om-figure">{pending.length}</strong><div className="om-kpi-foot"><span>esperan tu decisión</span></div></article>
    <article className="om-card om-kpi om-kpi--risk"><Eyebrow>SLA en riesgo</Eyebrow><strong className={`om-figure${slaRisk?' om-bad':''}`}>{slaRisk}</strong><div className="om-kpi-foot"><span>80% o más del plazo usado</span></div></article>
    <article className="om-card om-kpi om-kpi--goal"><Eyebrow>Dinero en juego</Eyebrow><strong className="om-figure">{fmtMoney(atStake)}</strong><div className="om-kpi-foot"><span>en decisiones con monto</span></div></article>
-   <article className="om-card om-kpi om-kpi--income"><Eyebrow>Resueltas hoy</Eyebrow><strong className="om-figure">{resolved}</strong><div className="om-kpi-foot"><span>en este navegador (demo)</span></div></article>
+   <article className="om-card om-kpi om-kpi--income"><Eyebrow>{live?'Resueltas':'Resueltas hoy'}</Eyebrow><strong className="om-figure">{resolved}</strong><div className="om-kpi-foot"><span>{live?'guardadas para tu empresa, con quién y cuándo':'en este navegador (demo)'}</span></div></article>
   </section>
 
   <div className="segmented om-tabs" role="tablist" aria-label="Tipo de decisión">
@@ -56,7 +59,8 @@ export default function DecisionsView(){
     </button>
    </li>)}</ul>}
   </section>
-  <p className="legend-note">Demo: las aprobaciones de ejemplo, tickets y umbrales provienen de los datos de demostración y tus decisiones se guardan solo en este navegador. No se firma nada en el ERP.</p>
+  {decErr&&<p className="legend-note om-ai-error" role="alert">{decErr}</p>}
+  <p className="legend-note">{live?'Las decisiones vienen de Omega y de los umbrales excedidos del último cierre; cada aprobación queda registrada en el servidor con quién decidió y cuándo. No se firma nada en Odoo.':'Demo: las aprobaciones de ejemplo, tickets y umbrales provienen de los datos de demostración y tus decisiones se guardan solo en este navegador. No se firma nada en el ERP.'}</p>
 
   {current&&<>
    <div className="drawer-scrim" onClick={()=>setOpenId(null)}/>

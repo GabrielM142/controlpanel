@@ -300,6 +300,8 @@ export function createHandler({pool, config, now = () => new Date()}) {
     if (cut === 'sin datos publicados') throw new HttpError(409, 'Aún no hay datos publicados para esta empresa.');
     try {
       const a = await answerQuestion({provider: ai.provider, apiKey: ai.apiKey, model: ai.model, question, cut, filters, digests});
+      await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, c => c.query('INSERT INTO app.ai_usage(tenant_id, user_id, page_id, provider) VALUES ($1, $2, $3, $4)',
+        [ctx.tenantId, ctx.user.id, pageId, ai.provider])).catch(() => {});
       return {headline: a.headline, points: a.points, suggestion: a.suggestion || null, missing_data: a.missing_data || [],
         sources: [`Omega IA (${PROVIDERS[ai.provider].label} · ${a.model}) · cierre ${cut}`, ...pages.map(id => `Reporte «${PAGES.get(id).page.label}»`)]};
     } catch (error) {
@@ -845,6 +847,19 @@ export function createHandler({pool, config, now = () => new Date()}) {
       if (!n) throw new HttpError(404, 'Escenario inexistente');
       return {ok: true};
     });
+  });
+
+  // Real Omega IA usage: answered questions this month (company and user) and the hourly limit.
+  route('GET', /^\/api\/ai\/usage$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    const r = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(`SELECT
+        count(*) FILTER (WHERE at >= date_trunc('month', now())) AS month,
+        count(*) FILTER (WHERE at >= date_trunc('month', now()) AND user_id = $1) AS mine,
+        count(*) FILTER (WHERE at > now() - interval '1 hour' AND user_id = $1) AS hour
+      FROM app.ai_usage`, [ctx.user.id])).rows[0]);
+    const recent = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
+      `SELECT at, page_id, provider FROM app.ai_usage WHERE user_id = $1 ORDER BY at DESC LIMIT 8`, [ctx.user.id])).rows);
+    return {month: Number(r.month), mine: Number(r.mine), hour: Number(r.hour), hourly_limit: 60, recent};
   });
 
   // Alert notifications (Telegram) per company; admins configure, the cron sends after each close.

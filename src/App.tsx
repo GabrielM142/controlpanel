@@ -10,6 +10,7 @@ import InputsView from './features/inputs/InputsView';
 import BudgetView from './features/budget/BudgetView';
 import CashflowView from './features/cashflow/CashflowView';
 import ReportSetup from './features/inputs/ReportSetup';
+import RisksLive from './features/risks/RisksLive';
 import {cachedGet} from './features/live/cache';
 import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
@@ -258,7 +259,7 @@ function AppShell(){
  const {pending:pendingDecisions}=useDecisions();
  const openTickets=live.live?0:demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
  const badgeFor=(id:string)=>id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
- function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused;return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
+ function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Factory');
@@ -406,7 +407,7 @@ function AppShell(){
      </section>}
      {reportPage&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
-     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
+     {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
     </div>

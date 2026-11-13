@@ -393,3 +393,7 @@
 .om-cf-bar b{font-family:var(--font-num);font-size:11px;color:var(--text)}
 .om-cf-bar b.neg{color:var(--fin-loss)}
 @media (prefers-reduced-motion:reduce){.om-cf-bar-track span{transition:none}}
+
+/* Riesgos (live) */
+.om-risks{display:grid;gap:16px}
+.om-risk-centers{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
