@@ -27,7 +27,8 @@ export default function BudgetView(){
  const {live,tenantId}=useLive();
  const now=new Date().getFullYear();
  const [kind,setKind]=useState<Kind>('ventas');
- const [year,setYear]=useState(now);
+ // From September on, the budget being prepared is next year's.
+ const [year,setYear]=useState(new Date().getMonth()>=8?now+1:now);
  const [by,setBy]=useState<By>('total');
  const [data,setData]=useState<Data|null>(null);
  const [grid,setGrid]=useState<Record<string,number[]>>({});
