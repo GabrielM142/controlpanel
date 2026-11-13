@@ -95,9 +95,10 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 - ISE calculado con una fórmula propuesta por OMEGA (marcada en el panel): falta aprobación del cliente.
 - Tareas, notas, umbrales y decisiones guardados en el servidor; umbrales evaluados en cada cierre.
 - Omega IA por empresa (Anthropic u OpenAI, clave cifrada); probada con la clave OpenAI del cliente.
-- Los 30 bloques restantes esperan información del cliente: Marketing (13, sin fuente), presupuestos
-  (meta mensual en Umbrales, compras, por unidad), reglas de unidades de negocio, cuentas de costo
-  logístico, conteos físicos y pickings internos. También faltan los datos del Odoo central de soporte (Tickets).
+- Los 27 bloques restantes esperan información que no existe en Odoo: Marketing (13; CRM con 0
+  oportunidades y 0 campañas), presupuestos (meta mensual en Umbrales, compras, por unidad; sin módulo de
+  presupuesto) y reglas de unidades de negocio (toda la venta en un solo equipo y una bodega).
+  También faltan los datos del Odoo central de soporte (Tickets).
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
 ## Próximos pasos concretos
