@@ -104,8 +104,17 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   como mesa de ayuda propia (SLA, responsable, conversación); tema de la empresa en el servidor; consumo
   real de Omega IA; 15/15 umbrales con valor; Iris (vista y endpoint de envío listos; API de Iris pendiente).
 - Marcas: NOVA exporta `product_brand_id` (mapeo nova_juj); en staging no hay marcas cargadas.
-- Falta del cliente: presupuestos, campañas, reglas de unidades de la empresa, marcas en los productos, API de
-  Iris y, si se quiere sincronizar, los datos del Odoo central de soporte.
+- SaaS multiempresa: Plataforma OMEGA (super admin `platform_admin`) con planes por empresa (estado,
+  módulos, skills, cuota de Truekens), alta de empresas y usuarios, y consumo global. Los módulos del
+  plan ocultan y bloquean reportes. Las 4 páginas de unidad muestran las unidades de cada empresa.
+- Truekens = (tokens reales de entrada + salida) × factor de la plataforma (hoy ×1); registro por
+  usuario, vista, pregunta y modelo con CSV de evidencia; cuota mensual con bloqueo y avisos 80/100%.
+- Notificaciones en el servidor (cierres, umbrales, tickets, Truekens, presupuesto) con centro de
+  gestión, leídas y preferencias por usuario.
+- Valores sugeridos cargados en staging: 4 unidades (equipos de venta), presupuesto de 14 meses
+  (empresa y unidad), 15 umbrales. El cumplimiento compara solo los meses con presupuesto.
+- Falta del cliente: factor de conversión de Truekens definitivo, presupuestos reales, campañas,
+  marcas en los productos, API de Iris y, si se quiere sincronizar, el Odoo central de soporte.
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
 ## Próximos pasos concretos

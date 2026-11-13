@@ -442,3 +442,30 @@
 .om-fac-detail dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin:4px 0}
 .om-fac-detail dt{color:var(--text-3);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
 .om-fac-detail dd{margin:2px 0 0;color:var(--text);white-space:pre-wrap;word-break:break-word;font-size:13px}
+
+/* Centro de notificaciones */
+.om-notif{display:grid;gap:16px}
+.om-nt-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.om-nt-items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.om-nt-items li{display:grid;grid-template-columns:10px 1fr auto;gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.om-nt-items li.is-read{opacity:.65}
+.om-nt-items strong{color:var(--text);font-size:14px}
+.om-nt-items p{margin:4px 0;color:var(--text-2);font-size:13px;line-height:1.5}
+.om-nt-items small{color:var(--text-3);font-size:11px}
+.om-nt-dot{width:8px;height:8px;border-radius:50%;margin-top:6px}
+.om-nt-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:12px}
+.om-nt-empty{display:block!important;color:var(--text-3);font-size:13px;text-align:center}
+/* Truekens y plataforma */
+.om-tk-view,.om-plat{display:grid;gap:16px}
+.om-tkn-bar{align-items:flex-end}
+.om-tkn-bar input[type=month]{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+.om-tkn-meter{position:relative;height:10px;border-radius:999px;background:var(--surface-2);overflow:visible}
+.om-tkn-meter i{display:block;height:100%;border-radius:999px;transition:width .25s}
+.om-tkn-meter i.g{background:var(--fin-income)}
+.om-tkn-meter i.a{background:var(--fin-risk)}
+.om-tkn-meter i.r{background:var(--fin-loss)}
+.om-tkn-meter span{position:absolute;right:0;top:14px;font-size:11px;color:var(--text-3)}
+.om-tkn-q{max-width:340px;white-space:normal}
+.om-seed{border-style:dashed}
+@media (max-width:767px){.om-nt-items li{grid-template-columns:10px 1fr}.om-nt-actions{grid-column:2;align-items:flex-start}}
+@media (prefers-reduced-motion:reduce){.om-tkn-meter i{transition:none}}
