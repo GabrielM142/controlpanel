@@ -54,6 +54,7 @@ const DEFAULTS:ThresholdRule[]=[
 ];
 
 type ThresholdsState={
+ canEdit:boolean;error:string|null;
  rules:ThresholdRule[];
  updateThreshold:(id:string,value:number)=>void;
  toggleEnabled:(id:string,enabled:boolean)=>void;
@@ -98,21 +99,23 @@ export function ThresholdsProvider({children}:{children:ReactNode}){
  const [rules,setRules]=useState<ThresholdRule[]>(()=>live?DEFAULTS.map(r=>({...r,current:NaN})):readStore());
  useEffect(()=>{if(live)return;try{localStorage.setItem(KEY,JSON.stringify(rules.map(r=>({id:r.id,threshold:r.threshold,enabled:r.enabled}))));}catch{}},[rules,live]);
  const version=status?.published?.version;
+ const [canEdit,setCanEdit]=useState(!live);
+ const [error,setError]=useState<string|null>(null);
  useEffect(()=>{
   if(!live||!tenantId)return;let off=false;
-  api<ApiThresholds>('/api/thresholds',{tenant:tenantId}).then(r=>{if(off)return;
+  api<ApiThresholds>('/api/thresholds',{tenant:tenantId}).then(r=>{if(off)return;setCanEdit(r.can_edit);
    const saved=new Map(r.rules.map(x=>[x.id,x]));
    // Business targets (monthly goal, minimum ticket) have no meaningful default for a real
    // company: they stay off until an admin saves the company's own value.
    setRules(DEFAULTS.map(def=>{const s=saved.get(def.id);const v=r.values[def.id];
     return {...def,current:typeof v==='number'?v:NaN,threshold:s?Number(s.warn_value):def.threshold,enabled:s?s.enabled:(TARGETS.has(def.id)?false:def.enabled)};}));
-  }).catch(()=>{});
+  }).catch(e=>setError((e as Error).message));
   return()=>{off=true;};
  },[live,tenantId,version]);
  const persist=useCallback((r:ThresholdRule)=>{
-  if(!live||!tenantId)return;
-  api(`/api/thresholds/${r.id}`,{tenant:tenantId,method:'PUT',body:{threshold:r.threshold,enabled:r.enabled,comparator:r.operator.startsWith('>')?'gt':'lt'}}).catch(()=>{});
- },[live,tenantId]);
+  if(!live||!tenantId||!canEdit)return;
+  api(`/api/thresholds/${r.id}`,{tenant:tenantId,method:'PUT',body:{threshold:r.threshold,enabled:r.enabled,comparator:r.operator.startsWith('>')?'gt':'lt'}}).then(()=>setError(null)).catch(e=>setError(`No se guardó el umbral: ${(e as Error).message}`));
+ },[live,tenantId,canEdit]);
 
  const updateThreshold=useCallback((id:string,value:number)=>{setRules(prev=>prev.map(r=>{if(r.id!==id)return r;const n={...r,threshold:Number.isFinite(value)?value:r.threshold};persist(n);return n;}));},[persist]);
  const toggleEnabled=useCallback((id:string,enabled:boolean)=>{setRules(prev=>prev.map(r=>{if(r.id!==id)return r;const n={...r,enabled};persist(n);return n;}));},[persist]);
@@ -127,7 +130,7 @@ export function ThresholdsProvider({children}:{children:ReactNode}){
   critical:activeAlerts.filter(r=>r.tone==='r').length,
  }),[rules,activeAlerts]);
 
- const value=useMemo<ThresholdsState>(()=>({rules,updateThreshold,toggleEnabled,resetOne,resetAll,activeAlerts,stats}),[rules,updateThreshold,toggleEnabled,resetOne,resetAll,activeAlerts,stats]);
+ const value=useMemo<ThresholdsState>(()=>({canEdit,error,rules,updateThreshold,toggleEnabled,resetOne,resetAll,activeAlerts,stats}),[canEdit,error,rules,updateThreshold,toggleEnabled,resetOne,resetAll,activeAlerts,stats]);
  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

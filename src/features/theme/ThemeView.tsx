@@ -10,7 +10,8 @@ const finDot=(token:string)=>`om-dot-${token.replace('--fin-','')}`;
 /** Configuración › Tema de la empresa. Solo cambia la marca (envase); los colores financieros no se tocan. */
 export default function ThemeView(){
  const {active}=useTenants();
- const {theme,save,reset}=useBrandTheme();
+ const {theme,save,reset,shared,canEdit}=useBrandTheme();
+ const [saveError,setSaveError]=useState<string|null>(null);
  const [color,setColor]=useState(theme.brandColor);
  const [mode,setMode]=useState<BrandMode>(theme.mode);
  const [saving,setSaving]=useState(false);
@@ -31,7 +32,7 @@ export default function ThemeView(){
  const swatches=useMemo(()=>SWATCHES.map(s=>({...s,hex:swatchHex(s.id)})),[]);
  const dirty=color!==theme.brandColor||mode!==theme.mode||logo!==theme.logo;
 
- const doSave=()=>{setSaving(true);setSaved(false);setTimeout(()=>{save({brandColor:color,mode,logo});setSaving(false);setSaved(true);},600);};
+ const doSave=()=>{setSaving(true);setSaved(false);setSaveError(null);save({brandColor:color,mode,logo}).then(()=>setSaved(true),e=>setSaveError((e as Error).message)).finally(()=>setSaving(false));};
  const onSave=()=>{if(check.clash)setConfirmClash(true);else doSave();};
 
  const preview={'--brand':color,'--on-brand':check.on} as CSSProperties;
@@ -40,8 +41,10 @@ export default function ThemeView(){
    <div><h2 className="om-headline om-headline--sm">Tema de {active.name}</h2>
     <p className="om-muted">Elige el color de tu marca. OMEGA revisa el contraste y que no se confunda con los colores financieros.</p></div>
    <div className="om-theme-actions">
-    <button type="button" className="om-btn om-btn--ghost" onClick={()=>{reset();setSaved(false);}}>Restablecer</button>
+    <button type="button" className="om-btn om-btn--ghost" onClick={()=>{reset().catch(e=>setSaveError((e as Error).message));setSaved(false);}}>Restablecer</button>
     <button type="button" className="om-btn om-btn--gold" onClick={onSave} disabled={saving||!dirty} aria-busy={saving}>{saving?<Loader2 size={15} className="om-spin" aria-hidden="true"/>:null}{saving?'Guardando…':saved&&!dirty?'Guardado':'Guardar tema'}</button>
+    {saveError&&<p className="legend-note om-ai-error" role="alert">{saveError}</p>}
+    {shared&&!canEdit&&<p className="legend-note">El color y el logo de la empresa los cambia un administrador; aquí puedes elegir tu modo claro u oscuro.</p>}
    </div>
   </header>
 
@@ -70,7 +73,7 @@ export default function ThemeView(){
      <strong className="om-theme-title">Apariencia</strong>
      <div className="segmented om-mode" role="group" aria-label="Modo">{MODES.map(m=><button key={m.id} type="button" aria-pressed={mode===m.id} onClick={()=>setMode(m.id)}>{m.label}</button>)}</div>
      <div className="om-logo-row"><span className="om-logo-slot">{logo?<img src={logo} alt="Logo actual de la empresa"/>:<ImagePlus size={20} aria-hidden="true"/>}</span>
-      <span className="om-muted">Logo de la empresa (SVG o PNG, hasta 200 KB). Se muestra junto a la Ω de OMEGA y se guarda en este navegador.</span>
+      <span className="om-muted">Logo de la empresa (SVG o PNG, hasta 200 KB). Se muestra junto a la Ω de OMEGA{shared?' y lo ven todos los usuarios de la empresa':' y se guarda en este navegador'}.</span>
       <input ref={fileRef} type="file" accept="image/png,image/svg+xml" className="om-sr" aria-label="Elegir archivo de logo" onChange={e=>{pickLogo(e.target.files?.[0]);e.target.value='';}}/>
       <div className="om-logo-actions"><button type="button" className="om-btn om-btn--ghost" onClick={()=>fileRef.current?.click()}>{logo?'Cambiar logo':'Subir logo'}</button>
       {logo&&<button type="button" className="om-btn om-btn--ghost" onClick={()=>setLogo(undefined)}>Quitar</button>}</div></div>

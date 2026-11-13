@@ -1,6 +1,10 @@
 import {createContext,createElement,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
+import {api} from '../../data/api';
+import {useLive} from '../live/LiveData';
 
-// Tema por empresa (solo frontend): localStorage["nova.theme.<tenantId>"] = {brandColor, mode}.
+// Tema por empresa: con el panel conectado, color de marca y logo se guardan en el servidor
+// (/api/tenant/theme, compartidos por toda la empresa); el modo claro/oscuro es de cada usuario.
+// localStorage["nova.theme.<tenantId>"] guarda la copia local (y todo el tema en modo demo).
 // Aplica --brand, --on-brand (contraste WCAG ≥ 4.5) y data-mode en <html>. La marca nunca pinta datos:
 // los colores financieros (--fin-*) son fijos. Los colores se leen de omega-tokens.css (sin hex aquí).
 export type BrandMode='dark'|'light'|'auto';
@@ -57,18 +61,34 @@ export function applyTheme(t:BrandTheme){
  root.dataset.theme='dark'; // OMEGA skin (light is a mode of the same skin)
 }
 
-type Ctx={theme:BrandTheme;save:(t:BrandTheme)=>void;reset:()=>void;toggleMode:()=>void;tenantId:string};
+type Ctx={theme:BrandTheme;save:(t:BrandTheme)=>Promise<void>;reset:()=>Promise<void>;toggleMode:()=>void;tenantId:string;shared:boolean;canEdit:boolean};
 const BrandCtx=createContext<Ctx|null>(null);
 
 export function BrandThemeProvider({tenantId,children}:{tenantId:string;children:ReactNode}){
  const [theme,setTheme]=useState<BrandTheme>(()=>readTheme(tenantId));
+ const {live}=useLive();
+ const [canEdit,setCanEdit]=useState(!live);
+ // Live: the company brand comes from the server; the personal mode stays local.
+ useEffect(()=>{
+  if(!live||!tenantId||tenantId==='demo')return;let off=false;
+  api<{brand_color:string|null;logo:string|null;can_edit:boolean}>('/api/tenant/theme',{tenant:tenantId}).then(r=>{if(off)return;setCanEdit(r.can_edit);
+   if(!r.brand_color)return;const local=readTheme(tenantId);const t:BrandTheme={brandColor:r.brand_color,mode:local.mode,logo:r.logo||undefined};
+   try{localStorage.setItem(keyFor(tenantId),JSON.stringify(t));}catch{}setTheme(t);}).catch(()=>{});
+  return()=>{off=true;};
+ },[live,tenantId]);
  // Re-apply when the company changes (TenantSwitcher): brand changes, financial colors never do.
  useEffect(()=>{const t=readTheme(tenantId);setTheme(t);applyTheme(t);},[tenantId]);
  useEffect(()=>{applyTheme(theme);if(theme.mode!=='auto')return;const mq=window.matchMedia?.('(prefers-color-scheme: light)');const on=()=>applyTheme(theme);mq?.addEventListener?.('change',on);return()=>mq?.removeEventListener?.('change',on);},[theme]);
- const save=useCallback((t:BrandTheme)=>{try{localStorage.setItem(keyFor(tenantId),JSON.stringify(t));localStorage.setItem('nova.theme',t.mode==='light'?'light':'dark');}catch{}setTheme(t);},[tenantId]);
- const reset=useCallback(()=>{try{localStorage.removeItem(keyFor(tenantId));}catch{}const t={brandColor:swatchHex('indigo'),mode:'dark' as BrandMode};setTheme(t);},[tenantId]);
+ const save=useCallback(async(t:BrandTheme)=>{
+  if(live&&canEdit)await api('/api/tenant/theme',{tenant:tenantId,method:'PUT',body:{brand_color:t.brandColor,logo:t.logo||null}});
+  try{localStorage.setItem(keyFor(tenantId),JSON.stringify(t));localStorage.setItem('nova.theme',t.mode==='light'?'light':'dark');}catch{}setTheme(t);
+ },[tenantId,live,canEdit]);
+ const reset=useCallback(async()=>{
+  if(live&&canEdit)await api('/api/tenant/theme',{tenant:tenantId,method:'DELETE'});
+  try{localStorage.removeItem(keyFor(tenantId));}catch{}const t={brandColor:swatchHex('indigo'),mode:'dark' as BrandMode};setTheme(t);
+ },[tenantId,live,canEdit]);
  const toggleMode=useCallback(()=>{setTheme(prev=>{const next:BrandTheme={...prev,mode:document.documentElement.dataset.mode==='light'?'dark':'light'};try{localStorage.setItem(keyFor(tenantId),JSON.stringify(next));localStorage.setItem('nova.theme',next.mode);}catch{}return next;});},[tenantId]);
- const value=useMemo(()=>({theme,save,reset,toggleMode,tenantId}),[theme,save,reset,toggleMode,tenantId]);
+ const value=useMemo(()=>({theme,save,reset,toggleMode,tenantId,shared:live,canEdit}),[theme,save,reset,toggleMode,tenantId,live,canEdit]);
  return createElement(BrandCtx.Provider,{value},children);
 }
 

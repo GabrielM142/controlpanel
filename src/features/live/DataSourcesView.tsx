@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useState} from 'react';
-import {AlertCircle,CheckCircle2,Database,Link2,Loader2,Pause,Play,PlugZap,RefreshCw} from 'lucide-react';
+import {AlertCircle,CheckCircle2,Database,KeyRound,Link2,Loader2,Pause,Play,PlugZap,RefreshCw,RotateCcw} from 'lucide-react';
 import {api} from '../../data/api';
 import {useLive} from './LiveData';
 
@@ -33,6 +33,8 @@ export default function DataSourcesView(){
  const [runs,setRuns]=useState<Record<string,Run[]>>({});
  const [error,setError]=useState<string|null>(null);
  const [busy,setBusy]=useState(false);
+ const [notice,setNotice]=useState<string|null>(null);
+ const [rotateKey,setRotateKey]=useState<Record<string,string>>({});
  const [form,setForm]=useState({name:'',base_url:'',db_name:'',login:'',api_key:'',collect_after:'03:00'});
  const [token,setToken]=useState<Record<string,string>>({});
  const admin=membership&&(membership.role==='owner'||membership.role==='admin');
@@ -50,7 +52,9 @@ export default function DataSourcesView(){
 
  const act=async(id:string,action:string,body:unknown={})=>{
   setBusy(true);setError(null);
-  try{await api(`/api/sources/${id}/${action}`,{tenant:tenantId,method:'POST',body});await load();await refreshStatus();}
+  setNotice(null);
+  try{await api(`/api/sources/${id}/${action}`,{tenant:tenantId,method:'POST',body});await load();await refreshStatus();
+   setNotice(action==='resync'?'Reenvío solicitado: Odoo vuelve a exportar esos datos en la próxima carga.':action==='rotate'?'Clave de API actualizada y cifrada.':action==='collect'?'Recolección solicitada.':null);}
   catch(e){setError((e as Error).message);}finally{setBusy(false);}
  };
  const showRuns=async(id:string)=>{try{const r=await api<{runs:Run[]}>(`/api/sources/${id}/runs`,{tenant:tenantId});setRuns(x=>({...x,[id]:r.runs}));}catch(e){setError((e as Error).message);}};
@@ -63,6 +67,7 @@ export default function DataSourcesView(){
  return <>
   <h2 className="section-label"><span>Fuentes de datos · {membership?.name}</span><i/></h2>
   {error&&<p className="legend-note"><AlertCircle size={12}/> {error}</p>}
+  {notice&&<p className="legend-note" role="status"><CheckCircle2 size={12}/> {notice}</p>}
   {sources.map(s=><section className="panel" key={s.id}>
    <header className="panel-heading" style={{gap:10}}>
     <h2><Database size={13}/> {s.name} <span className={`tag ${tone(s.status)}`}>{statusLabel[s.status]||s.status}</span></h2>
@@ -72,6 +77,8 @@ export default function DataSourcesView(){
      {s.status==='paused'?<button className="button secondary" disabled={busy} onClick={()=>act(s.id,'resume')}><Play size={13}/>Reanudar</button>
       :<button className="button secondary" disabled={busy||s.status!=='active'} onClick={()=>act(s.id,'pause')}><Pause size={13}/>Pausar</button>}
      <button className="button secondary" onClick={()=>showRuns(s.id)}>Lotes</button>
+     <button className="button secondary" disabled={busy||s.status!=='active'||!s.datasets?.length} title="Odoo vuelve a exportar todos los datos de esta fuente en la próxima carga"
+      onClick={()=>{if(confirm('¿Reenviar todos los datos desde Odoo en la próxima carga? Puede tardar varios ciclos.'))act(s.id,'resync',{datasets:(s.datasets||[]).filter(d=>d.available).map(d=>d.key)});}}><RotateCcw size={13}/>Reenviar todo</button>
     </div>
    </header>
    <div className="panel-body">
@@ -83,6 +90,10 @@ export default function DataSourcesView(){
      {s.datasets&&<tr><td>Datasets</td><td>{s.datasets.filter(d=>d.available).length} disponibles{s.datasets.some(d=>d.missing_required?.length)&&<> · <b>con campos faltantes:</b> {s.datasets.filter(d=>d.missing_required?.length).map(d=>d.key).join(', ')}</>}</td></tr>}
      {s.last_error&&<tr><td>Último error</td><td className="r">{s.last_error}</td></tr>}
     </tbody></table></div>
+    <div className="sources-link">
+     <input type="password" autoComplete="off" aria-label="Nueva clave de API del usuario técnico" placeholder="Nueva clave de API del usuario técnico de Odoo" value={rotateKey[s.id]||''} onChange={e=>setRotateKey(k=>({...k,[s.id]:e.target.value}))}/>
+     <button className="button secondary" disabled={busy||!(rotateKey[s.id]||'').trim()} onClick={()=>{act(s.id,'rotate',{api_key:rotateKey[s.id].trim()});setRotateKey(k=>({...k,[s.id]:''}));}}><KeyRound size={13}/>Rotar clave</button>
+    </div>
     {s.status!=='active'&&s.status!=='paused'&&<div className="sources-link">
      <input aria-label="Código de vinculación" placeholder="Código de vinculación generado en Odoo" value={token[s.id]||''} onChange={e=>setToken(t=>({...t,[s.id]:e.target.value}))}/>
      <button className="button primary" disabled={busy||!token[s.id]} onClick={()=>act(s.id,'link',{link_token:token[s.id]})}><Link2 size={13}/>Vincular</button>

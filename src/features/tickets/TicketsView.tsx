@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import {AlertTriangle,Clock3,Filter,LifeBuoy,MessageSquare,Star,Timer,TrendingDown,TrendingUp,User} from 'lucide-react';
 import {useLive} from '../live/LiveData';
+import TicketsLive from './TicketsLive';
 
 type Priority='alta'|'media'|'baja';
 type Status='abierto'|'en_proceso'|'esperando_cliente'|'resuelto'|'cerrado';
@@ -32,6 +33,12 @@ const timeline=[
 ];
 
 export default function TicketsView(){
+ const {live}=useLive();
+ return live?<TicketsLive/>:<TicketsDemo/>;
+}
+
+// Demo (sin panel conectado): datos de ejemplo rotulados.
+function TicketsDemo(){
  const {live}=useLive();
  const [priority,setPriority]=useState<'todos'|Priority>('todos');
  const [status,setStatus]=useState<'todos'|Status>('todos');

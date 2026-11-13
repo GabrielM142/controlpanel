@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {decryptSecret, encryptSecret, hashPassword, newToken, sha256, verifyPassword} from '../lib/crypto.mjs';
 import {withTransaction} from '../lib/db.mjs';
 import {enumerateBlocks} from '../lib/blocks.mjs';
-import {aiFacts, buildReport, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
+import {aiFacts, buildReport, campaignPerformance, METRICS, parseFilters, receivableSummary, thresholdValues, warehouseValuation} from '../lib/metrics.mjs';
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {alertMessage, evaluateAlerts, sendTelegram} from '../lib/alerts.mjs';
 import {cashflowBase} from '../lib/cashflow.mjs';
@@ -860,6 +860,155 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const recent = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
       `SELECT at, page_id, provider FROM app.ai_usage WHERE user_id = $1 ORDER BY at DESC LIMIT 8`, [ctx.user.id])).rows);
     return {month: Number(r.month), mine: Number(r.mine), hour: Number(r.hour), hourly_limit: 60, recent};
+  });
+
+  // Company brand: color and logo shared by all users (admins change it).
+  route('GET', /^\/api\/tenant\/theme$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    const row = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
+      'SELECT brand_color, logo, updated_at FROM app.tenant_theme WHERE tenant_id = $1', [ctx.tenantId])).rows[0]);
+    return {brand_color: row?.brand_color || null, logo: row?.logo || null, updated_at: row?.updated_at || null,
+      can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin};
+  });
+  route('PUT', /^\/api\/tenant\/theme$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 300 * 1024);
+    const color = typeof b.brand_color === 'string' ? b.brand_color.trim().toLowerCase() : '';
+    if (!/^#[0-9a-f]{6}$/.test(color)) throw new HttpError(400, 'Color de marca inválido (#rrggbb)');
+    const logo = b.logo === null || b.logo === undefined || b.logo === '' ? null : String(b.logo);
+    if (logo && (logo.length > 280000 || !/^data:image\/(png|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(logo))) throw new HttpError(400, 'Logo inválido: PNG o SVG de hasta 200 KB');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.tenant_theme(tenant_id, brand_color, logo, updated_by, updated_at) VALUES ($1, $2, $3, $4, now())
+        ON CONFLICT (tenant_id) DO UPDATE SET brand_color = EXCLUDED.brand_color, logo = EXCLUDED.logo, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [ctx.tenantId, color, logo, ctx.user.id]);
+      await audit(c, ctx, 'theme.update', color, {logo: Boolean(logo)});
+      return {ok: true};
+    });
+  });
+  route('DELETE', /^\/api\/tenant\/theme$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query('DELETE FROM app.tenant_theme WHERE tenant_id = $1', [ctx.tenantId]);
+      return {ok: true};
+    });
+  });
+
+  // Helpdesk (OMEGA tickets): SLA by priority, assignee, first response, resolution and comments.
+  const TICKET_SLA_HOURS = {alta: 4, media: 24, baja: 72};
+  const TICKET_STATUS = ['abierto', 'en_progreso', 'esperando', 'resuelto', 'cerrado'];
+  const ticketCols = `t.id, t.title, t.description, t.category, t.customer, t.priority, t.status, t.assignee_id, ua.name AS assignee_name,
+      t.created_by, uc.name AS created_by_name, t.created_at, t.due_at, t.first_response_at, t.resolved_at, t.updated_at, t.source`;
+  const ticketFrom = `FROM app.tickets t LEFT JOIN app.users ua ON ua.id = t.assignee_id LEFT JOIN app.users uc ON uc.id = t.created_by`;
+
+  route('GET', /^\/api\/tickets$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const open = query.estado === 'todos' ? '' : `WHERE t.status NOT IN ('cerrado') OR t.updated_at > now() - interval '30 days'`;
+      const tickets = (await c.query(`SELECT ${ticketCols} ${ticketFrom} ${open} ORDER BY (t.status IN ('resuelto', 'cerrado')), t.due_at LIMIT 500`)).rows;
+      const k = (await c.query(`SELECT count(*) FILTER (WHERE status NOT IN ('resuelto', 'cerrado')) AS open,
+          count(*) FILTER (WHERE status NOT IN ('resuelto', 'cerrado') AND due_at < now()) AS late,
+          count(*) FILTER (WHERE status NOT IN ('resuelto', 'cerrado') AND due_at >= now() AND due_at < now() + (due_at - created_at) * 0.2) AS at_risk,
+          count(*) FILTER (WHERE resolved_at >= date_trunc('day', now())) AS solved_today,
+          count(*) FILTER (WHERE resolved_at > now() - interval '30 days') AS solved30,
+          count(*) FILTER (WHERE resolved_at > now() - interval '30 days' AND resolved_at <= due_at) AS on_time30,
+          avg(extract(epoch FROM (first_response_at - created_at)) / 60) FILTER (WHERE first_response_at IS NOT NULL AND created_at > now() - interval '30 days') AS response_min,
+          avg(extract(epoch FROM (resolved_at - created_at)) / 3600) FILTER (WHERE resolved_at > now() - interval '30 days') AS resolve_h
+        FROM app.tickets`)).rows[0];
+      const agents = (await c.query(`SELECT u.id, u.name, m.role FROM app.memberships m JOIN app.users u ON u.id = m.user_id
+          WHERE m.tenant_id = $1 AND u.disabled_at IS NULL ORDER BY u.name`, [ctx.tenantId])).rows;
+      const n = v => (v === null ? null : Number(v));
+      return {tickets, agents, sla_hours: TICKET_SLA_HOURS, me: ctx.user.id,
+        kpis: {open: n(k.open), late: n(k.late), at_risk: n(k.at_risk), solved_today: n(k.solved_today), solved30: n(k.solved30),
+          sla_pct: Number(k.solved30) ? Number(k.on_time30) / Number(k.solved30) * 100 : null, response_min: n(k.response_min), resolve_h: n(k.resolve_h)},
+        can_manage: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.analyst};
+    });
+  });
+  route('GET', /^\/api\/tickets\/(\d{1,12})$/, async ({req, match}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const ticket = (await c.query(`SELECT ${ticketCols} ${ticketFrom} WHERE t.id = $1`, [match[1]])).rows[0];
+      if (!ticket) throw new HttpError(404, 'Ticket inexistente');
+      const comments = (await c.query(`SELECT k.id, k.body, k.internal, k.created_at, u.name AS author FROM app.ticket_comments k
+          LEFT JOIN app.users u ON u.id = k.author_id WHERE k.ticket_id = $1 ORDER BY k.created_at`, [match[1]])).rows;
+      return {ticket, comments};
+    });
+  });
+  route('POST', /^\/api\/tickets$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 16 * 1024);
+    const title = str(b.title, 200, {required: true, name: 'título'});
+    if (title.length < 3) throw new HttpError(400, 'El título necesita al menos 3 caracteres');
+    const priority = ['alta', 'media', 'baja'].includes(b.priority) ? b.priority : 'media';
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const row = (await c.query(`INSERT INTO app.tickets(tenant_id, title, description, category, customer, priority, created_by, due_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, now() + make_interval(hours => $8)) RETURNING id`,
+      [ctx.tenantId, title, str(b.description, 8000), str(b.category, 60) || 'general', str(b.customer, 160), priority, ctx.user.id, TICKET_SLA_HOURS[priority]])).rows[0];
+      await audit(c, ctx, 'ticket.create', String(row.id), {priority});
+      return {id: row.id};
+    });
+  });
+  route('PATCH', /^\/api\/tickets\/(\d{1,12})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'analyst');
+    const b = await readJson(req, 4096);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const t = (await c.query('SELECT id, status, priority, created_at FROM app.tickets WHERE id = $1 FOR UPDATE', [match[1]])).rows[0];
+      if (!t) throw new HttpError(404, 'Ticket inexistente');
+      const sets = ['updated_at = now()'];
+      const p = [match[1]];
+      if (b.status !== undefined) {
+        if (!TICKET_STATUS.includes(b.status)) throw new HttpError(400, 'Estado inválido');
+        sets.push(`status = $${p.push(b.status)}`);
+        sets.push(`resolved_at = CASE WHEN $${p.length} IN ('resuelto', 'cerrado') THEN coalesce(resolved_at, now()) ELSE NULL END`);
+        // Moving a ticket out of "abierto" counts as the first response.
+        if (b.status !== 'abierto') sets.push('first_response_at = coalesce(first_response_at, now())');
+      }
+      if (b.priority !== undefined) {
+        if (!TICKET_SLA_HOURS[b.priority]) throw new HttpError(400, 'Prioridad inválida');
+        sets.push(`priority = $${p.push(b.priority)}`, `due_at = created_at + make_interval(hours => $${p.push(TICKET_SLA_HOURS[b.priority])})`);
+      }
+      if (b.assignee_id !== undefined) {
+        if (b.assignee_id !== null) {
+          const ok = (await c.query('SELECT 1 FROM app.memberships WHERE tenant_id = $1 AND user_id = $2', [ctx.tenantId, b.assignee_id])).rows.length;
+          if (!ok) throw new HttpError(400, 'El responsable no pertenece a la empresa');
+        }
+        sets.push(`assignee_id = $${p.push(b.assignee_id)}`);
+      }
+      await c.query(`UPDATE app.tickets SET ${sets.join(', ')} WHERE id = $1`, p);
+      await audit(c, ctx, 'ticket.update', match[1], {status: b.status, priority: b.priority, assignee: b.assignee_id});
+      return {ok: true};
+    });
+  });
+  route('POST', /^\/api\/tickets\/(\d{1,12})\/comments$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 8192);
+    const body = str(b.body, 4000, {required: true, name: 'comentario'});
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const t = (await c.query('SELECT id, created_by FROM app.tickets WHERE id = $1', [match[1]])).rows[0];
+      if (!t) throw new HttpError(404, 'Ticket inexistente');
+      await c.query('INSERT INTO app.ticket_comments(tenant_id, ticket_id, author_id, body, internal) VALUES ($1, $2, $3, $4, $5)',
+        [ctx.tenantId, t.id, ctx.user.id, body, b.internal === true]);
+      // A public answer from someone other than the requester is the first response.
+      const response = b.internal !== true && t.created_by !== ctx.user.id;
+      await c.query(`UPDATE app.tickets SET updated_at = now()${response ? ', first_response_at = coalesce(first_response_at, now())' : ''} WHERE id = $1`, [t.id]);
+      return {ok: true};
+    });
+  });
+
+  // Marketing app data (Iris or others): campaigns with leads, cost per lead, captured customers and ROI.
+  route('GET', /^\/api\/marketing\/performance$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    const source = /^[a-z0-9_-]{1,40}$/.test(query.fuente || '') ? query.fuente : null;
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const pub = (await c.query('SELECT business_date::text AS d FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      const to = pub?.d || new Date().toISOString().slice(0, 10);
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(query.desde || '') ? query.desde : `${to.slice(0, 4)}-01-01`;
+      return {from, to, source, ...(await campaignPerformance(c, from, to, ctx.companies, source))};
+    });
   });
 
   // Alert notifications (Telegram) per company; admins configure, the cron sends after each close.

@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useState} from 'react';
+import {Fragment,useCallback,useEffect,useState} from 'react';
 import {AlertCircle,ArrowUpRight,Loader2,PackageCheck,RefreshCw,Send} from 'lucide-react';
 import {api} from '../../data/api';
 import {terms,termsSha256} from '../../data/terms';
@@ -9,6 +9,10 @@ type Request={id:string;created_at:string;client_name:string;plan:string;title:s
 const statusLabel:Record<string,string>={pending_send:'Pendiente de envío',received:'Recibida',analyzing:'En análisis',quoted:'Cotizada',approved:'Aprobada',in_progress:'En desarrollo',delivered:'Entregada',archived:'Archivada'};
 const statusTone:Record<string,'g'|'a'|'r'|'muted'>={pending_send:'r',received:'a',analyzing:'a',quoted:'g',approved:'g',in_progress:'a',delivered:'g',archived:'muted'};
 
+const HIDDEN=new Set(['id','idempotency_key','terms_sha256','tenant_id','created_by']);
+const LABELS:Record<string,string>={created_at:'Fecha',client_name:'Empresa',plan:'Plan',title:'Módulo',priority:'Prioridad',status:'Estado',tokens_used:'Tokens',terms_version:'Versión de términos',
+ description:'Descripción',objective:'Objetivo',users:'Usuarios',integrations:'Integraciones',deadline:'Plazo',budget:'Presupuesto',contact:'Contacto',answers:'Respuestas',updated_at:'Actualizado'};
+
 function readLocal():Request[]{try{const raw=localStorage.getItem('nova.factory.local');if(!raw)return [];const arr=JSON.parse(raw);return Array.isArray(arr)?arr:[];}catch{return [];}}
 
 export default function TruequeList(){
@@ -17,6 +21,7 @@ export default function TruequeList(){
  const [error,setError]=useState<string|null>(null);
  const [source,setSource]=useState<'live'|'local'|'mixed'>('local');
  const live=useLive();
+ const [openId,setOpenId]=useState<string|null>(null);
 
  const load=useCallback(async()=>{
   setLoading(true);setError(null);
@@ -63,7 +68,7 @@ export default function TruequeList(){
       </div>
      :<div className="table-scroll"><table>
       <thead><tr><th>Fecha</th><th>Módulo</th><th>Empresa</th><th>Plan</th><th>Prioridad</th><th>Estado</th><th className="num">Tokens</th><th></th></tr></thead>
-      <tbody>{items.map(r=><tr key={r.id}>
+      <tbody>{items.map(r=><Fragment key={r.id}><tr>
        <td>{new Date(r.created_at).toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'2-digit'})}</td>
        <td><b>{r.title}</b></td>
        <td>{r.client_name}</td>
@@ -73,8 +78,11 @@ export default function TruequeList(){
        <td className="num">{r.tokens_used??'—'}</td>
        <td>{r.status==='pending_send'&&live.live
         ?<button type="button" className="row-link" onClick={()=>retry(r)}>Reintentar envío <Send size={13}/></button>
-        :<a className="row-link" href="#trueque" aria-label="Abrir detalle" title="Detalle disponible en la próxima iteración">Detalle <ArrowUpRight size={13}/></a>}</td>
-      </tr>)}</tbody>
+        :<button type="button" className="row-link" aria-expanded={openId===r.id} onClick={()=>setOpenId(openId===r.id?null:r.id)}>Detalle <ArrowUpRight size={13}/></button>}</td>
+      </tr>
+      {openId===r.id&&<tr className="om-fac-detail"><td colSpan={8}><dl>{Object.entries(r).filter(([k,v])=>!HIDDEN.has(k)&&v!==null&&v!==undefined&&v!=='').map(([k,v])=>
+       <div key={k}><dt>{LABELS[k]||k.replace(/_/g,' ')}</dt><dd>{typeof v==='object'?JSON.stringify(v,null,1):String(v)}</dd></div>)}</dl></td></tr>}
+      </Fragment>)}</tbody>
      </table></div>}
    </div>
   </section>

@@ -22,7 +22,7 @@ function status(r:ThresholdRule){
 const statusLabel:Record<string,string>={nodata:'Sin dato publicado',ok:'Dentro del umbral',warning:'Cerca del límite',critical:'Umbral excedido',off:'Alerta desactivada'};
 
 export default function ThresholdsView(){
- const {rules,updateThreshold,toggleEnabled,resetOne,resetAll,stats}=useThresholds();
+ const {rules,updateThreshold,toggleEnabled,resetOne,resetAll,stats,canEdit,error}=useThresholds();
  const grouped=useMemo(()=>{const g:Record<ThresholdArea,ThresholdRule[]>={comercial:[],financiero:[],compras:[],inventarios:[],soporte:[]};for(const r of rules)g[r.area].push(r);return g;},[rules]);
  const cumplimiento=stats.enabled?Math.round(((stats.enabled-stats.triggered)/stats.enabled)*100):100;
 
@@ -36,9 +36,11 @@ export default function ThresholdsView(){
    <article className="panel metric"><div className="kpi-label">Consejo del copiloto</div><div className="metric-value" style={{fontSize:14,lineHeight:1.55}}>{stats.critical>0?`Tienes ${stats.critical} umbral(es) crítico(s). Revisa el detalle antes de tu próxima reunión gerencial.`:stats.triggered>0?'Hay alertas de atención — ajusta con el líder de área.':'Todos los indicadores están dentro de los umbrales configurados.'}</div><p>El copiloto lee estos umbrales al armar el resumen de cada vista.</p></article>
   </div>
 
+  {error&&<p className="legend-note om-ai-error" role="alert">{error}</p>}
+  {!canEdit&&<p className="legend-note">Solo los administradores cambian los umbrales; aquí ves los valores del último cierre.</p>}
   <div className="thresholds-toolbar">
    <span><SlidersHorizontal size={13}/> Ajusta umbrales por área. Los cambios se guardan automáticamente y disparan alertas en la campana superior.</span>
-   <button type="button" className="button secondary" onClick={()=>{if(confirm('¿Restaurar los umbrales por defecto?'))resetAll();}}><RotateCcw size={13}/>Restaurar defaults</button>
+   {canEdit&&<button type="button" className="button secondary" onClick={()=>{if(confirm('¿Restaurar los umbrales por defecto?'))resetAll();}}><RotateCcw size={13}/>Restaurar defaults</button>}
   </div>
 
   {(Object.keys(grouped) as ThresholdArea[]).map(area=>{
@@ -62,7 +64,7 @@ export default function ThresholdsView(){
          <p>{r.description}</p>
         </div>
         <label className="th-toggle" title={r.enabled?'Desactivar alerta':'Activar alerta'}>
-         <input type="checkbox" checked={r.enabled} onChange={e=>toggleEnabled(r.id,e.target.checked)}/>
+         <input type="checkbox" checked={r.enabled} disabled={!canEdit} onChange={e=>toggleEnabled(r.id,e.target.checked)}/>
          <span/>
         </label>
        </div>
@@ -78,7 +80,7 @@ export default function ThresholdsView(){
         <div className="th-cell th-input">
          <span>Umbral</span>
          <div>
-          <input type="number" value={r.threshold} step={r.unit==='%'?0.1:r.unit==='USD'?10000:1} onChange={e=>updateThreshold(r.id,parseFloat(e.target.value))} disabled={!r.enabled} aria-label={`Umbral de ${r.label}`}/>
+          <input type="number" value={r.threshold} step={r.unit==='%'?0.1:r.unit==='USD'?10000:1} onChange={e=>updateThreshold(r.id,parseFloat(e.target.value))} disabled={!r.enabled||!canEdit} aria-label={`Umbral de ${r.label}`}/>
           <em>{r.unit}</em>
          </div>
         </div>
@@ -93,7 +95,7 @@ export default function ThresholdsView(){
         </div>
         <div className="th-cell th-actions">
          <a className="row-link" href={'#'+r.linkedPageId}>Ver vista <ArrowRight size={12}/></a>
-         <button type="button" className="link-button" onClick={()=>resetOne(r.id)}><RotateCcw size={11}/>Default ({fmt(r.defaultThreshold,r.unit)})</button>
+         {canEdit&&<button type="button" className="link-button" onClick={()=>resetOne(r.id)}><RotateCcw size={11}/>Default ({fmt(r.defaultThreshold,r.unit)})</button>}
         </div>
        </div>
       </div>;
@@ -102,6 +104,6 @@ export default function ThresholdsView(){
    </section>;
   })}
 
-  <p className="legend-note" style={{marginTop:14}}><b>Cómo funciona.</b> Cada umbral genera una alerta que aparece en la campana superior y en el copiloto de análisis. Con la base analítica conectada, los valores se leen del último corte publicado por NOVA (carga nocturna desde Odoo) y las reglas se evalúan tras cada publicación diaria; no es tiempo real. En este modo los valores actuales son de ejemplo.</p>
+  <p className="legend-note" style={{marginTop:14}}><b>Cómo funciona.</b> Cada umbral genera una alerta que aparece en la campana superior y en el copiloto de análisis. Con la base analítica conectada, los valores se leen del último corte publicado por NOVA (carga nocturna desde Odoo) y las reglas se evalúan tras cada publicación diaria; no es tiempo real. Si configuras Telegram, las alertas excedidas también te llegan al chat después de cada cierre.</p>
  </>;
 }
