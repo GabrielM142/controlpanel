@@ -175,3 +175,34 @@
 .mdock-sheet-menu .portal-menu-caret { width: 44px; height: 44px; }
 .mdock-sheet-menu .portal-flyout-item { padding: 11px 10px; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .portal-menu-caret svg { transition: none; } }
+
+/* ── Ajuste responsive: el menú completo se ve entero y ningún nombre ni contador se corta ── */
+.portal-menu .portal-flyout-label, .portal-menu-label { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25; }
+.portal-menu-count, .portal-flyout-badge, .portal-flyout-lock { flex: none; }
+.portal-menu-head { letter-spacing: .05em; }
+@media (min-width: 1024px) {
+  .portal-dock.is-expanded { gap: 6px; }
+  .portal-menu { gap: 2px; }
+  .portal-menu-head { padding: 7px 8px; }
+  .portal-menu-caret { height: 32px; width: 28px; }
+  .portal-menu-group .portal-flyout-item { padding: 5px 8px; }
+  .portal-menu-group > ul { margin: 0 0 4px 17px; padding-left: 10px; }
+}
+/* Pantallas bajas (laptops con zoom, 700–800 px de alto): más compacto para que todo el menú quepa */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .portal-menu-top { padding-bottom: 2px; }
+  .portal-menu-top .portal-dock-logo { width: 34px; height: 34px; font-size: 19px; }
+  .portal-menu-head { padding: 5px 8px; font-size: 11.5px; }
+  .portal-menu-head .portal-dock-icon { width: 20px; height: 20px; }
+  .portal-menu-caret { height: 28px; }
+  .portal-menu-group .portal-flyout-item { padding: 3px 8px; font-size: 12.5px; }
+  .portal-dock.is-expanded .portal-dock-foot { padding-top: 4px; }
+}
+/* Teléfono: dock inferior en columnas iguales; los nombres y contadores siempre completos */
+@media (max-width: 767px) {
+  .mobile-dock { display: grid; grid-template-columns: 1fr 1fr 64px 1fr 1fr 1fr; justify-items: center; gap: 0; padding: 0 4px; left: 8px; right: 8px; }
+  .mdock-item { min-width: 0; width: 100%; padding: 0 1px; }
+  .mdock-item span { max-width: 100%; font-size: clamp(8.5px, 2.65vw, 10.5px); letter-spacing: -.01em; white-space: nowrap; }
+  .mdock-item i { right: calc(50% - 22px); }
+  .mdock-orb { width: 58px; height: 58px; }
+}
