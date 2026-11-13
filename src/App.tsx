@@ -189,6 +189,9 @@ function AppShell(){
  const shownFilters=live.live?pageFilters.filter(k=>LIVE_FILTERS.has(k)):pageFilters;
  const filterQuery=useMemo(()=>Object.fromEntries(pageFilters.filter(k=>LIVE_FILTERS.has(k)).map(k=>[k,filters[k]])),[pageFilters,filters]);
  // Una vista fuera del plan sigue visible, pero no pide datos (la API respondería 403): muestra la pantalla de espera.
+ // Menú completo visible por defecto en escritorio; la preferencia de plegarlo se recuerda.
+ const [menuFull,setMenuFull]=useState(()=>{try{return localStorage.getItem('nova.menu.expanded')!=='0';}catch{return true;}});
+ const toggleMenu=useCallback(()=>setMenuFull(v=>{const n=!v;try{localStorage.setItem('nova.menu.expanded',n?'1':'0');}catch{}return n;}),[]);
  const pageLocked=pageId!=='plataforma'&&!allowed(pageId);
  const reportState=useReportData(live.live&&reportPage&&!pageLocked?reportPage.id:null,filterQuery);
  const ids=useMemo(()=>reportPage?blockIds(reportPage.id,reportPage.nodes):new WeakMap<object,string>(),[reportPage]);
@@ -315,14 +318,14 @@ function AppShell(){
  function NavItem({p}:{p:ReportPage|VirtualPage}){if(p.id==='plataforma'&&!allowed(p.id))return null;const navLocked=!allowed(p.id);const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{labelFor(p.id,p.label)}</span>{navLocked?<small className="badge-paused">Plan</small>:paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
-  return <PortalDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} links={dockLinks} current={pageId}>
+  return <PortalDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} links={dockLinks} current={pageId} expanded={menuFull} onToggle={toggleMenu}>
    <AvatarMenu initials={(accountName||'OM').trim().slice(0,2).toUpperCase()} {...accountBody}/>
   </PortalDock>;
  }
 
  return <NavigateContext.Provider value={navigate}>
   <a className="skip-link" href="#main" onClick={e=>{e.preventDefault();document.getElementById("main")?.focus();}}>Ir al reporte</a>
-  <div className="app-shell">
+  <div className={`app-shell${menuFull?' menu-expanded':''}`}>
    <aside className="sidebar portal-shell"><Sidebar/></aside>
    <MobileDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} more={<AccountMenuBody {...accountBody}/>}/>
    <main id="main" className={`workspace${reportPage?.id==='nivel1'&&skin==='mando'?' mando-home':''}`} tabIndex={-1}>
