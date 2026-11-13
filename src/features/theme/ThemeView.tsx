@@ -2,7 +2,16 @@ import {useEffect,useMemo,useRef,useState,type CSSProperties} from 'react';
 import {AlertTriangle,CheckCircle2,ImagePlus,Loader2,Lock} from 'lucide-react';
 import {useTenants} from '../tenants/useTenants';
 import {ConfirmDialog,Eyebrow} from '../omega/ui';
+import {useLive} from '../live/LiveData';
+import {setSkin,useSkin,type Skin} from './useSkin';
 import {FINANCIAL,LOGO_MAX_BYTES,SWATCHES,hueClash,onBrandFor,swatchHex,useBrandTheme,type BrandMode} from './useBrandTheme';
+
+function SkinPicker(){
+ const {live,membership}=useLive();
+ const {skin,chosen}=useSkin(live?membership?.role:null);
+ const opts:{id:Skin|null;label:string}[]=[{id:'mando',label:'Mando (oscuro espacial)'},{id:'era',label:'Nueva era'},{id:null,label:'Según mi rol'}];
+ return <div className="segmented om-mode" role="group" aria-label="Estilo del panel">{opts.map(o=><button key={String(o.id)} type="button" aria-pressed={o.id===null?chosen===null:chosen===o.id} onClick={()=>setSkin(o.id)}>{o.label}{o.id===null&&chosen===null?` · ${skin==='mando'?'Mando':'Nueva era'}`:''}</button>)}</div>;
+}
 
 const MODES:{id:BrandMode;label:string}[]=[{id:'dark',label:'Oscuro'},{id:'light',label:'Claro'},{id:'auto',label:'Automático'}];
 const finDot=(token:string)=>`om-dot-${token.replace('--fin-','')}`;
@@ -71,6 +80,7 @@ export default function ThemeView(){
 
     <div className="om-card">
      <strong className="om-theme-title">Apariencia</strong>
+     <SkinPicker/>
      <div className="segmented om-mode" role="group" aria-label="Modo">{MODES.map(m=><button key={m.id} type="button" aria-pressed={mode===m.id} onClick={()=>setMode(m.id)}>{m.label}</button>)}</div>
      <div className="om-logo-row"><span className="om-logo-slot">{logo?<img src={logo} alt="Logo actual de la empresa"/>:<ImagePlus size={20} aria-hidden="true"/>}</span>
       <span className="om-muted">Logo de la empresa (SVG o PNG, hasta 200 KB). Se muestra junto a la Ω de OMEGA{shared?' y lo ven todos los usuarios de la empresa':' y se guarda en este navegador'}.</span>

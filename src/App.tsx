@@ -11,6 +11,7 @@ import BudgetView from './features/budget/BudgetView';
 import CashflowView from './features/cashflow/CashflowView';
 import ReportSetup from './features/inputs/ReportSetup';
 import RisksLive from './features/risks/RisksLive';
+import {useSkin} from './features/theme/useSkin';
 import IrisView from './features/marketing/IrisView';
 import TruekensView from './features/truekens/TruekensView';
 import NotificationsView from './features/notifications/NotificationsView';
@@ -168,6 +169,7 @@ function AppShell(){
  const [menuOpen,setMenuOpen]=useState(false);
  // Light/dark is a mode of the company theme (useBrandTheme); the header toggle keeps working.
  const brandTheme=useBrandTheme();
+ useSkin(live.live?live.membership?.role:null);
  const theme:'light'|'dark'=brandTheme.theme.mode==='light'?'light':'dark';
  const [isFullscreen,setIsFullscreen]=useState(false);
  const [rulerOn,setRulerOn]=useState(()=>ls.get('nova.ruler','off')==='on');

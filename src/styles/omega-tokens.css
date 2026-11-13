@@ -20,11 +20,13 @@
   --fin-income: #2ee6a8; --fin-loss: #ff5a6e; --fin-loss-text: #ff8a99;
   --fin-goal: #ffc94d; --fin-cash: #38d9ff; --fin-risk: #ff9f43; --fin-risk-text: #ffb470;
   --fin-ai: #c4a1ff; --on-loss: #0a0a1f;
+  --fin-cost: var(--fin-loss); /* costos: rojo en Nueva era; coral en Mando */
   /* Forma y tipografía */
   --radius-sm: 10px; --radius: 14px; --radius-lg: 22px; --radius-xl: 26px;
   --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, sans-serif;
   --font-ui: "Geist Variable", Geist, Inter, system-ui, sans-serif;
   --font-num: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+  --font-hud: var(--font-display); --hud-tracking: .04em; /* etiquetas HUD (Mando: Chakra Petch en versalitas) */
   --glow-brand: 0 10px 26px color-mix(in srgb, var(--brand) 35%, transparent);
   --halo: radial-gradient(900px 520px at 12% -8%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 62%),
           radial-gradient(700px 480px at 100% 0%, color-mix(in srgb, var(--fin-cash) 8%, transparent), transparent 60%), var(--bg);
@@ -35,7 +37,7 @@
 
   /* Colores de marca sugeridos (Configuración › Tema de la empresa) y texto oscuro sobre marca clara */
   --swatch-indigo: #6c63ff; --swatch-azul: #2f7bff; --swatch-magenta: #ff3ea5; --swatch-grafito: #4b5170;
-  --swatch-esmeralda: #10b981; --swatch-coral: #ff6b5b; --swatch-turquesa: #14b8a6; --swatch-violeta: #9333ea;
+  --swatch-cian: #4de1ff; --swatch-esmeralda: #10b981; --swatch-coral: #ff6b5b; --swatch-turquesa: #14b8a6; --swatch-violeta: #9333ea;
   --on-brand-dark: #0a0a1f; --on-brand-light: #ffffff;
 
   /* --- Alias de compatibilidad (tokens F0–F6 → nueva era). Chips: fondo al 13%. --- */
@@ -52,6 +54,35 @@
   --ai: var(--fin-ai); --ai-text: var(--fin-ai); --ai-soft: color-mix(in srgb, var(--fin-ai) 13%, transparent);
   --ai-line: color-mix(in srgb, var(--fin-ai) 35%, transparent);
   --line-2: var(--line); --line-3: var(--line-strong);
+}
+
+/* ============================================================
+   Fase M · tema "Mando" (oscuro espacial). <html data-skin="mando">, ver useSkin.ts.
+   Solo pantalla y modo oscuro: el modo claro y la impresión conservan sus tokens.
+   Los financieros mantienen su significado (verde ingreso, rojo pérdida…), con la
+   variante luminosa del mockup. La marca sigue saliendo del tema de cada empresa.
+   ============================================================ */
+@media screen {
+  :root[data-skin="mando"]:not([data-mode="light"]) {
+    --bg: #03060d; --bg-2: #060c18; --surface-solid: #0a1527;
+    --surface: rgba(12,26,48,.62); --surface-2: rgba(18,38,66,.72);
+    --line: color-mix(in srgb, var(--brand) 18%, transparent); --line-strong: color-mix(in srgb, var(--brand) 34%, transparent);
+    --text: #ecf6ff; --text-2: #b3c4d9; --text-3: #8fa3bd; --text-4: #6f84a0;
+    --fin-income: #3ef0a1; --fin-loss: #ff4d5e; --fin-loss-text: #ff8592; --fin-cost: #ff8a5c;
+    --fin-goal: #ffc65c; --fin-cash: #4de1ff; --fin-ai: #a98bff; --on-loss: #03060d;
+    --mando-grid: color-mix(in srgb, var(--text) 5%, transparent);
+    --mando-glow: 0 0 22px color-mix(in srgb, var(--brand) 45%, transparent);
+    --font-display: "Chakra Petch", "Bricolage Grotesque Variable", system-ui, sans-serif;
+    --font-hud: "Chakra Petch", system-ui, sans-serif; --hud-tracking: 3px;
+    --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
+    --font-num: "Chakra Petch", "Geist Mono Variable", ui-monospace, monospace;
+    --halo:
+      radial-gradient(1100px 620px at 50% -10%, color-mix(in srgb, var(--brand) 18%, transparent), transparent 64%),
+      radial-gradient(800px 520px at 100% 100%, color-mix(in srgb, var(--fin-ai) 7%, transparent), transparent 60%),
+      linear-gradient(var(--mando-grid) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--mando-grid) 1px, transparent 1px) 0 0 / 48px 48px,
+      var(--bg);
+  }
 }
 
 /* Modo claro OMEGA (por empresa). Los financieros se oscurecen para mantener AA sobre blanco. */
@@ -85,3 +116,8 @@
   src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Geist Mono Variable'; font-style: normal; font-weight: 100 900; font-display: swap;
   src: url('@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2') format('woff2'); }
+/* Tema Mando: Chakra Petch (cifras y HUD). Inter Variable ya se declara en theme.css. */
+@font-face { font-family: 'Chakra Petch'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('@fontsource/chakra-petch/files/chakra-petch-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Chakra Petch'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('@fontsource/chakra-petch/files/chakra-petch-latin-700-normal.woff2') format('woff2'); }

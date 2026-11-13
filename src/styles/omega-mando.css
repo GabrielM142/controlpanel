@@ -1,0 +1,34 @@
+/* ============================================================
+   OMEGA · Fase M1 — superficies del tema "Mando" (FASE_DISENO_CENTRO_MANDO.md §1).
+   Se activa con <html data-skin="mando"> en modo oscuro (useSkin.ts). Solo var(--…):
+   los colores salen de omega-tokens.css. Se carga después de omega-era.css.
+   ============================================================ */
+@media screen {
+  /* Paneles de vidrio: borde de 1 px con el color de acción al 18 % (--line en Mando) */
+  :root[data-skin="mando"]:not([data-mode="light"]) .panel,
+  :root[data-skin="mando"]:not([data-mode="light"]) .om-card {
+    background: var(--surface); border-color: var(--line);
+    backdrop-filter: blur(12px) saturate(1.15); -webkit-backdrop-filter: blur(12px) saturate(1.15);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  }
+  :root[data-skin="mando"]:not([data-mode="light"]) .sidebar,
+  :root[data-skin="mando"]:not([data-mode="light"]) .mobile-drawer,
+  :root[data-skin="mando"]:not([data-mode="light"]) .utility-bar {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+
+  /* Etiquetas HUD: Chakra Petch en versalitas con tracking amplio */
+  :root[data-skin="mando"]:not([data-mode="light"]) :is(.page-kicker, .section-label, .om-eyebrow, .omega-section-head, .nav-trueque-head) {
+    font-family: var(--font-hud); font-weight: 600; text-transform: uppercase; letter-spacing: var(--hud-tracking);
+  }
+  :root[data-skin="mando"]:not([data-mode="light"]) :is(h1, .om-headline, .kpi-value, .metric-value, .om-figure) {
+    font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums;
+  }
+
+  /* Color de acción: la Ω, los botones principales y el foco brillan con --brand */
+  :root[data-skin="mando"]:not([data-mode="light"]) .omega-mark { box-shadow: var(--mando-glow); }
+  :root[data-skin="mando"]:not([data-mode="light"]) :is(.button.primary, .om-btn--gold, .omega-present) { box-shadow: var(--mando-glow); }
+  :root[data-skin="mando"]:not([data-mode="light"]) :is(button, a, select, input, [tabindex]):focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 3px; box-shadow: var(--mando-glow);
+  }
+}

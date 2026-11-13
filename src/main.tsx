@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import {applySkin,readSkin} from './features/theme/useSkin';
 // Orden obligatorio: tokens OMEGA → paleta puente F0 → estilos de la app.
 import './styles/omega-tokens.css';
 import './styles/legacy-palette.css';
@@ -8,6 +9,7 @@ import './theme.css';
 import './styles/omega-shell.css';
 import './styles/omega-views.css';
 import './styles/omega-era.css';
+import './styles/omega-mando.css';
 import './styles/omega-motion.css';
 
 // OMEGA es oscuro por defecto: se fija antes del primer render (login incluido). Respeta la elección guardada.
@@ -16,6 +18,8 @@ try{
  document.documentElement.dataset.theme='dark'; // OMEGA skin; light is data-mode (company theme)
  document.documentElement.dataset.mode=localStorage.getItem('nova.theme')==='light'?'light':'dark';
 }catch{document.documentElement.dataset.theme='dark';}
+// Fase M: estilo guardado (o Mando por defecto) antes del primer render; AppShell lo ajusta según el rol.
+applySkin(readSkin());
 
 // One-shot migration for boceto users that used the previous side.* localStorage namespace.
 try{

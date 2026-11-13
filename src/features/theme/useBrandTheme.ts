@@ -8,7 +8,7 @@ import {useLive} from '../live/LiveData';
 // Aplica --brand, --on-brand (contraste WCAG ≥ 4.5) y data-mode en <html>. La marca nunca pinta datos:
 // los colores financieros (--fin-*) son fijos. Los colores se leen de omega-tokens.css (sin hex aquí).
 export type BrandMode='dark'|'light'|'auto';
-export type BrandTheme={brandColor:string;mode:BrandMode;logo?:string};
+export type BrandTheme={brandColor:string;mode:BrandMode;logo?:string;isDefault?:boolean};
 /** Logo local (SVG o PNG), como data URL en este navegador. Se muestra con <img>: nunca se ejecuta. */
 export const LOGO_MAX_BYTES=200*1024;
 
@@ -48,14 +48,16 @@ export function hueClash(brand:string){
 
 const keyFor=(tenantId:string)=>`nova.theme.${tenantId}`;
 export function readTheme(tenantId:string):BrandTheme{
- const fallback:BrandTheme={brandColor:swatchHex('indigo')||'',mode:'dark'};
+ const fallback:BrandTheme={brandColor:swatchHex('indigo')||'',mode:'dark',isDefault:true};
  try{const v=JSON.parse(localStorage.getItem(keyFor(tenantId))||'null');if(v&&hexToRgb(v.brandColor||'')&&['dark','light','auto'].includes(v.mode))return {brandColor:v.brandColor,mode:v.mode,logo:typeof v.logo==='string'&&/^data:image\/(png|svg\+xml);base64,/.test(v.logo)?v.logo:undefined};}catch{}
  try{if(localStorage.getItem('nova.theme')==='light')fallback.mode='light';}catch{}
  return fallback;
 }
 export function applyTheme(t:BrandTheme){
  const root=document.documentElement;
- if(t.brandColor){const {on}=onBrandFor(t.brandColor);root.style.setProperty('--brand',t.brandColor);root.style.setProperty('--on-brand',on);}
+ // Mando (Fase M): sin color elegido por la empresa, la acción es cian.
+ const brand=t.isDefault&&root.dataset.skin==='mando'?(swatchHex('cian')||t.brandColor):t.brandColor;
+ if(brand){const {on}=onBrandFor(brand);root.style.setProperty('--brand',brand);root.style.setProperty('--on-brand',on);}
  const prefersLight=typeof window!=='undefined'&&window.matchMedia?.('(prefers-color-scheme: light)').matches;
  root.dataset.mode=t.mode==='auto'?(prefersLight?'light':'dark'):t.mode;
  root.dataset.theme='dark'; // OMEGA skin (light is a mode of the same skin)
@@ -78,6 +80,7 @@ export function BrandThemeProvider({tenantId,children}:{tenantId:string;children
  },[live,tenantId]);
  // Re-apply when the company changes (TenantSwitcher): brand changes, financial colors never do.
  useEffect(()=>{const t=readTheme(tenantId);setTheme(t);applyTheme(t);},[tenantId]);
+ useEffect(()=>{const re=()=>applyTheme(theme);window.addEventListener('omega-skin',re);return()=>window.removeEventListener('omega-skin',re);},[theme]);
  useEffect(()=>{applyTheme(theme);if(theme.mode!=='auto')return;const mq=window.matchMedia?.('(prefers-color-scheme: light)');const on=()=>applyTheme(theme);mq?.addEventListener?.('change',on);return()=>mq?.removeEventListener?.('change',on);},[theme]);
  const save=useCallback(async(t:BrandTheme)=>{
   if(live&&canEdit)await api('/api/tenant/theme',{tenant:tenantId,method:'PUT',body:{brand_color:t.brandColor,logo:t.logo||null}});
