@@ -15,12 +15,14 @@ import OrbitNodes,{type OrbitNode} from './OrbitNodes';
 import MissionCard from './MissionCard';
 import OmegaOrb from './OmegaOrb';
 import NewsTicker,{type NewsItem} from './NewsTicker';
+import {LevelChip} from './AchievementToast';
+import type {Motivation} from './useMotivation';
 
 // Centro de mando (Fase M3): Dirección presentada como el HUD del copiloto. Solo datos de los
 // hooks y la API actuales; en modo demo, los del fixture. Nada se rotula "en vivo": todo es del
 // cierre publicado y la cinta se llama "Novedades".
 type Props={widgets:Record<string,Widget>|null;live:boolean;tenantName:string;userName:string;onNavigate:(id:string)=>void;onAsk:(q:string)=>void;
- motivation?:{xpFor:(kind:'ok'|'no')=>number;onAction:(kind:'ok'|'no',d:{title:string;amount?:number})=>void}};
+ motivation?:Pick<Motivation,'xp'|'level'|'streak'|'xpFor'>};
 const hhmm=(d:Date)=>d.toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'});
 const short=(k?:Kpi)=>!k||k.value==='—'?'sin dato publicado':[k.delta,k.deltaLabel].filter(Boolean).join(' ').toLowerCase().slice(0,40);
 
@@ -71,7 +73,7 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
  const pending=decisions.filter(d=>d.status==='pendiente');
  const [touched,setTouched]=useState<string[]>([]);
  const missions=[...decisions.filter(d=>touched.includes(d.id)),...pending.filter(d=>!touched.includes(d.id))].slice(0,3);
- const act=(id:string,ok:boolean)=>{const d=decisions.find(x=>x.id===id);if(!d)return;setTouched(t=>[...new Set([...t,id])]);flow.request(d,ok?'aprobada':'rechazada');motivation?.onAction(ok?'ok':'no',d);};
+ const act=(id:string,ok:boolean)=>{const d=decisions.find(x=>x.id===id);if(!d)return;setTouched(t=>[...new Set([...t,id])]);flow.request(d,ok?'aprobada':'rechazada');};
 
  const c=cumpl?parseNumber(cumpl.value):null,u=util?parseNumber(util.value):null;
  const first=pending[0];
@@ -101,6 +103,7 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
    <span className="mx-cmd-mark" aria-hidden="true">Ω</span>
    <div><div className="mx-hud-title mx-cmd-title">OMEGA · CENTRO DE MANDO</div><div className="mx-cmd-sub">{tenantName}</div></div>
    <span className="mx-cmd-spacer"/>
+   {motivation&&<LevelChip m={motivation}/>}
    <span className={`mx-cmd-status${stale?' is-stale':''}`}>{live
     ?(published?<>{stale?<AlertTriangle size={14} aria-hidden="true"/>:<CheckCircle2 size={14} aria-hidden="true"/>}Datos al cierre del {published.business_date}{closeAt?` · ${hhmm(closeAt)}`:''}{stale?' · desactualizado':''}</>:'Sin datos publicados todavía')
     :'Datos de demostración · sin conexión a Odoo'}</span>

@@ -31,6 +31,8 @@ import DireccionHero from './features/omega/DireccionHero';
 import CommandCenter from './features/omega/CommandCenter';
 import Billboard from './features/billboard/Billboard';
 import {useTrackView} from './features/billboard/useViews';
+import {useMotivation} from './features/omega/useMotivation';
+import AchievementToasts from './features/omega/AchievementToast';
 import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
 import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
@@ -145,6 +147,7 @@ function AppShell(){
  const {skin}=useSkin(live.live?live.membership?.role:null);
  // Si el rol resulta no ser gerencia (tema Nueva era), el inicio vuelve a Dirección.
  useEffect(()=>{if(bootNoHash.current&&skin!=='mando')setPageId(p=>p==='cartelera'&&!location.hash.slice(1)?'nivel1':p);},[skin]);
+ const motivation=useMotivation(live.tenantId||activeTenant.id||'demo',live.live&&live.user?live.user.id:'demo');
  useTrackView(live.tenantId||activeTenant.id||'demo',pageId,!pageId.startsWith('portal-')&&pageId!=='cartelera');
  const theme:'light'|'dark'=brandTheme.theme.mode==='light'?'light':'dark';
  const [isFullscreen,setIsFullscreen]=useState(false);
@@ -396,7 +399,7 @@ function AppShell(){
      {live.live&&reportPage&&reportState.error&&<p className="legend-note" role="alert">No se pudo cargar el reporte: {reportState.error}. Se mantiene el último corte publicado en el servidor.</p>}
      {live.live&&reportPage&&!reportState.loading&&reportState.data&&!reportState.data.published&&<p className="legend-note">Aún no hay datos publicados para esta empresa. Configura la fuente en <b>Configuración · Fuentes de datos</b>.</p>}
      {reportPage&&reportPage.id==='nivel1'&&(skin==='mando'
-      ?<CommandCenter widgets={reportState.data?.widgets||null} live={live.live} tenantName={live.live?live.membership?.name||activeTenant.name:activeTenant.name} userName={live.live&&live.user?live.user.name:'Gerencia'} onNavigate={navigate} onAsk={askOmega}/>
+      ?<CommandCenter widgets={reportState.data?.widgets||null} live={live.live} tenantName={live.live?live.membership?.name||activeTenant.name:activeTenant.name} userName={live.live&&live.user?live.user.name:'Gerencia'} onNavigate={navigate} onAsk={askOmega} motivation={motivation}/>
       :<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>)}
      {reportPage&&reportPage.id!=='nivel1'&&<section className="om-lead" aria-label="Lectura de Omega">
       <span className="omega-glyph" aria-hidden="true">Ω</span>
@@ -409,7 +412,7 @@ function AppShell(){
        closeLabel={live.live?(live.status?.published?`CIERRE DEL ${live.status.published.business_date}`:'SIN CIERRE PUBLICADO'):'DATOS DE DEMOSTRACIÓN'}
        rows={PORTALS.filter(pt=>pt.id!=='mando'&&pt.id!=='omega').map(pt=>({portal:pt,items:portalItems(pt)}))}
        info={id=>{if(!allValidIds.has(id)||!allowed(id))return null;const rp=report.pages.find(x=>x.id===id);const vp=virtualById.get(id);return {label:labelFor(id,rp?.label||vp?.label||id),question:rp?.question||vp?.question||'',icon:icons[id]||LayoutDashboard};}}
-       onNavigate={navigate} onAsk={askOmega}/>
+       onNavigate={navigate} onAsk={askOmega} motivation={motivation}/>
       :virtualPage&&pageId.startsWith('portal-')?<PortalPage portal={portalById.get(pageId.slice(7) as PortalId)!} items={portalItems(portalById.get(pageId.slice(7) as PortalId)!)} onOpen={navigate}/>
       :virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<RenameContext.Provider value={renames}><WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider></RenameContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
@@ -426,6 +429,7 @@ function AppShell(){
   </button>}
   <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel} ctx={reportCtx} tenant={live.tenantId}/>
   <AlertsDrawer open={alertsOpen} onClose={()=>setAlertsOpen(false)} onNavigate={navigate}/>
+  <AchievementToasts m={motivation}/>
   <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} items={paletteItems} onSelect={navigate}/>
   {(aiOpen||alertsOpen)&&<div className="drawer-scrim" onClick={()=>{setAiOpen(false);setAlertsOpen(false);}}/>}
   {notice&&<div className="toast" role="status"><Activity size={18}/><span>{notice}</span><button aria-label="Cerrar aviso" onClick={()=>setNotice('')}><X size={16}/></button></div>}

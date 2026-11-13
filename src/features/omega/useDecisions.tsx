@@ -3,6 +3,7 @@ import {useThresholds} from '../thresholds/useThresholds';
 import {demoTickets} from '../tickets/TicketsView';
 import {useLive} from '../live/LiveData';
 import {api} from '../../data/api';
+import {emitAction} from './useMotivation';
 
 // OMEGA · bandeja única de decisiones. Fuentes: tickets de soporte, umbrales excedidos (useThresholds),
 // solicitudes de aprobación de ejemplo y lo que el gerente lleva desde "Pregúntale a Omega".
@@ -64,7 +65,9 @@ export function DecisionsProvider({children}:{children:ReactNode}){
  const decide=useCallback((id:string,status:DecisionStatus)=>{
   setHistory(h=>({...h,[id]:store.status[id]||'pendiente'}));
   setStore(s=>({...s,status:{...s.status,[id]:status}}));
-  saveStatus(id,status,base.find(d=>d.id===id)?.title);
+  const d=base.find(x=>x.id===id);
+  saveStatus(id,status,d?.title);
+  if(d&&(status==='aprobada'||status==='rechazada'))emitAction({kind:status==='aprobada'?'decision':'discard',ref:`dec:${id}`,title:d.title,amount:d.amount,sub:d.kind});
  },[store.status,saveStatus,base]);
  const undo=useCallback((id:string)=>{
   const prev=history[id]||'pendiente';

@@ -136,3 +136,33 @@
   .mx-node-label { font-size: 9px; letter-spacing: 1.5px; } .mx-node-value { font-size: 14px; } .mx-node-delta { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .mx-node, .mx-btn-primary { transition: none !important; } .mx-node:hover, .mx-node:focus-visible { transform: translate(-50%, -50%); } }
+
+/* Fase M5 · Motivación: toasts de logro, nivel y racha. Solo motivación visual. */
+.ach-stack { position: fixed; right: 24px; bottom: 96px; z-index: 80; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
+.ach-toast { pointer-events: auto; display: flex; align-items: center; gap: 14px; min-width: 300px; max-width: 420px; padding: 14px 16px; border-radius: 18px;
+  background: var(--surface-solid, var(--surface)); border: 1px solid color-mix(in srgb, var(--fin-goal) 45%, transparent);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--bg) 75%, transparent), 0 0 30px color-mix(in srgb, var(--fin-goal) 18%, transparent); }
+.ach-toast.is-weekly { border-color: color-mix(in srgb, var(--fin-ai) 50%, transparent); animation: om-rise var(--motion, 220ms) var(--ease) both; }
+.ach-toast.is-level { border-color: var(--fin-goal); }
+.ach-icon { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: var(--fin-goal); background: color-mix(in srgb, var(--fin-goal) 16%, transparent); }
+.ach-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ach-body strong { font: 700 14px var(--font-ui); color: var(--text); }
+.ach-body span { font: 500 13px/1.4 var(--font-ui); color: var(--text-2); }
+.ach-xp { font: 700 18px var(--font-num); color: var(--fin-goal); white-space: nowrap; }
+.ach-close { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--text-3); cursor: pointer; }
+.ach-close:hover { color: var(--text); background: var(--surface-2, var(--surface)); }
+.ach-chip { display: inline-flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fin-goal) 35%, transparent);
+  background: color-mix(in srgb, var(--fin-goal) 8%, transparent); font: 700 12px var(--font-ui); color: var(--text); white-space: nowrap; }
+.ach-chip-level { font-family: var(--font-hud); letter-spacing: .04em; color: var(--fin-goal); }
+.ach-chip-bar { width: 72px; height: 5px; border-radius: 5px; background: var(--line-2, var(--line)); overflow: hidden; }
+.ach-chip-bar i { display: block; height: 100%; background: var(--fin-goal); border-radius: 5px; }
+.ach-chip-streak { display: inline-flex; align-items: center; gap: 4px; color: var(--fin-risk-text, var(--fin-risk)); }
+.ach-chip-streak.is-off { color: var(--text-3); }
+.ach-chip.is-compact .ach-chip-bar { width: 52px; }
+.bb-kicker-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+@media (max-width: 767px) {
+  .ach-stack { left: 16px; right: 16px; bottom: 104px; align-items: stretch; }
+  .ach-toast { min-width: 0; max-width: none; }
+  .mx-cmd-head .ach-chip { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ach-toast, .ach-toast.is-weekly { animation: none; } }

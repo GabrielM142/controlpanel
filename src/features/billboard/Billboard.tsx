@@ -11,13 +11,15 @@ import type {PortalItem} from '../portals/PortalPage';
 import {useViewHistory} from './useViews';
 import ContentRow from './ContentRow';
 import PosterCard from './PosterCard';
+import {LevelChip} from '../omega/AchievementToast';
+import type {Motivation} from '../omega/useMotivation';
 
 // Cartelera (Fase M4): inicio de la gerencia en escritorio, estilo plataforma de series.
 // Todo sale de los hooks actuales: titular del briefing (mismo cálculo de Dirección), decisiones
 // de useDecisions, historial de este navegador y el catálogo del Market. Nada se rotula "en vivo".
 type Info={label:string;question:string;icon:LucideIcon};
 type Props={live:boolean;tenantKey:string;userName:string;closeLabel:string;
- rows:{portal:Portal;items:PortalItem[]}[];info:(id:string)=>Info|null;onNavigate:(id:string)=>void;onAsk:(q:string)=>void};
+ rows:{portal:Portal;items:PortalItem[]}[];info:(id:string)=>Info|null;onNavigate:(id:string)=>void;onAsk:(q:string)=>void;motivation?:Pick<Motivation,'xp'|'level'|'streak'>};
 
 const ago=(t:number)=>{const m=Math.round((Date.now()-t)/60000);return m<1?'hace un momento':m<60?`hace ${m} min`:m<1440?`hace ${Math.round(m/60)} h`:`hace ${Math.round(m/1440)} d`;};
 const statusTone=(s:PortalItem['status'])=>s==='atencion'?'loss':s==='revisar'?'goal':'brand';
@@ -30,7 +32,7 @@ function activate(item:MarketItem,onNavigate:(id:string)=>void){
  onNavigate('trueque');
 }
 
-export default function Billboard({live,tenantKey,userName,closeLabel,rows,info,onNavigate,onAsk}:Props){
+export default function Billboard({live,tenantKey,userName,closeLabel,rows,info,onNavigate,onAsk,motivation}:Props){
  const {tenantId,status}=useLive();const version=versionKey(status);
  const [widgets,setWidgets]=useState<Record<string,Widget>|null>(null);
  useEffect(()=>{if(!live||!tenantId)return;let off=false;
@@ -69,7 +71,7 @@ export default function Billboard({live,tenantKey,userName,closeLabel,rows,info,
      :<span className="bb-hero-omega">Ω</span>}
    </div>
    <div className="bb-hero-text">
-    <span className="mx-hud-title bb-kicker">ESTRENO DE HOY · {closeLabel}</span>
+    <div className="bb-kicker-row"><span className="mx-hud-title bb-kicker">ESTRENO DE HOY · {closeLabel}</span>{motivation&&<LevelChip m={motivation} compact/>}</div>
     <h1 className="bb-hero-title">{head1} <em className={u!==null&&u<0?'fin-loss':'fin-income'}>{head2}</em></h1>
     <p className="bb-hero-syn">{userName.split(' ')[0]}, {synopsis.charAt(0).toLowerCase()+synopsis.slice(1)}</p>
     <ul className="bb-tags" aria-label="Etiquetas">

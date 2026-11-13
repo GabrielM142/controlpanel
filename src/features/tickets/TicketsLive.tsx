@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useState,type FormEvent} from 'react';
 import {AlertTriangle,CheckCircle2,Clock3,Loader2,MessageSquare,Plus,Send,X} from 'lucide-react';
 import {api} from '../../data/api';
 import {useLive} from '../live/LiveData';
+import {emitAction} from '../omega/useMotivation';
 
 // Mesa de ayuda de OMEGA (conectada): tickets por empresa con SLA por prioridad, responsable,
 // primera respuesta, resolución y conversación. Preparada para sincronizar con un Odoo Helpdesk.
@@ -45,7 +46,8 @@ export default function TicketsLive(){
 
  const run=async(fn:()=>Promise<unknown>,ok?:string)=>{setBusy(true);setMsg(null);try{await fn();if(ok)setMsg({ok:true,text:ok});await load();if(openId)await loadDetail(openId);}catch(e){setMsg({ok:false,text:(e as Error).message});}finally{setBusy(false);}};
  const create=(e:FormEvent)=>{e.preventDefault();run(async()=>{const r=await api<{id:number}>('/api/tickets',{tenant:tenantId!,method:'POST',body:form});setCreating(false);setForm({title:'',description:'',customer:'',category:'general',priority:'media'});setOpenId(r.id);},'Ticket creado.');};
- const patch=(id:number,body:Record<string,unknown>)=>run(()=>api(`/api/tickets/${id}`,{tenant:tenantId!,method:'PATCH',body}));
+ const patch=(id:number,body:Record<string,unknown>)=>run(async()=>{await api(`/api/tickets/${id}`,{tenant:tenantId!,method:'PATCH',body});
+  if(body.status==='resuelto')emitAction({kind:'ticket',ref:`tk:${id}`});});
  const send=(e:FormEvent)=>{e.preventDefault();if(!openId||!comment.trim())return;run(async()=>{await api(`/api/tickets/${openId}/comments`,{tenant:tenantId!,method:'POST',body:{body:comment,internal}});setComment('');});};
 
  if(!data)return <section className="panel"><div className="panel-body"><p className="legend-note"><Loader2 size={14} className="om-spin"/> Cargando tickets…</p>{msg&&<p className="legend-note om-ai-error" role="alert">{msg.text}</p>}</div></section>;

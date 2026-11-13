@@ -9,6 +9,7 @@ import {AI_BACKEND} from './reportAI';
 import {useTokens} from '../tokens/useTokens';
 import {blocksOf,kpisOf,pageById,pageReading} from './data';
 import {useDecisions} from './useDecisions';
+import {emitAction} from './useMotivation';
 import {Chip,Eyebrow,OmegaGlyph} from './ui';
 
 // Intent → report page. Deterministic and read-only: Omega answers ONLY from the published data of
@@ -66,6 +67,7 @@ export default function AskOmegaView(){
   const text=question.trim();if(!text||busy)return;
   setError(null);
   if(!tokens.spend(7,`Omega · ${text.slice(0,40)}`)){setError('Sin consumo disponible en el plan de este período.');return;}
+  emitAction({kind:'ask'});
   setBusy(true);
   try{
    const pageId=INTENTS.find(([re])=>re.test(text))?.[1]||'nivel1';

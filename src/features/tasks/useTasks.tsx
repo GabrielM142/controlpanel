@@ -1,6 +1,7 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 import {api} from '../../data/api';
 import {useLive} from '../live/LiveData';
+import {emitAction} from '../omega/useMotivation';
 
 export type TaskPriority='baja'|'media'|'alta';
 export type TaskStatus='pending'|'in_progress'|'done'|'cancelled';
@@ -82,7 +83,8 @@ export function TasksProvider({children}:{children:ReactNode}){
   setTasks(prev=>prev.filter(t=>t.id!==id));
   if(live&&tenantId&&/^[0-9a-f-]{36}$/.test(id))api(`/api/tasks/${id}`,{tenant:tenantId,method:'DELETE'}).catch(()=>{});
  },[live,tenantId]);
- const setStatus=useCallback((id:string,status:TaskStatus)=>{update(id,{status});},[update]);
+ const setStatus=useCallback((id:string,status:TaskStatus)=>{update(id,{status});
+  if(status==='done')emitAction({kind:'task',ref:`task:${id}`,title:tasks.find(t=>t.id===id)?.title});},[update,tasks]);
  const markAiReview=useCallback((id:string,suggestion:string)=>{setTasks(prev=>prev.map(t=>t.id===id?{...t,aiReviewedAt:new Date().toISOString(),aiSuggestion:suggestion}:t));},[]);
 
  const counts=useMemo(()=>{const today=new Date().toISOString().slice(0,10);return {
