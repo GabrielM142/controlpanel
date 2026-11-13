@@ -320,7 +320,7 @@ function AppShell(){
   <div className="app-shell">
    <aside className="sidebar portal-shell"><Sidebar/></aside>
    <MobileDock active={loc.portal?.id||null} allowed={portalAllowed} onOpen={openPortal} badge={portalBadge} more={<AccountMenuBody {...accountBody}/>}/>
-   <main id="main" className="workspace" tabIndex={-1}>
+   <main id="main" className={`workspace${reportPage?.id==='nivel1'&&skin==='mando'?' mando-home':''}`} tabIndex={-1}>
     <div className="utility-bar">
      <div className="breadcrumbs">
       <nav className="om-crumbs" aria-label="Ruta">

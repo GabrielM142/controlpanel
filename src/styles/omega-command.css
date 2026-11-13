@@ -269,3 +269,61 @@ button.mx-tile { cursor: pointer; }
 :root[data-tv="on"][data-presentation="on"] .portal-card h3, :root[data-tv="on"][data-presentation="on"] .portal-card strong { font-size: 22px; }
 @media (max-width: 767px) { .tv-bar { display: none; } }
 @media print { .tv-bar { display: none; } }
+
+/* ============================================================
+   Ajuste fiel al mockup: en el portal Mando el Centro de mando
+   ES la pantalla. El encabezado clásico queda solo para lectores
+   de pantalla, los filtros en una franja fina y el reactor se
+   ajusta a la altura disponible, con su halo de luz.
+   ============================================================ */
+:root .workspace.mando-home { position: relative; }
+@media (min-width: 768px) { :root .workspace.mando-home .page-header { position: absolute; top: 61px; right: 35px; z-index: 2; padding: 6px 0; background: transparent; justify-content: flex-end; } }
+@media (max-width: 767px) { :root .workspace.mando-home .page-header { padding: 10px 16px 0; background: transparent; } }
+:root .workspace.mando-home .page-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+:root .workspace.mando-home .header-actions { flex-direction: row; align-items: center; }
+:root .workspace.mando-home .updated-time { display: none; }
+:root .workspace.mando-home .filters { padding-top: 6px; padding-bottom: 6px; background: transparent; border-color: transparent; }
+.workspace.mando-home .mx-cmd { min-height: calc(100vh - 150px); align-content: start; }
+.workspace.mando-home .mx-cmd-grid { align-items: center; }
+.mx-cmd-grid .mx-reactor-stage { width: min(100%, 760px, calc(100vh - 290px)); min-width: 360px; }
+.mx-reactor-wrap { position: relative; }
+.mx-reactor-wrap::before { content: ''; position: absolute; left: 50%; top: 50%; width: 130%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 22%, transparent) 0, color-mix(in srgb, var(--brand) 6%, transparent) 38%, transparent 62%); }
+.mx-reactor-stage { z-index: 1; }
+
+/* Enfoque sin serie mensual: comparación real con su referencia o avance contra la meta */
+.mx-compare { display: flex; flex-direction: column; gap: 12px; padding: 6px 0 4px; }
+.mx-compare-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.mx-compare-label { font-size: 12px; color: var(--text-3); }
+.mx-compare-track { height: 12px; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); overflow: hidden; }
+.mx-compare-fill { display: block; height: 100%; border-radius: 999px; background: color-mix(in srgb, var(--text) 28%, transparent); }
+.mx-compare-row.is-now .mx-compare-label { color: var(--text); font-weight: 600; }
+.mx-compare-value { font: 700 15px var(--font-num); color: var(--text-2); white-space: nowrap; }
+.mx-compare-row.is-now .mx-compare-value { color: var(--text); }
+.mx-compare-delta { font-size: 13px; font-weight: 600; }
+.mx-compare.fin-income .mx-compare-row.is-now .mx-compare-fill { background: var(--fin-income); box-shadow: 0 0 14px color-mix(in srgb, var(--fin-income) 60%, transparent); }
+.mx-compare.fin-loss .mx-compare-row.is-now .mx-compare-fill { background: var(--fin-loss); box-shadow: 0 0 14px color-mix(in srgb, var(--fin-loss) 60%, transparent); }
+.mx-compare.fin-cost .mx-compare-row.is-now .mx-compare-fill { background: var(--fin-cost); box-shadow: 0 0 14px color-mix(in srgb, var(--fin-cost) 60%, transparent); }
+.mx-compare.fin-cash .mx-compare-row.is-now .mx-compare-fill { background: var(--fin-cash); box-shadow: 0 0 14px color-mix(in srgb, var(--fin-cash) 60%, transparent); }
+.mx-compare.fin-income .mx-compare-delta { color: var(--fin-income); } .mx-compare.fin-loss .mx-compare-delta { color: var(--fin-loss-text); }
+.mx-compare.fin-cost .mx-compare-delta { color: var(--fin-cost); } .mx-compare.fin-cash .mx-compare-delta { color: var(--fin-cash); }
+.mx-gauge { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 6px; }
+.mx-gauge-track { position: relative; height: 14px; border-radius: 999px; background: color-mix(in srgb, var(--fin-goal) 14%, transparent); }
+.mx-gauge-fill { display: block; height: 100%; border-radius: 999px; background: var(--fin-goal); box-shadow: 0 0 16px color-mix(in srgb, var(--fin-goal) 65%, transparent); }
+.mx-gauge-mark { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--text); border-radius: 2px; transform: translateX(-1px); }
+.mx-gauge-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+.mx-gauge-goal { color: var(--text); font-weight: 600; }
+@media (max-width: 1279px) { .mx-cmd-grid .mx-reactor-stage { width: min(100%, 640px); min-width: 0; } .workspace.mando-home .mx-cmd { min-height: 0; } }
+/* Laptop (1280–1599): cabecera en una línea, misiones con scroll propio y nodos más compactos */
+@media (min-width: 1280px) {
+  .workspace.mando-home .mx-cmd-head { flex-wrap: nowrap; }
+  .workspace.mando-home .mx-cmd-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .workspace.mando-home .mx-cmd-grid > .mx-col.mx-panel { max-height: calc(100vh - 280px); overflow-y: auto; scrollbar-width: thin; }
+}
+@media (min-width: 1280px) and (max-width: 1599px) {
+  .workspace.mando-home .mx-cmd-clock { font-size: 22px; }
+  .workspace.mando-home .mx-node { min-width: 112px; padding: 8px 10px; border-radius: 14px; }
+  .workspace.mando-home .mx-node-value { font-size: 18px; }
+  .workspace.mando-home .mx-node-delta { font-size: 11px; max-width: 130px; }
+  .workspace.mando-home .mx-omega-msg { font-size: 16px; }
+}

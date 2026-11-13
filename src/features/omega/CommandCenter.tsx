@@ -71,6 +71,8 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
   {id:'costos',label:'COSTOS',value:gastos?.value||'—',delta:gastos&&gastos.value!=='—'?'gastos totales':'sin dato publicado',fin:'cost',angle:210},
  ];
  const [sel,setSel]=useState('ingresos');
+ // KPI de origen de cada nodo: cuando no hay serie mensual, Enfoque compara con su referencia real.
+ const focusKpi:Record<string,Kpi|undefined>={ingresos:ventas,meta:cumpl,caja,utilidad:util,costos:gastos};
  const focusNode=nodes.find(n=>n.id===sel)!;
  const focusSeries=sel==='utilidad'?seriesFrom('financiero','financiero-30',finSrc,live):sel==='caja'?seriesFrom('financiero','financiero-32',finSrc,live):[];
  const focusText=sel==='soporte'?(tickets?`${tickets.open} tickets abiertos${tickets.late?`, ${tickets.late} con el SLA vencido`:''}${tickets.solved_today?`; ${tickets.solved_today} resueltos hoy`:''}.`:'Sin datos de soporte.')
@@ -216,7 +218,7 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
     <div className="mx-panel mx-focus" aria-live="polite">
      <span className="mx-hud-title mx-muted">ENFOQUE</span>
      <strong className={`mx-focus-title fin-${focusNode.fin}`}>{focusNode.label} · {focusNode.value}</strong>
-     <Spark values={focusSeries} fin={focusNode.fin}/>
+     <FocusVisual values={focusSeries} fin={focusNode.fin} kpi={focusKpi[sel]} meta={sel==='meta'}/>
      <p className="mx-focus-text">{focusText}</p>
     </div>
    </section>
@@ -233,6 +235,39 @@ function MiniPulse({value,tone}:{value:number|null;tone:string}){
   <circle cx="32" cy="32" r={r} className={`mx-mini-arc fin-${tone}`} strokeDasharray={`${(c*f).toFixed(1)} ${c.toFixed(1)}`} transform="rotate(-90 32 32)"/>
   <text x="32" y="38" textAnchor="middle" className="mx-mini-num">{value===null?'—':value}</text>
  </svg>;
+}
+
+/** Enfoque: serie mensual si existe; si no, una lectura visual con el mismo dato del KPI
+ *  (cumplimiento contra la meta, o período actual contra su referencia), nunca cifras inventadas. */
+function FocusVisual({values,fin,kpi,meta}:{values:number[];fin:string;kpi?:Kpi;meta:boolean}){
+ if(values.length>=2)return <Spark values={values} fin={fin}/>;
+ const cur=kpi&&kpi.value!=='—'?parseNumber(kpi.value):null;
+ if(kpi&&cur!==null&&meta){
+  const scale=150,fill=Math.max(0,Math.min(scale,cur))/scale*100;
+  return <div className={`mx-gauge fin-${fin}`} role="img" aria-label={`Cumplimiento de ${kpi.value} sobre la meta`}>
+   <div className="mx-gauge-track"><span className="mx-gauge-fill" style={{width:`${fill}%`}}/><span className="mx-gauge-mark" style={{left:`${100/scale*100}%`}}/></div>
+   <div className="mx-gauge-legend"><span>0%</span><span className="mx-gauge-goal">Meta 100%</span><span>{scale}%</span></div>
+  </div>;
+ }
+ const m=kpi?/([+−-]?\d+(?:[.,]\d+)?)\s*%/.exec(kpi.delta||''):null;
+ if(kpi&&cur!==null&&m){
+  const p=parseFloat(m[1].replace('−','-').replace(',','.'))/100;
+  if(p>-1&&p!==0){
+   const prev=cur/(1+p),max=Math.max(Math.abs(cur),Math.abs(prev))||1;
+   const ref=/presup/i.test(kpi.deltaLabel)?'Presupuesto':/año|ant/i.test(kpi.deltaLabel)?'Año anterior':'Referencia';
+   const fmt=(v:number)=>kpi.value.trim().startsWith('$')||kpi.value.includes('$')?`${v<0?'−':''}$${Math.round(Math.abs(v)).toLocaleString('es-EC')}`:Math.round(v).toLocaleString('es-EC');
+   const rows:[string,number,boolean][]=[[ref,prev,false],['Este período',cur,true]];
+   return <div className={`mx-compare fin-${fin}`} role="img" aria-label={`${ref}: ${fmt(prev)}. Este período: ${kpi.value} (${kpi.delta})`}>
+    {rows.map(([l,v,now])=><div key={l} className={`mx-compare-row${now?' is-now':''}`}>
+     <span className="mx-compare-label">{l}</span>
+     <span className="mx-compare-track"><span className="mx-compare-fill" style={{width:`${Math.max(4,Math.abs(v)/max*100)}%`}}/></span>
+     <strong className="mx-compare-value">{now?kpi.value:fmt(v)}</strong>
+    </div>)}
+    <span className="mx-compare-delta">{kpi.delta} {kpi.deltaLabel.toLowerCase()}</span>
+   </div>;
+  }
+ }
+ return <p className="mx-empty mx-spark-empty">Sin serie mensual publicada para este indicador.</p>;
 }
 
 function Spark({values,fin}:{values:number[];fin:string}){
