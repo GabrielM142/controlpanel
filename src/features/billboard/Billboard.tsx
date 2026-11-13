@@ -5,7 +5,8 @@ import {cachedGet} from '../live/cache';
 import {useLive,versionKey} from '../live/LiveData';
 import {blocksOf,fmtMoney,kpisOf,pageById,parseNumber,tableRows} from '../omega/data';
 import {useDecisions} from '../omega/useDecisions';
-import {marketCatalog,type MarketItem} from '../market/data';
+import {marketCatalog} from '../market/data';
+import {activateSkill} from '../market/activate';
 import type {Portal} from '../portals/portals';
 import type {PortalItem} from '../portals/PortalPage';
 import {useViewHistory} from './useViews';
@@ -25,12 +26,6 @@ const ago=(t:number)=>{const m=Math.round((Date.now()-t)/60000);return m<1?'hace
 const statusTone=(s:PortalItem['status'])=>s==='atencion'?'loss':s==='revisar'?'goal':'brand';
 const statusLabel={estable:'Estable',revisar:'Revisar',atencion:'Atención'} as const;
 
-/** Activa un skill con el flujo actual del Market: abre Factory con el nombre precargado, sin confirmar nada. */
-function activate(item:MarketItem,onNavigate:(id:string)=>void){
- try{sessionStorage.setItem('nova.factory.prefill',item.name);}catch{}
- window.dispatchEvent(new CustomEvent('report-notice',{detail:`${item.name}: completa la solicitud en Factory. Aún no se registró nada.`}));
- onNavigate('trueque');
-}
 
 export default function Billboard({live,tenantKey,userName,closeLabel,rows,info,onNavigate,onAsk,motivation}:Props){
  const {tenantId,status}=useLive();const version=versionKey(status);
@@ -106,7 +101,7 @@ export default function Billboard({live,tenantKey,userName,closeLabel,rows,info,
   <ContentRow title="Skills recomendados" meta="del Market">
    {skills.map(s=><PosterCard key={s.id} title={s.name} sub={s.tagline} icon={s.icon} tone="ai">
     <span className="bb-poster-note">{s.price?.label||'A cotizar'} · {s.delivery}</span>
-    <button type="button" className="mx-btn-ghost is-ai bb-poster-cta" onClick={()=>activate(s,onNavigate)}><Sparkles size={14} aria-hidden="true"/>Activar</button>
+    <button type="button" className="mx-btn-ghost is-ai bb-poster-cta" onClick={()=>activateSkill(s,onNavigate)}><Sparkles size={14} aria-hidden="true"/>Activar</button>
    </PosterCard>)}
   </ContentRow>
 
