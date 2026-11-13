@@ -3,6 +3,7 @@ import {CheckCircle2,Loader2,Plus,Save,Sparkles,Trash2} from 'lucide-react';
 import {api} from '../../data/api';
 import {useLive} from '../live/LiveData';
 import {clearCache} from '../live/cache';
+import SeedCard from '../inputs/SeedCard';
 
 // Budget builder: a 12-month grid per company, unit or brand, started from what really happened
 // the year before (sales, purchases, selling + administrative expenses) plus a growth rate.
@@ -96,6 +97,7 @@ export default function BudgetView(){
  const cutMonth=data?.cutoff&&Number(data.cutoff.slice(0,4))===year?Number(data.cutoff.slice(5,7)):Number(data?.cutoff?.slice(0,4))>year?12:0;
 
  return <div className="om-budget">
+  {edit&&!data?.rows.length&&tenantId&&<SeedCard tenantId={tenantId} onDone={load}/>}
   <section className="panel">
    <div className="panel-body om-budget-bar">
     <div className="om-in-kinds" role="tablist" aria-label="Tipo de presupuesto">{KINDS.map(x=><button key={x.id} type="button" role="tab" aria-selected={kind===x.id} className={`om-in-kind${kind===x.id?' is-active':''}`} onClick={()=>setKind(x.id)}><strong>{x.label}</strong><small>{x.feeds}</small></button>)}</div>

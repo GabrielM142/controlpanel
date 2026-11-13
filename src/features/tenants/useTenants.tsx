@@ -6,7 +6,7 @@ export type Tenant={id:string;monogram:string;name:string;subtitle:string;sector
 // DEMO catalog (labelled example companies). In live mode the list comes from
 // the server memberships; the selector is UX only — the API re-checks every call.
 const demoCatalog:Tenant[]=[
- {id:'juj',monogram:'J',name:'JUJ',subtitle:'José Ugalde Jerves',sector:'Retail & Mayorista'},
+ {id:'juj',monogram:'E',name:'Empresa Demo',subtitle:'Empresa de demostración',sector:'Retail & Mayorista'},
  {id:'coand',monogram:'CA',name:'Comercial Andes',subtitle:'Grupo Andes Distribución',sector:'Distribución nacional'},
  {id:'ware',monogram:'W',name:'Grupo Warenhaus',subtitle:'Warenhaus S.A.',sector:'Retail especializado'},
  {id:'chai',monogram:'CH',name:'Chaide & Chaide',subtitle:'Colchones & Muebles',sector:'Manufactura'},

@@ -1,5 +1,5 @@
 {
-    "name": "NOVA JUJ Adapter",
+    "name": "NOVA Atributos por empresa",
     "version": "16.0.1.0.0",
     "category": "Technical",
     "summary": "Adaptador JUJ: mapeo de marca, unidad, zona, cantón y canal a campos personalizados",

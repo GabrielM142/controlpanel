@@ -11,7 +11,7 @@ const pageOptions=[
  {id:'inventarios',label:'Inventarios'},
  {id:'clientes',label:'Clientes'},
  {id:'tickets',label:'Tickets Vigentes'},
- {id:'retailjuj',label:'Retail JUJ'},
+ {id:'retailjuj',label:'Retail 1'},
  {id:'retailintorno',label:'Retail Intorno'},
 ];
 

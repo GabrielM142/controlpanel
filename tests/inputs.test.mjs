@@ -47,10 +47,11 @@ test('budgets: admin only, validated, and used by every attainment block', async
   assert.equal(n1['nivel1-02'].metric, 'budget_attainment');
   assert.equal(n1['nivel1-08'].kind, 'table');
   assert.ok(n1['nivel1-08'].rows.some(r => r[0] === 'Retail JUJ'));
-  const unit = await report('retailjuj');
-  assert.equal(unit['retailjuj-02'].kind, 'metric');
-  assert.match(unit['retailjuj-02'].note, /presupuestados/);
-  assert.notEqual(unit['retailjuj-04'].reason || '', 'Sin gastos fijos de la unidad: cárgalos (tipo gastos_fijos) en Configuración → Presupuestos y unidades.');
+  // Unit pages are positions: the fixture's first unit by priority ("Retail JUJ") is the first page.
+  const unit = await report('mayoristahogar');
+  assert.equal(unit['mayoristahogar-02'].kind, 'metric');
+  assert.match(unit['mayoristahogar-02'].note, /presupuestados/);
+  assert.notEqual(unit['mayoristahogar-04'].reason || '', 'Sin gastos fijos de la unidad: cárgalos (tipo gastos_fijos) en Configuración → Presupuestos y unidades.');
   const c = await report('compras');
   assert.equal(c['compras-05'].kind, 'kpi');
   const inputs = await call(api, 'GET', '/api/inputs', {headers: H(vera, w.tenantA)});

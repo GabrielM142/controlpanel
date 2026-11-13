@@ -4,7 +4,7 @@ Actualizado: 2026-11-12. Rama: `main` (decisión explícita del propietario). Co
 (= ZIP auditado `controlpanel-main.zip`, sin diferencias de código).
 
 Leyenda de columnas: **Impl.** código escrito · **Local** probado automáticamente en esta máquina ·
-**Odoo16** probado en una base Odoo 16 real · **Cliente** validado con JUJ/su servidor.
+**Odoo16** probado en una base Odoo 16 real · **Cliente** validado con la empresa/su servidor.
 `✔` sí · `◐` parcial · `—` no.
 
 ## F0 · Reconocimiento (HEAD vs inventario)
@@ -29,7 +29,7 @@ Leyenda de columnas: **Impl.** código escrito · **Local** probado automáticam
 | F2 `nova_connector` (conexión, vinculación, outbox, lotes, partes, cursores, RPC, crons, retención, cuotas, clones) | ✔ | ◐ | ✔ CI | — | Lógica pura 13/13 (Py 3.10/3.12); verificación estática (Py 3.8, XML, ACL). Pruebas Odoo en `tests/` del addon: se ejecutan en el job `odoo16` de CI. |
 | F2 `nova_master_data` | ✔ | ◐ | ✔ CI | — | Captura create/write/unlink, rollback, commits fuera de orden, archivado, fuera de alcance, PII excluida, límites de parte. |
 | F3 `nova_sales`, `nova_account`, `nova_stock`, `nova_stock_account`, `nova_purchase`, `nova_pos` | ✔ | ◐ | ✔ CI | — | Validación de nombres de campo contra Odoo 16 instalado en CI; pago/conciliación → cartera; NC; quants. POS: solo verificación de campos (sin escenario de sesión). |
-| F3 `nova_juj` (adaptador) | ✔ | ◐ | ✔ CI | — | Sin nombres técnicos JUJ: mapeo configurable de marca/unidad/canal/zona/cantón. Campos reales: **pendiente JUJ**. |
+| F3 `nova_juj` (adaptador) | ✔ | ◐ | ✔ CI | — | Sin nombres técnicos la empresa: mapeo configurable de marca/unidad/canal/zona/cantón. Campos reales: **pendiente la empresa**. |
 | F3 Ingesta central (descarga, checksum, límites, ACK, aplicación idempotente, cascadas, snapshot/resync, conciliación, publicación) | ✔ | ✔ | — | — | `tests/pipeline.test.mjs` 10/10: M4.4 casos 1-8, corrupto/truncado/versión/gap/tamaño/generación, ACK perdido, caída a mitad. |
 | F4 API semántica + reportes reales (Dirección, Comercial, 4 unidades, inventario, cartera básica) | ✔ | ✔ | — | — | `tests/api.test.mjs` 15/15: cifras cambian con filtro y concilian con fixtures; sin números demo en modo real; sin consulta ERP al visualizar. Cartera: API `/api/receivables` (sin pantalla propia aún). |
 | F4 Frontend (modo real/demo, corte, carga/error/sin datos, CSV, filtros reales, fuentes de datos, login) | ✔ | ✔ | n/a | — | Preservación del demo 2/2; prueba SSR de modo real; build OK. QA visual en navegador/móvil/impresión: **pendiente**. |
@@ -59,9 +59,9 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 
 ## Bloqueos reales (M11) — solo bloquean lo que depende de ellos
 
-1. **Odoo 16 de JUJ**: URL, base, versión PostgreSQL/Python, módulos instalados, volumen y horarios de
+1. **Odoo 16 de la empresa**: URL, base, versión PostgreSQL/Python, módulos instalados, volumen y horarios de
    backup/cierre POS. Bloquea: dimensionamiento, ventana real, validación de campos personalizados.
-2. **Campos JUJ** de marca/unidad/zona/cantón/canal y tabla de unidades de negocio (compañía/diario/POS).
+2. **Campos la empresa** de marca/unidad/zona/cantón/canal y tabla de unidades de negocio (compañía/diario/POS).
    Bloquea: filtros por marca/zona reales y atribución de unidades (hoy reglas de fixture).
 3. **Fuente canónica de ventas** (factura vs POS vs pedido), moneda y criterio de costo. La regla
    implementada (factura publicada + POS sin factura; costo COGS anglosajón o costo POS) es una
@@ -104,7 +104,7 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   como mesa de ayuda propia (SLA, responsable, conversación); tema de la empresa en el servidor; consumo
   real de Omega IA; 15/15 umbrales con valor; Iris (vista y endpoint de envío listos; API de Iris pendiente).
 - Marcas: NOVA exporta `product_brand_id` (mapeo nova_juj); en staging no hay marcas cargadas.
-- Falta del cliente: presupuestos, campañas, reglas de unidades de JUJ, marcas en los productos, API de
+- Falta del cliente: presupuestos, campañas, reglas de unidades de la empresa, marcas en los productos, API de
   Iris y, si se quiere sincronizar, los datos del Odoo central de soporte.
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
@@ -113,7 +113,7 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 1. Revisar el resultado del job `odoo16` de CI y corregir lo que falle.
 2. Levantar `infra/compose.staging.yml`, vincular el Odoo 16 de staging, correr 3 noches simuladas
    (`Preparar lote ahora`) y medir CPU/RAM/duración SQL/bytes con el límite 2 CPU/2 GB.
-3. Taller con JUJ: campos personalizados, unidades, fuente de ventas, presupuesto; aprobar métricas v1.
+3. Taller con la empresa: campos personalizados, unidades, fuente de ventas, presupuesto; aprobar métricas v1.
 4. Desplegar API + worker + PostgreSQL 15 en el servidor central (TLS) y configurar `VITE_NOVA_API_URL`.
 5. Conectar UI de tareas/notas a la API; detalle de solicitudes Factory; backend LLM para el copiloto.
 

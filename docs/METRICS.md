@@ -1,4 +1,4 @@
-# Métricas v1 (estado: propuesta, pendiente de aprobación JUJ)
+# Métricas v1 (estado: propuesta, pendiente de aprobación la empresa)
 
 Catálogo ejecutable: `lib/metrics.mjs` (`GET /api/metrics`, MCP `get_metric_definition`).
 

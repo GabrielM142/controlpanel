@@ -1,4 +1,5 @@
 import {useLive} from '../live/LiveData';
+import {useNotifications,type Notice} from '../notifications/useNotifications';
 import {useEffect,useMemo,useRef} from 'react';
 import {AlertTriangle,ArrowUpRight,Bell,SlidersHorizontal,X} from 'lucide-react';
 import {useThresholds,type ThresholdRule} from '../thresholds/useThresholds';
@@ -10,8 +11,8 @@ export type Alert={id:string;severity:Severity;t:string;d:string;pageId:string;a
 export const globalAlerts:Alert[]=[
  {id:'a1',severity:'r',t:'Cartera vencida creció 12% intersemanal',d:'2 clientes concentran el 68% del saldo. Ver Financiero.',pageId:'financiero',at:'hoy 08:14'},
  {id:'a2',severity:'r',t:'Stock crítico en 4 SKU clave',d:'UMCO Chaide Loja: quiebre proyectado en 3 días.',pageId:'inventarios',at:'hoy 07:55'},
- {id:'a3',severity:'a',t:'SLA en riesgo — JUJ-1041',d:'Faltan 45 min. Distribuidora El Oro.',pageId:'tickets',at:'hoy 09:03'},
- {id:'a4',severity:'a',t:'Ticket promedio Retail JUJ bajó 6%',d:'Sucursal Machala arrastra la caída.',pageId:'retailjuj',at:'ayer'},
+ {id:'a3',severity:'a',t:'SLA en riesgo — TK-1041',d:'Faltan 45 min. Distribuidora El Oro.',pageId:'tickets',at:'hoy 09:03'},
+ {id:'a4',severity:'a',t:'Ticket promedio de Retail 1 bajó 6%',d:'Sucursal Machala arrastra la caída.',pageId:'retailjuj',at:'ayer'},
  {id:'a5',severity:'g',t:'Meta comercial Q3 al 82%',d:'A ritmo de cierre por encima del año pasado.',pageId:'comercial',at:'hoy 07:58'},
  {id:'a6',severity:'a',t:'Concentración de proveedores',d:'62% del volumen mensual en 2 proveedores. Ver Compras.',pageId:'compras',at:'martes'},
 ];
@@ -40,12 +41,20 @@ export function useCombinedAlerts(){
  },[activeAlerts,live]);
 }
 
+/** Live: the server notifications not read yet become the drawer's business movements. */
+function noticeToAlert(n:Notice):Alert{
+ return {id:`n-${n.id}`,severity:n.severity==='critica'?'r':n.severity==='atencion'?'a':'g',t:n.title,d:n.body||'',pageId:n.page_id||'notificaciones',
+  at:new Date(n.created_at).toLocaleString('es-EC',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})};
+}
+
 export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=>void;onNavigate:(id:string)=>void}){
  const ref=useRef<HTMLDivElement>(null);
  const {live}=useLive();
  const {activeAlerts}=useThresholds();
  const dynamicAlerts=activeAlerts.map(thresholdToAlert);
- const business=businessAlerts(live);
+ const notes=useNotifications();
+ const unreadNotes=(notes.data?.items||[]).filter(n=>!n.read_at);
+ const business=live?unreadNotes.slice(0,20).map(noticeToAlert):businessAlerts(live);
  const combined=[...dynamicAlerts,...business];
  const critical=combined.filter(a=>a.severity==='r').length;
  useEffect(()=>{if(!open)return;const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[open,onClose]);
@@ -68,8 +77,9 @@ export function AlertsDrawer({open,onClose,onNavigate}:{open:boolean;onClose:()=
     </button>)}
    </>}
    <div className="alerts-section-title"><Bell size={12}/> Movimientos del negocio <em>({business.length})</em></div>
-   {live&&business.length===0&&<p className="ai-empty">Sin alertas automáticas: se activan cuando el servidor evalúe los umbrales tras cada publicación.</p>}
-   {business.map(a=><button type="button" key={a.id} className={`alert-item sev-${a.severity}`} onClick={()=>{onNavigate(a.pageId);onClose();}}>
+   {live&&business.length===0&&<p className="ai-empty">No tienes notificaciones sin leer.</p>}
+   {live&&<button type="button" className="link-button" onClick={()=>{onNavigate('notificaciones');onClose();}}>Ver y gestionar todas las notificaciones <ArrowUpRight size={12}/></button>}
+   {business.map(a=><button type="button" key={a.id} className={`alert-item sev-${a.severity}`} onClick={()=>{if(a.id.startsWith('n-'))notes.markRead([Number(a.id.slice(2))]);onNavigate(a.pageId);onClose();}}>
     <span className="alert-dot"/>
     <div>
      <div className="alert-top"><strong>{a.t}</strong><span>{a.at}</span></div>

@@ -11,6 +11,7 @@ import {createPool, withTransaction} from '../lib/db.mjs';
 import {defaultTransportFactory, syncRegistry, tick} from '../lib/ingest/worker.mjs';
 import {dispatchAlerts} from '../lib/alerts.mjs';
 import {processRebuildRequests} from '../lib/ingest/rebuild-requests.mjs';
+import {notifyCloses} from '../lib/notifications.mjs';
 
 let state;
 const log = (level, event, data = {}) => console.log(JSON.stringify({ts: new Date().toISOString(), level, event, ...data}));
@@ -69,9 +70,11 @@ export default async function cron(req, res) {
     const alerts = await dispatchAlerts(state.pool, withTransaction, {secretKey: state.config.secretKey, log,
       panelUrl: process.env.NOVA_PANEL_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')})
       .catch(e => { log('warn', 'alerts_dispatch_failed', {error: e.message}); return []; });
+    // In-app notifications of the new close (thresholds), for the manager's notification center.
+    const notices = await notifyCloses(state.pool, withTransaction, {log}).catch(e => { log('warn', 'notify_failed', {error: e.message}); return 0; });
     log('info', 'cron_tick', {sources: results.length, ms: Date.now() - started});
     res.statusCode = 200;
-    res.end(JSON.stringify({ok: true, sources: results.length, results: results.map(r => r.status), alerts: alerts.length, rebuilt: rebuilt.length, ms: Date.now() - started}));
+    res.end(JSON.stringify({ok: true, sources: results.length, results: results.map(r => r.status), alerts: alerts.length, rebuilt: rebuilt.length, notices, ms: Date.now() - started}));
   } catch (error) {
     state = undefined; // rebuild the pool on the next call
     log('error', 'cron_failed', {error: error.message});

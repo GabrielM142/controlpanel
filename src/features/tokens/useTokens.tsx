@@ -13,7 +13,7 @@ export type TokensState={
  history:{at:string;cost:number;reason:string}[];
  simulated:boolean;
 };
-type Usage={month:number;mine:number;hour:number;hourly_limit:number;recent:{at:string;page_id:string|null;provider:string|null}[]};
+type Usage={plan_name:string;label:string;quota:number|null;used:{truekens:number;questions:number}};
 
 // LOCAL SIMULATION (boceto): not a billing ledger. Real plans/quotas live in the
 // server ledger (app.token_ledger: reserve -> commit/refund, idempotent).
@@ -47,20 +47,19 @@ export function TokensProvider({children}:{children:ReactNode}){
   return true;
  },[]);
 
- // Live: real usage from the server; never blocks (the server enforces the hourly limit).
+ // Live: Truekens of the company this month against its plan quota (server ledger); the server
+ // decides whether a question can be asked, the browser never blocks it.
  const {live,tenantId}=useLive();
  const [usage,setUsage]=useState<Usage|null>(null);
- const refresh=useCallback(()=>{if(live&&tenantId)api<Usage>('/api/ai/usage',{tenant:tenantId}).then(setUsage).catch(()=>{});},[live,tenantId]);
+ const refresh=useCallback(()=>{if(live&&tenantId)api<Usage>('/api/plan',{tenant:tenantId}).then(setUsage).catch(()=>{});},[live,tenantId]);
  useEffect(()=>{refresh();},[refresh]);
  const value=useMemo<TokensState>(()=>{
   if(live&&usage){
-   const lim=usage.hourly_limit;
-   return {monthlyBudget:lim,used:usage.hour,plan:`Omega IA · ${usage.month} preguntas este mes en tu empresa (${usage.mine} tuyas)`,nextReset:'cada hora',
-    remaining:Math.max(0,lim-usage.hour),percentUsed:Math.min(100,usage.hour/lim*100),
-    spend:(_c:number,_r:string)=>{setTimeout(refresh,15000);return true;},
-    history:usage.recent.map(r=>({at:r.at,cost:1,reason:`Omega IA · ${r.page_id||'consulta'}`})),simulated:false};
-  }
-  const remaining=Math.max(0,DEFAULT_BUDGET-used);
+   const used=Math.round(usage.used.truekens);const quota=usage.quota;
+   return {monthlyBudget:quota??used,used,plan:`${usage.label} · plan ${usage.plan_name} · ${usage.used.questions} preguntas este mes`,nextReset:'el 1 de cada mes',
+    remaining:quota===null?Infinity:Math.max(0,quota-used),percentUsed:quota?Math.min(100,used/quota*100):0,
+    spend:(_c:number,_r:string)=>{setTimeout(refresh,8000);return true;},history:[],simulated:false};
+  }  const remaining=Math.max(0,DEFAULT_BUDGET-used);
   return {monthlyBudget:DEFAULT_BUDGET,used,plan:PLAN_LABEL,nextReset,remaining,percentUsed:Math.min(100,used/DEFAULT_BUDGET*100),spend,history,simulated:true};
  },[used,history,nextReset,spend,live,usage,refresh]);
 

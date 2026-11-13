@@ -13,7 +13,7 @@ type Msg={role:'bot'|'user';text:string;at:number};
 const summaries:Record<string,string[]>={
  nivel1:[
   'La lectura general es positiva: el ISE está sobre 70 con mejora leve intermensual y las ventas sostienen la tendencia del trimestre.',
-  'Puntos a mirar: cartera vencida sigue arriba del umbral gerencial y el mix de canales muestra rotación acelerada en Retail JUJ.',
+  'Puntos a mirar: cartera vencida sigue arriba del umbral gerencial y el mix de canales muestra rotación acelerada en Retail 1.',
   'Recomendación: pedir a Comercial la explicación del top 3 clientes con crecimiento negativo y priorizar la campaña de cobranza que ya está aprobada.',
  ],
  comercial:[
@@ -50,7 +50,7 @@ const summaries:Record<string,string[]>={
   'Intorno crece dos dígitos con margen estable — validar capacidad logística para el próximo mes.',
  ],
  retailjuj:[
-  'Retail JUJ recupera ticket promedio; la sucursal Cuenca centro concentra el 41% del margen.',
+  'Retail 1 recupera ticket promedio; la sucursal Cuenca centro concentra el 41% del margen.',
  ],
  retailintorno:[
   'Retail Intorno estable, sin cambios materiales; la campaña de fidelización arranca la semana que viene.',

@@ -4,6 +4,7 @@ import {api} from '../../data/api';
 import {useLive} from '../live/LiveData';
 import {clearCache} from '../live/cache';
 import MarketingConnect from './MarketingConnect';
+import SeedCard from './SeedCard';
 
 // Company inputs Odoo does not hold: budgets, marketing campaigns and business-unit rules.
 // The reports read them on the next refresh; unit rules recalculate the history in the worker.
@@ -87,6 +88,7 @@ export default function InputsView(){
  return <div className="om-inputs">
   {msg&&<p className={`legend-note ${msg.ok?'':'om-ai-error'}`} role={msg.ok?'status':'alert'}>{msg.text}</p>}
   {!edit&&<p className="legend-note">Solo los administradores cargan presupuestos, campañas y unidades. Aquí ves lo que está vigente.</p>}
+  {edit&&tenantId&&<SeedCard tenantId={tenantId} onDone={load}/>}
 
   <section className="panel" aria-labelledby="om-in-units">
    <header className="panel-heading"><h2 id="om-in-units">Unidades de negocio</h2><Layers3 size={15} aria-hidden="true"/></header>

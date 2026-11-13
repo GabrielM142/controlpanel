@@ -55,8 +55,14 @@ test('report values come from NOVA marts and change with filters', async () => {
   assert.equal(nov.body.published.consistency, 'captured_interval');
   const retail = await call(api, 'GET', '/api/reports/comercial?anio=2026&mes=Noviembre&unidad=Retail%20JUJ', {headers: H(cookieA, w.tenantA)});
   assert.equal(retail.body.widgets['comercial-01'].raw, '45.00');
-  const unitPage = await call(api, 'GET', '/api/reports/retailjuj?anio=2026', {headers: H(cookieA, w.tenantA)});
-  assert.equal(unitPage.body.widgets['retailjuj-01'].raw, '45.00', 'unit page forces its own unit');
+  // Unit pages are positions filled with the company's units by rule priority: the fixture's
+  // "Retail JUJ" (priority 10) is the first unit, so the first unit page shows it.
+  const unitPage = await call(api, 'GET', '/api/reports/mayoristahogar?anio=2026', {headers: H(cookieA, w.tenantA)});
+  assert.equal(unitPage.body.widgets['mayoristahogar-01'].raw, '45.00', 'unit page forces its own unit');
+  const units = await call(api, 'GET', '/api/units', {headers: H(cookieA, w.tenantA)});
+  assert.deepEqual(units.body.pages.map(x => x.name), ['Retail JUJ', 'Mayorista Hogar', null, null]);
+  const empty = await call(api, 'GET', '/api/reports/retailintorno?anio=2026', {headers: H(cookieA, w.tenantA)});
+  assert.equal(empty.body.widgets?.['retailintorno-01']?.kind, 'missing', JSON.stringify(empty.body).slice(0, 300));
   const ytd = await call(api, 'GET', '/api/reports/nivel1?anio=2026&mes=Todos', {headers: H(cookieA, w.tenantA)});
   assert.equal(ytd.body.widgets['nivel1-01'].raw, '500.00', 'YTD = January 130 + November 370');
   const all = Object.keys(ytd.body.widgets);

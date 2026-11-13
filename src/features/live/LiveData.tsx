@@ -2,7 +2,7 @@ import {createContext,useCallback,useContext,useEffect,useMemo,useState,type Rea
 import {api,ApiError,IS_LIVE,type Membership,type ReportPayload,type StatusPayload,type Widget} from '../../data/api';
 import {cachedGet,clearCache,peekCached} from './cache';
 
-type User={id:string;email:string;name:string};
+type User={id:string;email:string;name:string;platform_admin?:boolean};
 type LiveState={
  live:boolean;
  loading:boolean;

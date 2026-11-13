@@ -9,15 +9,15 @@ type Status='abierto'|'en_proceso'|'esperando_cliente'|'resuelto'|'cerrado';
 export type Ticket={id:string;cliente:string;asunto:string;prioridad:Priority;agente:string;status:Status;abierto:string;sla:number;cola:string;canal:'Email'|'Teléfono'|'WhatsApp'|'Portal'};
 
 const tickets:Ticket[]=[
- {id:'JUJ-1042',cliente:'Comercial Andes',asunto:'Factura duplicada en Odoo — abril',prioridad:'alta',agente:'Andrea M.',status:'en_proceso',abierto:'hoy 09:12',sla:82,cola:'3h 40m',canal:'Email'},
- {id:'JUJ-1041',cliente:'Distribuidora El Oro',asunto:'Cortes en el POS de la sucursal Machala',prioridad:'alta',agente:'Bryan R.',status:'abierto',abierto:'hoy 08:20',sla:110,cola:'5h 05m',canal:'WhatsApp'},
- {id:'JUJ-1039',cliente:'Grupo Warenhaus',asunto:'Solicitud de reporte comparativo Q2',prioridad:'media',agente:'Andrea M.',status:'esperando_cliente',abierto:'ayer 17:28',sla:38,cola:'11h 22m',canal:'Portal'},
- {id:'JUJ-1037',cliente:'Chaide & Chaide',asunto:'Ajuste de precios mayoristas Q3',prioridad:'media',agente:'Camilo P.',status:'en_proceso',abierto:'ayer 14:03',sla:61,cola:'19h 48m',canal:'Email'},
- {id:'JUJ-1035',cliente:'Umco S.A.',asunto:'Onboarding nuevo usuario contable',prioridad:'baja',agente:'Camilo P.',status:'resuelto',abierto:'ayer 11:11',sla:12,cola:'—',canal:'Teléfono'},
- {id:'JUJ-1033',cliente:'Comercial Andes',asunto:'Tablero de cartera — filtro por vendedor',prioridad:'media',agente:'Andrea M.',status:'en_proceso',abierto:'martes 16:44',sla:74,cola:'1d 03h',canal:'Portal'},
- {id:'JUJ-1029',cliente:'Ferretería Loja',asunto:'Sincronización de inventarios Bodega Norte',prioridad:'alta',agente:'Bryan R.',status:'en_proceso',abierto:'lunes 10:19',sla:96,cola:'2d 04h',canal:'Email'},
- {id:'JUJ-1024',cliente:'Retail Intorno',asunto:'Alertas de stock crítico no llegan por correo',prioridad:'baja',agente:'Camilo P.',status:'resuelto',abierto:'lunes 08:02',sla:9,cola:'—',canal:'Email'},
- {id:'JUJ-1018',cliente:'Grupo Warenhaus',asunto:'Duplicidad de clientes en padrón',prioridad:'media',agente:'Andrea M.',status:'cerrado',abierto:'viernes 15:20',sla:22,cola:'—',canal:'Portal'},
+ {id:'TK-1042',cliente:'Comercial Andes',asunto:'Factura duplicada en Odoo — abril',prioridad:'alta',agente:'Andrea M.',status:'en_proceso',abierto:'hoy 09:12',sla:82,cola:'3h 40m',canal:'Email'},
+ {id:'TK-1041',cliente:'Distribuidora El Oro',asunto:'Cortes en el POS de la sucursal Machala',prioridad:'alta',agente:'Bryan R.',status:'abierto',abierto:'hoy 08:20',sla:110,cola:'5h 05m',canal:'WhatsApp'},
+ {id:'TK-1039',cliente:'Grupo Warenhaus',asunto:'Solicitud de reporte comparativo Q2',prioridad:'media',agente:'Andrea M.',status:'esperando_cliente',abierto:'ayer 17:28',sla:38,cola:'11h 22m',canal:'Portal'},
+ {id:'TK-1037',cliente:'Chaide & Chaide',asunto:'Ajuste de precios mayoristas Q3',prioridad:'media',agente:'Camilo P.',status:'en_proceso',abierto:'ayer 14:03',sla:61,cola:'19h 48m',canal:'Email'},
+ {id:'TK-1035',cliente:'Umco S.A.',asunto:'Onboarding nuevo usuario contable',prioridad:'baja',agente:'Camilo P.',status:'resuelto',abierto:'ayer 11:11',sla:12,cola:'—',canal:'Teléfono'},
+ {id:'TK-1033',cliente:'Comercial Andes',asunto:'Tablero de cartera — filtro por vendedor',prioridad:'media',agente:'Andrea M.',status:'en_proceso',abierto:'martes 16:44',sla:74,cola:'1d 03h',canal:'Portal'},
+ {id:'TK-1029',cliente:'Ferretería Loja',asunto:'Sincronización de inventarios Bodega Norte',prioridad:'alta',agente:'Bryan R.',status:'en_proceso',abierto:'lunes 10:19',sla:96,cola:'2d 04h',canal:'Email'},
+ {id:'TK-1024',cliente:'Retail Intorno',asunto:'Alertas de stock crítico no llegan por correo',prioridad:'baja',agente:'Camilo P.',status:'resuelto',abierto:'lunes 08:02',sla:9,cola:'—',canal:'Email'},
+ {id:'TK-1018',cliente:'Grupo Warenhaus',asunto:'Duplicidad de clientes en padrón',prioridad:'media',agente:'Andrea M.',status:'cerrado',abierto:'viernes 15:20',sla:22,cola:'—',canal:'Portal'},
 ];
 
 const statusLabel:Record<Status,string>={abierto:'Abierto',en_proceso:'En proceso',esperando_cliente:'Esperando cliente',resuelto:'Resuelto',cerrado:'Cerrado'};
@@ -26,10 +26,10 @@ const priorityTone:Record<Priority,'r'|'a'|'g'>={alta:'r',media:'a',baja:'g'};
 
 const timeline=[
  {at:'09:12',t:'Nuevo ticket',d:'Comercial Andes — factura duplicada',tone:'r' as const},
- {at:'08:47',t:'Ticket JUJ-1029 escalado',d:'Bryan R. → Nivel 2 · Sync inventarios',tone:'a' as const},
- {at:'ayer',t:'JUJ-1024 resuelto',d:'CSAT recibido: 5/5',tone:'g' as const},
- {at:'ayer',t:'SLA en riesgo — JUJ-1041',d:'Faltan 45 minutos para vencer',tone:'a' as const},
- {at:'lunes',t:'Cliente respondió JUJ-1039',d:'Warenhaus — solicita reunión',tone:'g' as const},
+ {at:'08:47',t:'Ticket TK-1029 escalado',d:'Bryan R. → Nivel 2 · Sync inventarios',tone:'a' as const},
+ {at:'ayer',t:'TK-1024 resuelto',d:'CSAT recibido: 5/5',tone:'g' as const},
+ {at:'ayer',t:'SLA en riesgo — TK-1041',d:'Faltan 45 minutos para vencer',tone:'a' as const},
+ {at:'lunes',t:'Cliente respondió TK-1039',d:'Warenhaus — solicita reunión',tone:'g' as const},
 ];
 
 export default function TicketsView(){
@@ -157,8 +157,8 @@ function TicketsDemo(){
     <div className="panel-body">
      <div className="ticket-hints">
       <div className="ticket-hint"><AlertTriangle size={14}/><div><strong>2 tickets alta prioridad sin asignar en la última hora</strong><p>Comercial Andes y Distribuidora El Oro. Sugerido: escalar a Nivel 2.</p></div></div>
-      <div className="ticket-hint"><Clock3 size={14}/><div><strong>SLA en riesgo — JUJ-1041</strong><p>Faltan 45 minutos. Andrea M. está en otro caso.</p></div></div>
-      <div className="ticket-hint"><MessageSquare size={14}/><div><strong>Ticket JUJ-1039 requiere respuesta</strong><p>Warenhaus solicitó una reunión hace 11 horas.</p></div></div>
+      <div className="ticket-hint"><Clock3 size={14}/><div><strong>SLA en riesgo — TK-1041</strong><p>Faltan 45 minutos. Andrea M. está en otro caso.</p></div></div>
+      <div className="ticket-hint"><MessageSquare size={14}/><div><strong>Ticket TK-1039 requiere respuesta</strong><p>Warenhaus solicitó una reunión hace 11 horas.</p></div></div>
      </div>
     </div>
    </section>

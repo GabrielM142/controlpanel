@@ -6,6 +6,9 @@ import {aiFacts, buildReport, campaignPerformance, METRICS, parseFilters, receiv
 import {AI_MODEL, aiConfigured, answerQuestion, PROVIDERS, reportDigest} from '../lib/ai.mjs';
 import {alertMessage, evaluateAlerts, sendTelegram} from '../lib/alerts.mjs';
 import {cashflowBase} from '../lib/cashflow.mjs';
+import {seedCompany} from '../lib/seed.mjs';
+import {assertCanSpend, monthUsage, recordUsage, tenantPlan, truekenSettings} from '../lib/truekens.mjs';
+import {KINDS as NOTIFY_KINDS, notify} from '../lib/notifications.mjs';
 import {demoRows} from '../lib/model.mjs';
 import {assertAllowedSourceUrl} from '../lib/net-guard.mjs';
 import {applyCors, HttpError, isUuid, parseCookies, readJson, send, str, toCsv} from './http.mjs';
@@ -13,6 +16,24 @@ import {handleMcp} from './mcp.mjs';
 
 const report = JSON.parse(readFileSync(new URL('../src/data/report.json', import.meta.url), 'utf8'));
 const PAGES = new Map(report.pages.map(p => [p.id, {page: p, blocks: enumerateBlocks(p)}]));
+
+// SaaS catalog: modules a company plan can enable (report pages and features) and assignable skills.
+const UNIT_PAGE_IDS = ['mayoristahogar', 'mayoristaintorno', 'retailjuj', 'retailintorno'];
+const MODULES = [
+  ...report.pages.filter(p => !UNIT_PAGE_IDS.includes(p.id)).map(p => ({id: p.id, label: p.label, kind: 'reporte'})),
+  {id: 'unidades', label: 'Unidades de negocio (4 páginas)', kind: 'reporte'},
+  {id: 'omega', label: 'Omega IA', kind: 'función'}, {id: 'presupuesto', label: 'Presupuesto', kind: 'función'},
+  {id: 'flujo', label: 'Flujo de efectivo', kind: 'función'}, {id: 'tickets', label: 'Tickets de soporte', kind: 'función'},
+  {id: 'iris', label: 'Iris · leads y campañas', kind: 'función'}, {id: 'bodegas', label: 'Valorización por bodega', kind: 'función'},
+  {id: 'decisiones', label: 'Decisiones', kind: 'función'}, {id: 'factory', label: 'Factory', kind: 'función'},
+];
+const SKILLS = [
+  {id: 'sk-consult-comercial', label: 'Consultoría Comercial'}, {id: 'sk-precios', label: 'Estrategia de precios'},
+  {id: 'sk-cartera', label: 'Optimización de cartera'}, {id: 'sk-sku', label: 'Rentabilidad por SKU'},
+  {id: 'sk-dashboard', label: 'Dashboard ejecutivo a medida'},
+];
+/** Module of a page id (the 4 unit pages share "unidades"). */
+const moduleOf = id => (UNIT_PAGE_IDS.includes(id) ? 'unidades' : id);
 const ROLE_RANK = {viewer: 1, analyst: 2, admin: 3, owner: 4};
 const COOKIE = 'nova_session';
 const PLAN = new Set(['free', 'pro', 'enterprise']);
@@ -92,6 +113,9 @@ export function createHandler({pool, config, now = () => new Date()}) {
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true, isolation: 'REPEATABLE READ'}, async c => {
       const pub = (await c.query('SELECT version, business_date::text, published_at, sources, consistency FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
       if (!pub) return {mode: 'live', published: null, widgets: Object.fromEntries(entry.blocks.map(b => [b.id, {kind: 'missing', reason: 'Aún no hay datos publicados para esta empresa.'}]))};
+      const plan = await tenantPlan(c, ctx.tenantId);
+      if (plan.status === 'suspendida') throw new HttpError(403, 'La cuenta de tu empresa está suspendida.');
+      if (Array.isArray(plan.modules) && !plan.modules.includes(moduleOf(pageId))) throw new HttpError(403, 'Este módulo no está activo en el plan de tu empresa.');
       const filters = parseFilters(query, pageId, pub.business_date);
       const widgets = await buildReport(c, pageId, filters, {companies: ctx.companies, blocks: entry.blocks});
       return {mode: 'live', published: pub, filters, widgets};
@@ -170,7 +194,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     const password = typeof body.password === 'string' ? body.password.slice(0, 1024) : '';
     const keys = throttleKeys(req, email);
     await assertNotLocked(keys);
-    const user = await tx({}, async c => (await c.query('SELECT id, email, name, password_hash, disabled_at FROM app.users WHERE email = $1', [email])).rows[0]);
+    const user = await tx({}, async c => (await c.query('SELECT id, email, name, password_hash, disabled_at, platform_admin FROM app.users WHERE email = $1', [email])).rows[0]);
     dummyHash ??= await hashPassword(newToken());
     const valid = await verifyPassword(password, user ? user.password_hash : dummyHash);
     const ok = user && !user.disabled_at && valid;
@@ -181,7 +205,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     await tx({}, c => c.query('INSERT INTO app.sessions(token_hash, user_id, expires_at) VALUES ($1, $2, $3)', [sha256(token), user.id, expires]));
     const cookie = `${COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${config.sessionHours * 3600}; SameSite=${config.cookieSameSite}${config.cookieSecure ? '; Secure' : ''}`;
     return {status: 200, headers: {'Set-Cookie': cookie},
-      body: {user: {id: user.id, email: user.email, name: user.name}, memberships: await memberships(user.id), token_type: 'cookie'}};
+      body: {user: {id: user.id, email: user.email, name: user.name, platform_admin: Boolean(user.platform_admin)}, memberships: await memberships(user.id), token_type: 'cookie'}};
   });
   route('POST', /^\/api\/auth\/logout$/, async ({req}) => {
     requireCsrf(req);
@@ -194,7 +218,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     if (config.mode === 'demo' && !pool) return {mode: 'demo'};
     const user = await session(req);
     if (!user) throw new HttpError(401, 'Sesión requerida');
-    return {mode: 'live', user: {id: user.id, email: user.email, name: user.name}, memberships: await memberships(user.id)};
+    return {mode: 'live', user: {id: user.id, email: user.email, name: user.name, platform_admin: Boolean(user.platform_admin)}, memberships: await memberships(user.id)};
   });
 
   route('GET', /^\/api\/status$/, async ({req}) => status(await tenantContext(req)));
@@ -270,6 +294,9 @@ export function createHandler({pool, config, now = () => new Date()}) {
   route('POST', /^\/api\/ai\/report$/, async ({req}) => {
     requireCsrf(req);
     const ctx = await tenantContext(req);
+    // Plan and monthly Trueken quota of the company first (the super admin sets them).
+    const can = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, c => assertCanSpend(c, ctx.tenantId));
+    if (!can.ok) throw new HttpError(can.status, can.message);
     const ai = await aiFor(ctx);
     if (!ai) throw new HttpError(503, 'Omega IA no está configurada: un administrador debe elegir el proveedor y cargar su clave en Configuración · Omega IA.');
     const body = await readJson(req, 16 * 1024);
@@ -300,9 +327,10 @@ export function createHandler({pool, config, now = () => new Date()}) {
     if (cut === 'sin datos publicados') throw new HttpError(409, 'Aún no hay datos publicados para esta empresa.');
     try {
       const a = await answerQuestion({provider: ai.provider, apiKey: ai.apiKey, model: ai.model, question, cut, filters, digests});
-      await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, c => c.query('INSERT INTO app.ai_usage(tenant_id, user_id, page_id, provider) VALUES ($1, $2, $3, $4)',
-        [ctx.tenantId, ctx.user.id, pageId, ai.provider])).catch(() => {});
-      return {headline: a.headline, points: a.points, suggestion: a.suggestion || null, missing_data: a.missing_data || [],
+      // Trueken ledger: real tokens × platform multiplier, with who asked, what and where.
+      const spent = await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, c => recordUsage(c, {tenantId: ctx.tenantId, userId: ctx.user.id,
+        pageId, provider: ai.provider, model: a.model, question, usage: a.usage})).catch(e => { console.error('trueken_record_failed', e.message); return null; });
+      return {headline: a.headline, points: a.points, suggestion: a.suggestion || null, missing_data: a.missing_data || [], truekens: spent?.truekens ?? null,
         sources: [`Omega IA (${PROVIDERS[ai.provider].label} · ${a.model}) · cierre ${cut}`, ...pages.map(id => `Reporte «${PAGES.get(id).page.label}»`)]};
     } catch (error) {
       if (error instanceof HttpError) throw error;
@@ -584,7 +612,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
           ORDER BY r.priority, r.id`)).rows;
       const options = (await c.query('SELECT source_id, match_type, match_value, name FROM core.dim_unit_source ORDER BY match_type, name')).rows;
       const brands = (await c.query(`SELECT DISTINCT brand FROM core.dim_product WHERE brand IS NOT NULL ORDER BY 1 LIMIT 500`)).rows.map(r => r.brand);
-      return {budgets, campaigns, sources, rules, options, brands, units: ['Mayorista Hogar', 'Mayorista Intorno', 'Retail JUJ', 'Retail Intorno'],
+      return {budgets, campaigns, sources, rules, options, brands, units: [...new Set([...rules.map(r => r.unit_name), 'Mayorista', 'Retail', 'E-commerce', 'Institucional'])],
         can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin};
     });
   });
@@ -947,6 +975,8 @@ export function createHandler({pool, config, now = () => new Date()}) {
           VALUES ($1, $2, $3, $4, $5, $6, $7, now() + make_interval(hours => $8)) RETURNING id`,
       [ctx.tenantId, title, str(b.description, 8000), str(b.category, 60) || 'general', str(b.customer, 160), priority, ctx.user.id, TICKET_SLA_HOURS[priority]])).rows[0];
       await audit(c, ctx, 'ticket.create', String(row.id), {priority});
+      await notify(c, ctx.tenantId, {kind: 'ticket', severity: priority === 'alta' ? 'atencion' : 'info', title: `Nuevo ticket #${row.id}: ${title}`,
+        body: `Prioridad ${priority} · SLA ${TICKET_SLA_HOURS[priority]} h${str(b.customer, 160) ? ` · ${str(b.customer, 160)}` : ''}`, pageId: 'tickets', dedupe: `ticket:new:${row.id}`});
       return {id: row.id};
     });
   });
@@ -976,6 +1006,8 @@ export function createHandler({pool, config, now = () => new Date()}) {
           if (!ok) throw new HttpError(400, 'El responsable no pertenece a la empresa');
         }
         sets.push(`assignee_id = $${p.push(b.assignee_id)}`);
+        if (b.assignee_id) await notify(c, ctx.tenantId, {kind: 'ticket', userId: b.assignee_id, title: `Te asignaron el ticket #${match[1]}`,
+          body: 'Revísalo en Tickets de soporte.', pageId: 'tickets'});
       }
       await c.query(`UPDATE app.tickets SET ${sets.join(', ')} WHERE id = $1`, p);
       await audit(c, ctx, 'ticket.update', match[1], {status: b.status, priority: b.priority, assignee: b.assignee_id});
@@ -1008,6 +1040,260 @@ export function createHandler({pool, config, now = () => new Date()}) {
       const to = pub?.d || new Date().toISOString().slice(0, 10);
       const from = /^\d{4}-\d{2}-\d{2}$/.test(query.desde || '') ? query.desde : `${to.slice(0, 4)}-01-01`;
       return {from, to, source, ...(await campaignPerformance(c, from, to, ctx.companies, source))};
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // SaaS: company plan, Truekens ledger, notifications, suggested values and the super admin console.
+  // ---------------------------------------------------------------------------------------------
+  const monthRange = mes => {
+    const m = /^(\d{4})-(\d{2})$/.exec(mes || '') ? mes : new Date().toISOString().slice(0, 7);
+    const [y, mm] = m.split('-').map(Number);
+    return {month: m, from: `${m}-01`, to: mm === 12 ? `${y + 1}-01-01` : `${y}-${String(mm + 1).padStart(2, '0')}-01`};
+  };
+
+  // Business units of the company in display order: the 4 unit pages show them by position.
+  route('GET', /^\/api\/units$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    const units = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => (await c.query(
+      'SELECT unit_name, min(priority) AS p FROM app.business_unit_rules GROUP BY 1 ORDER BY 2, 1')).rows.map(r => r.unit_name));
+    return {units, pages: UNIT_PAGE_IDS.map((id, i) => ({page_id: id, name: units[i] || null}))};
+  });
+
+  // Plan of the company: modules, skills, quota (members read it; the super admin changes it).
+  route('GET', /^\/api\/plan$/, async ({req}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const plan = await tenantPlan(c, ctx.tenantId);
+      return {...plan, used: await monthUsage(c)};
+    });
+  });
+
+  // Truekens ledger: managers see every user; the rest only their own consumption.
+  const truekenQuery = async (c, ctx, mes, mine) => {
+    const {month, from, to} = monthRange(mes);
+    const p = [from, to];
+    const who = mine ? `AND a.user_id = $${p.push(ctx.user.id)}` : '';
+    const byUser = (await c.query(`SELECT coalesce(u.name, 'Usuario eliminado') AS name, u.email, count(*)::int AS questions,
+        coalesce(sum(a.input_tokens), 0)::int AS input, coalesce(sum(a.output_tokens), 0)::int AS output, coalesce(sum(a.truekens), 0)::float AS truekens
+      FROM app.ai_usage a LEFT JOIN app.users u ON u.id = a.user_id WHERE a.at >= $1::date AND a.at < $2::date ${who}
+      GROUP BY 1, 2 ORDER BY truekens DESC`, p)).rows;
+    const byPage = (await c.query(`SELECT coalesce(a.page_id, 'omega') AS page_id, a.feature, count(*)::int AS questions, coalesce(sum(a.truekens), 0)::float AS truekens
+      FROM app.ai_usage a WHERE a.at >= $1::date AND a.at < $2::date ${who} GROUP BY 1, 2 ORDER BY truekens DESC`, p)).rows;
+    const entries = (await c.query(`SELECT a.at, coalesce(u.name, '—') AS user_name, a.page_id, a.feature, a.question, a.provider, a.model,
+        a.input_tokens, a.output_tokens, a.multiplier::float AS multiplier, a.truekens::float AS truekens
+      FROM app.ai_usage a LEFT JOIN app.users u ON u.id = a.user_id WHERE a.at >= $1::date AND a.at < $2::date ${who}
+      ORDER BY a.at DESC LIMIT 500`, p)).rows;
+    return {month, byUser, byPage, entries};
+  };
+  route('GET', /^\/api\/truekens$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    const manager = ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin;
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const plan = await tenantPlan(c, ctx.tenantId);
+      const used = await monthUsage(c);
+      return {plan, used, scope: manager ? 'empresa' : 'propio', ...(await truekenQuery(c, ctx, query.mes, !manager))};
+    });
+  });
+  route('GET', /^\/api\/truekens\.csv$/, async ({req, query}) => {
+    const ctx = await tenantContext(req, 'admin');
+    const data = await tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, c => truekenQuery(c, ctx, query.mes, false));
+    const rows = [['fecha', 'usuario', 'vista', 'pregunta', 'proveedor', 'modelo', 'tokens_entrada', 'tokens_salida', 'factor', 'truekens'],
+      ...data.entries.map(e => [new Date(e.at).toISOString(), e.user_name, e.page_id || '', e.question || '', e.provider || '', e.model || '', e.input_tokens ?? '', e.output_tokens ?? '', e.multiplier ?? '', e.truekens ?? ''])];
+    return {status: 200, raw: toCsv(rows), headers: {'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="truekens-${data.month}.csv"`}};
+  });
+
+  // Notifications of the user in this company (addressed to them or to everyone), read state, prefs.
+  route('GET', /^\/api\/notifications$/, async ({req, query}) => {
+    const ctx = await tenantContext(req);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const prefs = (await c.query('SELECT muted FROM app.notification_prefs WHERE user_id = $1', [ctx.user.id])).rows[0];
+      const muted = prefs?.muted || [];
+      const p = [ctx.user.id, muted];
+      const kind = NOTIFY_KINDS.includes(query.tipo) ? `AND n.kind = $${p.push(query.tipo)}` : '';
+      const unreadOnly = query.estado === 'no_leidas' ? 'AND r.read_at IS NULL' : '';
+      const items = (await c.query(`SELECT n.id, n.kind, n.severity, n.title, n.body, n.page_id, n.created_at, r.read_at
+          FROM app.notifications n LEFT JOIN app.notification_reads r ON r.notification_id = n.id AND r.user_id = $1
+         WHERE (n.user_id IS NULL OR n.user_id = $1) AND NOT (n.kind = ANY($2::text[])) ${kind} ${unreadOnly}
+         ORDER BY n.created_at DESC LIMIT 200`, p)).rows;
+      const counts = (await c.query(`SELECT n.kind, count(*)::int AS n FROM app.notifications n
+          LEFT JOIN app.notification_reads r ON r.notification_id = n.id AND r.user_id = $1
+         WHERE (n.user_id IS NULL OR n.user_id = $1) AND r.read_at IS NULL AND NOT (n.kind = ANY($2::text[])) GROUP BY 1`, [ctx.user.id, muted])).rows;
+      return {items, unread: counts.reduce((s, r) => s + r.n, 0), unread_by_kind: Object.fromEntries(counts.map(r => [r.kind, r.n])), muted, kinds: NOTIFY_KINDS};
+    });
+  });
+  route('POST', /^\/api\/notifications\/read$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 16 * 1024);
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const ids = b.all === true ? null : (Array.isArray(b.ids) ? b.ids.map(Number).filter(Number.isInteger).slice(0, 500) : []);
+      const r = await c.query(`INSERT INTO app.notification_reads(notification_id, user_id, tenant_id)
+          SELECT n.id, $1, $2 FROM app.notifications n WHERE (n.user_id IS NULL OR n.user_id = $1) AND ($3::bigint[] IS NULL OR n.id = ANY($3::bigint[]))
+          ON CONFLICT DO NOTHING`, [ctx.user.id, ctx.tenantId, ids]);
+      return {ok: true, marked: r.rowCount ?? null};
+    });
+  });
+  route('PUT', /^\/api\/notifications\/prefs$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req);
+    const b = await readJson(req, 4096);
+    const muted = Array.isArray(b.muted) ? [...new Set(b.muted.filter(k => NOTIFY_KINDS.includes(k)))] : [];
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.notification_prefs(tenant_id, user_id, muted, updated_at) VALUES ($1, $2, $3, now())
+          ON CONFLICT (tenant_id, user_id) DO UPDATE SET muted = EXCLUDED.muted, updated_at = now()`, [ctx.tenantId, ctx.user.id, muted]);
+      return {ok: true, muted};
+    });
+  });
+
+  // Suggested values (budget, thresholds, units) from the company's own data; admin of the company.
+  route('POST', /^\/api\/inputs\/seed$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 2048);
+    const growth = Number.isFinite(Number(b.growth)) ? Math.max(-50, Math.min(100, Number(b.growth))) : 5;
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const pub = (await c.query('SELECT business_date::text AS d FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      if (!pub) throw new HttpError(409, 'Aún no hay datos publicados para sugerir valores.');
+      const out = await seedCompany(c, ctx.tenantId, ctx.user.id, {growth, cutoff: pub.d});
+      await notify(c, ctx.tenantId, {kind: 'presupuesto', title: 'Valores sugeridos cargados',
+        body: `Presupuesto (${Object.entries(out.budget).map(([k, v]) => `${k}: ${v} meses`).join(', ')}), ${out.thresholds} umbrales y ${out.units} unidades, a partir de tus datos.`, pageId: 'presupuesto'});
+      await audit(c, ctx, 'inputs.seed', null, out);
+      return {ok: true, ...out};
+    });
+  });
+
+  // ---- Super admin console (app.users.platform_admin) ------------------------------------------
+  async function platformContext(req) {
+    const user = await session(req);
+    if (!user) throw new HttpError(401, 'Sesión requerida');
+    if (!user.platform_admin) throw new HttpError(403, 'Solo el super administrador de OMEGA');
+    return user;
+  }
+  const ptx = (user, fn, opts = {}) => tx({userId: user.id, platform: true, ...opts}, fn);
+  route('GET', /^\/api\/platform\/overview$/, async ({req, query}) => {
+    const user = await platformContext(req);
+    const {month, from, to} = monthRange(query.mes);
+    return ptx(user, async c => {
+      const settings = await truekenSettings(c);
+      const tenants = (await c.query(`SELECT t.id, t.slug, t.name, t.created_at, p.plan_name, coalesce(p.status, 'activa') AS status,
+          CASE WHEN p.tenant_id IS NULL THEN $3::int ELSE p.trueken_quota END AS quota, p.modules, coalesce(p.skills, '{}') AS skills, p.notes,
+          (SELECT count(*) FROM app.memberships m WHERE m.tenant_id = t.id)::int AS users,
+          (SELECT max(business_date)::text FROM ops.published_versions v WHERE v.tenant_id = t.id) AS last_close,
+          (SELECT string_agg(s.status, ',') FROM app.connector_sources s WHERE s.tenant_id = t.id) AS sources,
+          (SELECT coalesce(sum(a.truekens), 0)::float FROM app.ai_usage a WHERE a.tenant_id = t.id AND a.at >= $1::date AND a.at < $2::date) AS truekens,
+          (SELECT coalesce(sum(coalesce(a.input_tokens, 0) + coalesce(a.output_tokens, 0)), 0)::bigint FROM app.ai_usage a WHERE a.tenant_id = t.id AND a.at >= $1::date AND a.at < $2::date) AS tokens,
+          (SELECT count(*) FROM app.ai_usage a WHERE a.tenant_id = t.id AND a.at >= $1::date AND a.at < $2::date)::int AS questions,
+          (SELECT count(*) FROM app.tickets k WHERE k.tenant_id = t.id AND k.status NOT IN ('resuelto', 'cerrado'))::int AS open_tickets
+        FROM app.tenants t LEFT JOIN app.tenant_plans p ON p.tenant_id = t.id ORDER BY t.name`, [from, to, settings.defaultQuota])).rows;
+      return {month, settings, tenants, modules: MODULES, skills: SKILLS};
+    }, {readOnly: true});
+  });
+  route('GET', /^\/api\/platform\/usage$/, async ({req, query}) => {
+    const user = await platformContext(req);
+    const {month, from, to} = monthRange(query.mes);
+    const p = [from, to];
+    const t = isUuid(query.empresa) ? `AND a.tenant_id = $${p.push(query.empresa)}` : '';
+    return ptx(user, async c => ({month, entries: (await c.query(`SELECT a.at, te.name AS tenant, coalesce(u.name, '—') AS user_name, u.email, a.page_id, a.question,
+        a.provider, a.model, a.input_tokens, a.output_tokens, a.multiplier::float AS multiplier, a.truekens::float AS truekens
+      FROM app.ai_usage a JOIN app.tenants te ON te.id = a.tenant_id LEFT JOIN app.users u ON u.id = a.user_id
+     WHERE a.at >= $1::date AND a.at < $2::date ${t} ORDER BY a.at DESC LIMIT 1000`, p)).rows}), {readOnly: true});
+  });
+  route('PUT', /^\/api\/platform\/settings$/, async ({req}) => {
+    requireCsrf(req);
+    const user = await platformContext(req);
+    const b = await readJson(req, 4096);
+    const multiplier = Number(b.multiplier);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 1000) throw new HttpError(400, 'Factor inválido (mayor que 0)');
+    const quota = b.default_quota === null || b.default_quota === '' ? null : Number(b.default_quota);
+    if (quota !== null && (!Number.isInteger(quota) || quota < 0)) throw new HttpError(400, 'Cuota inválida');
+    return ptx(user, async c => {
+      await c.query(`INSERT INTO app.platform_settings(key, value, updated_by, updated_at) VALUES ('truekens', $1, $2, now())
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [JSON.stringify({multiplier, unit: 'token', label: 'Truekens'}), user.id]);
+      await c.query(`INSERT INTO app.platform_settings(key, value, updated_by, updated_at) VALUES ('default_plan', $1, $2, now())
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [JSON.stringify({trueken_quota: quota, modules: null, skills: []}), user.id]);
+      return {ok: true};
+    });
+  });
+  route('PUT', /^\/api\/platform\/tenants\/([0-9a-f-]{36})\/plan$/, async ({req, match}) => {
+    requireCsrf(req);
+    const user = await platformContext(req);
+    const b = await readJson(req, 16 * 1024);
+    const status = b.status === 'suspendida' ? 'suspendida' : 'activa';
+    const quota = b.trueken_quota === null || b.trueken_quota === '' ? null : Number(b.trueken_quota);
+    if (quota !== null && (!Number.isInteger(quota) || quota < 0)) throw new HttpError(400, 'Cuota inválida');
+    const modules = b.modules === null ? null : Array.isArray(b.modules) ? b.modules.filter(m => MODULES.some(x => x.id === m)) : null;
+    const skills = Array.isArray(b.skills) ? b.skills.filter(s => SKILLS.some(x => x.id === s)) : [];
+    return ptx(user, async c => {
+      const t = (await c.query('SELECT id FROM app.tenants WHERE id = $1', [match[1]])).rows[0];
+      if (!t) throw new HttpError(404, 'Empresa inexistente');
+      await c.query(`INSERT INTO app.tenant_plans(tenant_id, plan_name, status, trueken_quota, modules, skills, notes, updated_by, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now()) ON CONFLICT (tenant_id) DO UPDATE SET plan_name = EXCLUDED.plan_name, status = EXCLUDED.status,
+            trueken_quota = EXCLUDED.trueken_quota, modules = EXCLUDED.modules, skills = EXCLUDED.skills, notes = EXCLUDED.notes,
+            updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [match[1], str(b.plan_name, 60) || 'Estándar', status, quota, modules, skills, str(b.notes, 1000), user.id]);
+      return {ok: true};
+    }).then(async r => {
+      // Audit in the company's own transaction (a failed statement inside the platform one would abort it).
+      await tx({tenantId: match[1], userId: user.id}, c => c.query('INSERT INTO ops.audit_log(tenant_id, user_id, action, target, details) VALUES ($1, $2, $3, $4, $5)',
+        [match[1], user.id, 'platform.plan', match[1], JSON.stringify({status, quota, modules: modules?.length ?? 'todos', skills: skills.length})]));
+      return r;
+    });
+  });
+  route('POST', /^\/api\/platform\/tenants$/, async ({req}) => {
+    requireCsrf(req);
+    const user = await platformContext(req);
+    const b = await readJson(req, 8192);
+    const name = str(b.name, 120, {required: true, name: 'nombre de la empresa'});
+    const slug = (str(b.slug, 63) || name).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 63);
+    if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) throw new HttpError(400, 'Identificador inválido');
+    const email = str(b.admin_email, 200, {required: true, name: 'correo del administrador'}).toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new HttpError(400, 'Correo inválido');
+    const adminName = str(b.admin_name, 120) || email.split('@')[0];
+    const temp = newToken().slice(0, 14);
+    const hash = await hashPassword(temp);
+    return ptx(user, async c => {
+      if ((await c.query('SELECT 1 FROM app.tenants WHERE slug = $1', [slug])).rows.length) throw new HttpError(409, 'Ya existe una empresa con ese identificador');
+      const t = (await c.query('INSERT INTO app.tenants(slug, name) VALUES ($1, $2) RETURNING id', [slug, name])).rows[0];
+      let u = (await c.query('SELECT id FROM app.users WHERE email = $1', [email])).rows[0];
+      let password = null;
+      if (!u) { u = (await c.query('INSERT INTO app.users(email, name, password_hash) VALUES ($1, $2, $3) RETURNING id', [email, adminName, hash])).rows[0]; password = temp; }
+      await c.query(`INSERT INTO app.memberships(tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [t.id, u.id]);
+      const def = await truekenSettings(c);
+      await c.query(`INSERT INTO app.tenant_plans(tenant_id, plan_name, trueken_quota, updated_by) VALUES ($1, 'Estándar', $2, $3)`, [t.id, def.defaultQuota, user.id]);
+      return {id: t.id, slug, admin_email: email, temporary_password: password}; // shown once
+    });
+  });
+  route('POST', /^\/api\/platform\/tenants\/([0-9a-f-]{36})\/members$/, async ({req, match}) => {
+    requireCsrf(req);
+    const user = await platformContext(req);
+    const b = await readJson(req, 4096);
+    const email = str(b.email, 200, {required: true, name: 'correo'}).toLowerCase();
+    const role = ['owner', 'admin', 'analyst', 'viewer'].includes(b.role) ? b.role : 'viewer';
+    const temp = newToken().slice(0, 14);
+    const hash = await hashPassword(temp);
+    return ptx(user, async c => {
+      let u = (await c.query('SELECT id FROM app.users WHERE email = $1', [email])).rows[0];
+      let password = null;
+      if (!u) { u = (await c.query('INSERT INTO app.users(email, name, password_hash) VALUES ($1, $2, $3) RETURNING id', [email, str(b.name, 120) || email.split('@')[0], hash])).rows[0]; password = temp; }
+      await c.query(`INSERT INTO app.memberships(tenant_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT (tenant_id, user_id) DO UPDATE SET role = EXCLUDED.role`, [match[1], u.id, role]);
+      return {ok: true, email, role, temporary_password: password};
+    });
+  });
+  route('GET', /^\/api\/platform\/tenants\/([0-9a-f-]{36})\/members$/, async ({req, match}) => {
+    const user = await platformContext(req);
+    return ptx(user, async c => ({members: (await c.query(`SELECT u.id, u.name, u.email, m.role, m.created_at FROM app.memberships m
+        JOIN app.users u ON u.id = m.user_id WHERE m.tenant_id = $1 ORDER BY m.role, u.name`, [match[1]])).rows}), {readOnly: true});
+  });
+  route('POST', /^\/api\/platform\/tenants\/([0-9a-f-]{36})\/seed$/, async ({req, match}) => {
+    requireCsrf(req);
+    const user = await platformContext(req);
+    return tx({tenantId: match[1], userId: user.id}, async c => {
+      const pub = (await c.query('SELECT business_date::text AS d FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      if (!pub) throw new HttpError(409, 'La empresa aún no tiene datos publicados.');
+      return {ok: true, ...(await seedCompany(c, match[1], user.id, {cutoff: pub.d}))};
     });
   });
 

@@ -45,14 +45,14 @@ Reversión en staging: desinstalar los `nova_*` desde Aplicaciones (o restaurar 
 
 1. `npm run migrate`; crear roles de login: `CREATE ROLE nova_api_login LOGIN PASSWORD '…' IN ROLE nova_api;`
    (ídem `nova_worker_login`) y usar esas credenciales en `DATABASE_URL` de cada servicio.
-2. `npm run admin -- create-tenant juj "JUJ"`; `NOVA_NEW_PASSWORD=… npm run admin -- create-user …`;
-   `npm run admin -- grant <email> juj owner`; `npm run admin -- terms` (solo términos aprobados).
+2. `npm run admin -- create-tenant mi-empresa "Mi Empresa"`; `NOVA_NEW_PASSWORD=… npm run admin -- create-user …`;
+   `npm run admin -- grant <email> mi-empresa owner`; `npm run admin -- terms` (solo términos aprobados).
 3. En Odoo (staging primero): instalar addons, usuario técnico + API key, compañías y ventana,
    "Generar código de vinculación" (ver `odoo_addons/nova_connector/README.md`).
 4. En NOVA → Ajustes → Fuentes de datos: registrar la fuente y vincular con el código. El worker
    confirma la vinculación, guarda instalación/generación y compañías.
-5. Reglas de unidad: `npm run admin -- unit-rule juj <source> company 1 MH "Mayorista Hogar" Mayorista`
-   (validadas con JUJ) y `npm run admin -- rebuild <source>`.
+5. Reglas de unidad: `npm run admin -- unit-rule mi-empresa <source> company 1 MAY "Mayorista" Mayorista`
+   (validadas con la empresa) y `npm run admin -- rebuild <source>`.
 
 ## Runbooks
 

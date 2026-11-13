@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType,type ReactNode} from 'react';
-import {Target,Banknote,Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {BellRing,ShieldCheck,Target,Banknote,Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
@@ -12,6 +12,11 @@ import CashflowView from './features/cashflow/CashflowView';
 import ReportSetup from './features/inputs/ReportSetup';
 import RisksLive from './features/risks/RisksLive';
 import IrisView from './features/marketing/IrisView';
+import TruekensView from './features/truekens/TruekensView';
+import NotificationsView from './features/notifications/NotificationsView';
+import {NotificationsProvider,useNotifications} from './features/notifications/useNotifications';
+import PlatformView from './features/platform/PlatformView';
+import {api} from './data/api';
 import {cachedGet} from './features/live/cache';
 import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
@@ -58,6 +63,9 @@ const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Umbrales y alertas',question:'Configura los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'tema',group:'Ajustes',label:'Tema de la empresa',question:'¿Cómo se ve OMEGA para tu empresa? Elige tu color de marca; los colores financieros no cambian.',component:ThemeView,icon:Palette},
+ {id:'plataforma',group:'Plataforma',label:'Super admin',question:'Todas las empresas de OMEGA: planes, módulos, skills, cuotas y consumo real de Truekens.',component:PlatformView,icon:ShieldCheck},
+ {id:'notificaciones',group:'Gestión',label:'Notificaciones',question:'¿Qué pasó en la empresa que debo revisar?',component:NotificationsView,icon:BellRing},
+ {id:'truekens',group:'Ajustes',label:'Consumo de Truekens',question:'¿Quién usó Omega IA, cuándo, para qué y cuántos Truekens?',component:TruekensView,icon:Coins},
  {id:'iris',group:'Ventas',label:'Iris · leads y campañas',question:'¿Cuántos leads trae Iris, cuánto cuesta cada uno y cuántos terminan comprando?',component:IrisView,icon:Target},
  {id:'flujo',group:'Planificación',label:'Flujo de efectivo',question:'¿Cuánta caja tendré los próximos meses y qué palanca la mejora más?',component:CashflowView,icon:Banknote},
  {id:'presupuesto',group:'Planificación',label:'Presupuesto',question:'¿Cuánto planeas vender, comprar y gastar cada mes, y cómo vas contra eso?',component:BudgetView,icon:Calculator},
@@ -77,7 +85,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={iris:Target,flujo:Banknote,presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={plataforma:ShieldCheck,notificaciones:BellRing,truekens:Coins,iris:Target,flujo:Banknote,presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
@@ -98,8 +106,7 @@ const NAV:NavSection[]=[
   {label:'Logística',ids:['logistica']},
  ]},
  {label:'Unidades',subs:[
-  {label:'Mayorista',ids:['mayoristahogar','mayoristaintorno']},
-  {label:'Retail',ids:['retailjuj','retailintorno']},
+  {label:'Unidades de negocio',ids:['mayoristahogar','mayoristaintorno','retailjuj','retailintorno']},
  ]},
  {label:'Planificación',subs:[
   {label:'Flujo de efectivo',ids:['flujo']},
@@ -107,18 +114,28 @@ const NAV:NavSection[]=[
  ]},
  {label:'Gestión',subs:[
   {label:'Decisiones',ids:['decisiones']},
+  {label:'Notificaciones',ids:['notificaciones']},
   {label:'Tickets de soporte',ids:['tickets']},
   {label:'Tareas y notas',ids:['tasks','notes']},
+ ]},
+ {label:'Plataforma OMEGA',subs:[
+  {label:'Super admin',ids:['plataforma']},
  ]},
  {label:'Configuración',subs:[
   {label:'Fuentes de datos',ids:['sources']},
   {label:'Omega IA',ids:['omega-ia']},
+  {label:'Consumo de Truekens',ids:['truekens']},
   {label:'Umbrales',ids:['control']},
   {label:'Presupuestos y unidades',ids:['insumos']},
   {label:'Tema de la empresa',ids:['tema']},
   {label:'Mercado',ids:['market','market-odoo','market-skills','market-automations','market-services']},
  ]},
 ];
+
+// Unit pages are positions: demo shows generic names; live shows each company's configured units.
+const UNIT_PAGE_IDS=['mayoristahogar','mayoristaintorno','retailjuj','retailintorno'];
+const DEMO_UNIT_LABEL:Record<string,string>={mayoristahogar:'Mayorista 1',mayoristaintorno:'Mayorista 2',retailjuj:'Retail 1',retailintorno:'Retail 2'};
+const PAGE_MODULE:Record<string,string>={'trueque':'factory','trueque-list':'factory',mayoristahogar:'unidades',mayoristaintorno:'unidades',retailjuj:'unidades',retailintorno:'unidades'};
 const ROLE_LABEL:Record<string,string>={owner:'Propietario',admin:'Administrador',analyst:'Analista',viewer:'Lectura'};
 function locate(id:string):{section:string;sub?:string}{
  if(id==='omega')return {section:'Pregúntale a Omega'};
@@ -135,6 +152,16 @@ function AppShell(){
  const {active:activeTenant}=useTenants();
  const live=useLive();
  const [liveOptions,setLiveOptions]=useState<Record<string,string[]>>({});
+ // SaaS: the 4 unit pages show this company's units; modules outside its plan are hidden.
+ const [unitNames,setUnitNames]=useState<Record<string,string|null>>({});
+ const unreadNotices=useNotifications().data?.unread||0;
+ const [planModules,setPlanModules]=useState<string[]|null>(null);
+ useEffect(()=>{
+  if(!live.live||!live.tenantId){setUnitNames({});setPlanModules(null);return;}let off=false;
+  api<{pages:{page_id:string;name:string|null}[]}>('/api/units',{tenant:live.tenantId}).then(r=>{if(!off)setUnitNames(Object.fromEntries(r.pages.map(x=>[x.page_id,x.name])));}).catch(()=>{});
+  api<{modules:string[]|null}>('/api/plan',{tenant:live.tenantId}).then(r=>{if(!off)setPlanModules(r.modules);}).catch(()=>{});
+  return()=>{off=true;};
+ },[live.live,live.tenantId]);
  const [pageId,setPageId]=useState(getPage);
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
@@ -156,7 +183,20 @@ function AppShell(){
  const virtualPage=isVirtual?virtualById.get(pageId)!:null;
  const reportPage=!isVirtual?report.pages.find(p=>p.id===pageId)!:null;
 
- const pageLabel=virtualPage?virtualPage.label:reportPage!.label;
+ function labelFor(id:string,fallback:string){
+  if(!UNIT_PAGE_IDS.includes(id))return fallback;
+  if(!live.live)return DEMO_UNIT_LABEL[id]||fallback;
+  return unitNames[id]||`Unidad ${UNIT_PAGE_IDS.indexOf(id)+1} · sin configurar`;
+ }
+ function allowed(id:string){
+  if(id==='plataforma')return Boolean(live.live&&live.user?.platform_admin);
+  if(!live.live||!planModules)return true;
+  const mod=PAGE_MODULE[id]||id;
+  // Settings and personal views are always available; reports and features follow the plan.
+  const gated=new Set(['nivel1','comercial','financiero','compras','inventarios','clientes','logistica','marketing','riesgos','unidades','omega','presupuesto','flujo','tickets','iris','bodegas','decisiones','factory']);
+  return !gated.has(mod)||planModules.includes(mod);
+ }
+ const pageLabel=labelFor(pageId,virtualPage?virtualPage.label:reportPage!.label);
  // Riesgos (connected) is built from every area's live risks: no longer "en pausa".
  const liveRisks=live.live&&reportPage?.id==='riesgos';
  const pageQuestion=virtualPage?virtualPage.question:liveRisks?'¿Qué riesgos enfrenta la empresa y qué oportunidades tiene, según el último cierre?':reportPage!.question;
@@ -252,18 +292,19 @@ function AppShell(){
  },[]);
 
  const paletteItems=useMemo<PaletteItem[]>(()=>[
-  ...report.pages.map(p=>({id:p.id,label:p.label,group:p.group,subgroup:findSub(p.id,p.group),keywords:p.question})),
-  ...virtualPages.map(p=>({id:p.id,label:p.label,group:p.group,subgroup:p.subgroup,keywords:p.question})),
+  ...report.pages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:labelFor(p.id,p.label),group:p.group,subgroup:findSub(p.id,p.group),keywords:p.question})),
+  ...virtualPages.filter(p=>allowed(p.id)).map(p=>({id:p.id,label:p.label,group:p.group,subgroup:p.subgroup,keywords:p.question})),
  ],[]);
 
  const {activeAlerts}=useThresholds();
- const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=businessAlerts(live.live).filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts,live.live]);
- const bellTotal=useMemo(()=>businessAlerts(live.live).length+activeAlerts.length,[activeAlerts,live.live]);
+ const noticeItems=useNotifications().data?.items;
+ const criticalAlerts=useMemo(()=>{const dyn=activeAlerts.filter(r=>r.tone==='r').length;const stat=live.live?(noticeItems||[]).filter(n=>!n.read_at&&n.severity==='critica').length:businessAlerts(false).filter(a=>a.severity==='r').length;return dyn+stat;},[activeAlerts,live.live,noticeItems]);
+ const bellTotal=useMemo(()=>(live.live?(noticeItems||[]).filter(n=>!n.read_at).length:businessAlerts(false).length)+activeAlerts.length,[activeAlerts,live.live,noticeItems]);
 
  const {pending:pendingDecisions}=useDecisions();
  const openTickets=live.live?0:demoTickets.filter(t=>t.status!=='resuelto'&&t.status!=='cerrado').length;
- const badgeFor=(id:string)=>id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
- function NavItem({p}:{p:ReportPage|VirtualPage}){const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{p.label}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
+ const badgeFor=(id:string)=>id==='notificaciones'&&unreadNotices?<small className="om-badge om-badge--bad">{unreadNotices}</small>:id==='decisiones'&&pendingDecisions?<small className="om-badge om-badge--gold">{pendingDecisions}</small>:id==='tickets'&&openTickets?<small className="om-badge om-badge--bad">{openTickets}</small>:null;
+ function NavItem({p}:{p:ReportPage|VirtualPage}){if(!allowed(p.id))return null;const ItemIcon=icons[p.id]||LayoutDashboard;const paused=('paused' in p)&&p.paused&&!(live.live&&p.id==='riesgos');return <button key={p.id} aria-current={p.id===pageId?'page':undefined} onClick={()=>navigate(p.id)}><ItemIcon size={17} strokeWidth={1.7}/><span>{labelFor(p.id,p.label)}</span>{paused?<small className="badge-paused">En pausa</small>:badgeFor(p.id)||(p.id===pageId?<ChevronRight size={13}/>:null)}</button>;}
 
  function Sidebar(){
   const truequePages=virtualPages.filter(p=>p.group==='Factory');
@@ -277,13 +318,14 @@ function AppShell(){
    <TenantSwitcher/>
    <nav aria-label="Menú principal" className="omega-nav">
     <button type="button" className="omega-ask-nav" aria-current={pageId==='omega'?'page':undefined} onClick={()=>navigate('omega')}><span className="omega-glyph" aria-hidden="true">Ω</span><span>Pregúntale a Omega</span></button>
-    {NAV.map(sec=>{
+    {NAV.filter(sec=>sec.subs.some(sub=>sub.ids.some(id=>allowed(id)))).map(sec=>{
      const secKey=`sec:${sec.label}`;const open=expanded.has(secKey);
      return <div key={sec.label}>
       <div className={`nav-group omega-section ${open?'open':'closed'}${loc.section===sec.label?' is-active':''}`}>
        <button type="button" className="nav-group-header omega-section-head" aria-expanded={open} onClick={()=>toggleKey(secKey)}><span>{sec.label}</span><ChevronDown size={12} className={open?'':'rotate-neg90'}/></button>
        {open&&<div className="nav-group-body">{sec.subs.map(sub=>{
-        const pages=sub.ids.map(byId).filter(Boolean) as (ReportPage|VirtualPage)[];
+        const pages=(sub.ids.map(byId).filter(Boolean) as (ReportPage|VirtualPage)[]).filter(p=>allowed(p.id));
+        if(!pages.length)return null;
         if(pages.length===1)return <NavItem key={sub.label} p={pages[0]}/>;
         const subKey=`sub:${sec.label}::${sub.label}`;const subOpen=expanded.has(subKey)||sub.ids.includes(pageId);
         return <div className={`nav-sub ${subOpen?'open':'closed'}`} key={sub.label}>
@@ -439,7 +481,7 @@ function Gate(){
  const live=useLive();
  if(live.live&&live.loading)return <main className="login-shell"><p className="legend-note">Cargando sesión…</p></main>;
  if(live.live&&!live.user)return <LoginView/>;
- return <TenantsProvider><BrandFromTenant><ThresholdsProvider><DecisionsProvider><TokensProvider><TasksProvider><NotesProvider><AppShell/><OnboardingTour/></NotesProvider></TasksProvider></TokensProvider></DecisionsProvider></ThresholdsProvider></BrandFromTenant></TenantsProvider>;
+ return <TenantsProvider><BrandFromTenant><ThresholdsProvider><DecisionsProvider><TokensProvider><TasksProvider><NotesProvider><NotificationsProvider><AppShell/><OnboardingTour/></NotificationsProvider></NotesProvider></TasksProvider></TokensProvider></DecisionsProvider></ThresholdsProvider></BrandFromTenant></TenantsProvider>;
 }
 
 export default function App(){return <LiveProvider><Gate/></LiveProvider>;}

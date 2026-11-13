@@ -18,7 +18,7 @@ const INTENTS:[RegExp,string][]=[
  [/venta|vend|factur|ticket|comercial/i,'comercial'],[/compra|proveedor|abastec/i,'compras'],
  [/inventar|stock|bodega|rotaci/i,'inventarios'],[/client|cartera|fideli/i,'clientes'],
  [/log[ií]st|despach|entreg|otif/i,'logistica'],[/campa|marketing|roi/i,'marketing'],
- [/mayorista hogar/i,'mayoristahogar'],[/mayorista intorno/i,'mayoristaintorno'],[/retail juj/i,'retailjuj'],[/retail intorno/i,'retailintorno'],
+ [/mayorista hogar/i,'mayoristahogar'],[/mayorista intorno/i,'mayoristaintorno'],[/retail (juj|1)\b/i,'retailjuj'],[/retail intorno/i,'retailintorno'],
  [/riesgo|empresa|general|directorio/i,'nivel1'],
 ];
 const SUGGESTED=['¿Dónde estoy perdiendo margen?','¿Cómo van las ventas frente al año anterior?','¿Qué riesgos hay en inventario?','¿Cómo está Retail Intorno?'];

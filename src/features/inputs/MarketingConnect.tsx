@@ -28,7 +28,7 @@ Content-Type: application/json
 {"source": "${label.toLowerCase().replace(/[^a-z0-9_-]/g,'')||'iris'}",
  "campaigns": [{"id": "CMP-001", "name": "Verano 2026", "status": "ejecutada",
    "start_date": "2026-01-05", "end_date": "2026-02-15",
-   "brand": "Marca", "unit": "Retail JUJ", "investment": 4200, "leads": 310}]}`;
+   "brand": "Marca", "unit": "Unidad 1", "investment": 4200, "leads": 310}]}`;
  const copy=(t:string)=>{navigator.clipboard?.writeText(t).then(()=>setMsg({ok:true,text:'Copiado.'}),()=>{});};
 
  return <div className="om-mkt">

@@ -14,7 +14,7 @@ type NotesState={
 
 const Ctx=createContext<NotesState|null>(null);
 const KEY='nova.notes';
-const AUTHOR='JUJ';
+const AUTHOR='Yo';
 
 const seed:Note[]=[
  {id:'n1',text:'Preguntar a Andrea por el follow-up de Comercial Andes esta semana.',color:'gold',createdAt:new Date(Date.now()-86400000*2).toISOString(),author:AUTHOR,linkedPageId:'clientes',pinned:true},
