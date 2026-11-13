@@ -87,12 +87,17 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
   contra Odoo: ventas 2026 al centavo, compras 0,1 %, despachos ±30 por zona horaria, inventario 0,01 %.
 - Margen contable: costo que Odoo contabiliza en cada entrega (cuenta de salida de la categoría) →
   margen bruto 2026 8,5 %. Hallazgo: 65.713 unidades entregadas sin facturar (~$153 mil a costo).
-- Reportes con datos reales: 78 de 166 bloques (antes 36). Inventarios 15/19, Comercial 14/18,
-  Compras 13/19, Logística 12/18, Financiero 7/35, Dirección 5/13, Clientes 4/15, Unidades 2/4.
+- Reportes con datos reales: 136 de 166 bloques (antes 78). Financiero 35/35, Inventarios 19/19,
+  Clientes 15/15, Comercial 17/18, Compras 17/19, Logística 14/18, Dirección 11/13, Unidades 2/4.
+- Financiero sale del dataset `account_balance_month` (saldo mensual por cuenta, snapshot) con el plan
+  de cuentas ecuatoriano (601 venta, 602 administración, 603 financieros). En staging falta, al parecer,
+  el asiento de apertura: caja y patrimonio negativos.
+- ISE calculado con una fórmula propuesta por OMEGA (marcada en el panel): falta aprobación del cliente.
 - Tareas, notas, umbrales y decisiones guardados en el servidor; umbrales evaluados en cada cierre.
-- Omega IA por empresa (Anthropic u OpenAI, clave cifrada); falta la prueba con la clave real.
-- Pendiente de información del cliente: reglas de unidad/marca/canal, presupuesto, mapeo contable
-  (Financiero completo), fórmula ISE, datos del Odoo central de soporte (Tickets). Marketing: sin fuente.
+- Omega IA por empresa (Anthropic u OpenAI, clave cifrada); probada con la clave OpenAI del cliente.
+- Los 30 bloques restantes esperan información del cliente: Marketing (13, sin fuente), presupuestos
+  (meta mensual en Umbrales, compras, por unidad), reglas de unidades de negocio, cuentas de costo
+  logístico, conteos físicos y pickings internos. También faltan los datos del Odoo central de soporte (Tickets).
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
 ## Próximos pasos concretos
