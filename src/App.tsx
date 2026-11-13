@@ -157,7 +157,9 @@ function AppShell(){
  const reportPage=!isVirtual?report.pages.find(p=>p.id===pageId)!:null;
 
  const pageLabel=virtualPage?virtualPage.label:reportPage!.label;
- const pageQuestion=virtualPage?virtualPage.question:reportPage!.question;
+ // Riesgos (connected) is built from every area's live risks: no longer "en pausa".
+ const liveRisks=live.live&&reportPage?.id==='riesgos';
+ const pageQuestion=virtualPage?virtualPage.question:liveRisks?'¿Qué riesgos enfrenta la empresa y qué oportunidades tiene, según el último cierre?':reportPage!.question;
  const pageFilters=virtualPage?[]:reportPage!.filters;
  // Live mode only shows filters the API really applies (others would silently do nothing).
  const shownFilters=live.live?pageFilters.filter(k=>LIVE_FILTERS.has(k)):pageFilters;
@@ -404,10 +406,10 @@ function AppShell(){
      {reportPage&&reportPage.id==='nivel1'&&<DireccionHero widgets={reportState.data?.widgets||null} live={live.live} onNavigate={navigate} onAsk={askOmega}/>}
      {reportPage&&reportPage.id!=='nivel1'&&<section className="om-lead" aria-label="Lectura de Omega">
       <span className="omega-glyph" aria-hidden="true">Ω</span>
-      <div><span className="om-eyebrow">Lectura de Omega</span><p>{live.live&&reportState.loading?'Leyendo el último cierre…':pageReading(reportPage.id,live.live?reportState.data?.widgets||null:null)}</p></div>
+      <div><span className="om-eyebrow">Lectura de Omega</span><p>{liveRisks?'Reúno los riesgos, oportunidades y alertas que calculó cada área con el último cierre. Empieza por los críticos.':live.live&&reportState.loading?'Leyendo el último cierre…':pageReading(reportPage.id,live.live?reportState.data?.widgets||null:null)}</p></div>
       <button type="button" className="om-btn om-btn--ai" onClick={()=>askOmega(`¿Qué está pasando en ${reportPage.label}?`)}>Preguntar a Omega</button>
      </section>}
-     {reportPage&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
+     {reportPage&&!liveRisks&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():live.live&&reportPage!.id==='riesgos'?<RisksLive onNavigate={navigate}/>:<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
      {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}

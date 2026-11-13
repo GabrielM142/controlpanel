@@ -98,8 +98,14 @@ implementado y probado por partes. Falta la ejecución en staging con Odoo 16 + 
 - ISE calculado con una fórmula propuesta por OMEGA (marcada en el panel): falta aprobación del cliente.
 - Tareas, notas, umbrales y decisiones guardados en el servidor; umbrales evaluados en cada cierre.
 - Omega IA por empresa (Anthropic u OpenAI, clave cifrada); probada con la clave OpenAI del cliente.
-- Falta del cliente: presupuestos, campañas, reglas de unidades de JUJ, marcas en los productos y los
-  datos del Odoo central de soporte (Tickets).
+- Planificación: Presupuesto (grilla de 12 meses desde el real del año anterior) y Flujo de efectivo
+  (caja real, proyección con cartera, proveedores, nómina e IVA; escenarios guardados por empresa).
+- Menús revisados (30 vistas, recorridas en producción sin errores): Riesgos con datos reales; Tickets
+  como mesa de ayuda propia (SLA, responsable, conversación); tema de la empresa en el servidor; consumo
+  real de Omega IA; 15/15 umbrales con valor; Iris (vista y endpoint de envío listos; API de Iris pendiente).
+- Marcas: NOVA exporta `product_brand_id` (mapeo nova_juj); en staging no hay marcas cargadas.
+- Falta del cliente: presupuestos, campañas, reglas de unidades de JUJ, marcas en los productos, API de
+  Iris y, si se quiere sincronizar, los datos del Odoo central de soporte.
 - Operación: Neon 736 MB de 1 GB; despliegue por `vercel deploy --prod` (la integración Git no dispara).
 
 ## Próximos pasos concretos

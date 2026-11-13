@@ -82,7 +82,7 @@ export function levers(b:Base,p:Params){
  const test=(label:string,detail:string,q:Partial<Params>)=>{const r=project(b,{...p,...q});
   return {label,detail,cash:r.closing-cur.closing,profit:r.operatingResult-cur.operatingResult,sales:r.sales-cur.sales};};
  return [
-  test('Cobrar 30 días antes',`Días de cobro ${Math.max(0,p.collectDays-30)} en lugar de ${p.collectDays}`,{collectDays:Math.max(0,p.collectDays-30)}),
+  test(p.collectDays<=30?'Cobrar de contado':'Cobrar 30 días antes',`Días de cobro ${Math.max(0,p.collectDays-30)} en lugar de ${p.collectDays}`,{collectDays:Math.max(0,p.collectDays-30)}),
   test('Recuperar 30% más de la cartera vencida','Gestión de cobranza sobre lo vencido',{overdueRecovery:Math.min(100,p.overdueRecovery+30)}),
   test('Vender 10% más','Crecimiento sobre el ritmo actual',{salesGrowth:p.salesGrowth+10}),
   test('Promoción en el primer mes',`${p.promoDiscount}% de descuento con +${p.promoUplift}% de volumen`,{promoMonths:[...new Set([...p.promoMonths,b.months[0]])]}),
