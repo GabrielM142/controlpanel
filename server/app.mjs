@@ -572,7 +572,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
       const budgets = (await c.query(`SELECT kind, to_char(month, 'YYYY-MM') AS month, unit_name, brand, amount::text AS amount
           FROM app.budgets ORDER BY kind, month, unit_name NULLS FIRST, brand NULLS FIRST`)).rows;
-      const campaigns = (await c.query(`SELECT id, name, status, start_date::text, end_date::text, brand, unit_name, investment::text AS investment
+      const campaigns = (await c.query(`SELECT id, name, status, start_date::text, end_date::text, brand, unit_name, investment::text AS investment, source, leads
           FROM app.marketing_campaigns ORDER BY start_date, id`)).rows;
       const sources = (await c.query(`SELECT id, name, rebuild_requested_at, rebuilt_at FROM app.connector_sources ORDER BY created_at`)).rows;
       const rules = (await c.query(`SELECT r.id, r.source_id, r.match_type, r.match_value, r.unit_code, r.unit_name, r.channel, r.priority,
@@ -625,7 +625,7 @@ export function createHandler({pool, config, now = () => new Date()}) {
       return {name, status, start, end, brand: opt(r.brand, 120), unit: opt(r.unit_name, 120), investment};
     });
     return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
-      await c.query('DELETE FROM app.marketing_campaigns');
+      await c.query("DELETE FROM app.marketing_campaigns WHERE source = 'csv'"); // campaigns pushed by an app stay
       for (const r of rows) await c.query(`INSERT INTO app.marketing_campaigns(tenant_id, name, status, start_date, end_date, brand, unit_name, investment, created_by)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [ctx.tenantId, r.name, r.status, r.start, r.end, r.brand, r.unit, r.investment, ctx.user.id]);
       await audit(c, ctx, 'campaigns.replace', null, {rows: rows.length});
@@ -657,6 +657,153 @@ export function createHandler({pool, config, now = () => new Date()}) {
       await c.query('UPDATE app.connector_sources SET rebuild_requested_at = now()');
       await audit(c, ctx, 'units.replace', null, {rules: rules.length});
       return {ok: true, rules: rules.length, rebuild: 'solicitado'};
+    });
+  });
+
+  // Budget builder: one year of one kind at a time. The base is what really happened (sales,
+  // purchases, fixed expenses from the ledger) month by month, so a budget starts from facts.
+  const BUDGET_BY = ['total', 'unit', 'brand'];
+  async function budgetActuals(c, kind, by, from, to, companies) {
+    const p = [from, to];
+    const cs = a => companies ? `AND (${a}.source_id::text || ':' || ${a}.company_id) = ANY($3::text[])` : '';
+    if (companies) p.push(companies);
+    let sql;
+    if (kind === 'ventas') {
+      const key = by === 'unit' ? `coalesce((SELECT r.unit_name FROM app.business_unit_rules r WHERE r.unit_code = m.unit_code LIMIT 1), 'Sin unidad')`
+        : by === 'brand' ? `coalesce(d.brand, 'Sin marca')` : `'Empresa'`;
+      sql = `SELECT ${key} AS key, to_char(m.business_date, 'YYYY-MM') AS month, sum(m.net_amount)::text AS amount FROM core.fact_sales_line m
+        LEFT JOIN core.dim_product d ON d.source_id = m.source_id AND d.product_id = m.product_id
+       WHERE m.business_date BETWEEN $1::date AND $2::date ${cs('m')} GROUP BY 1, 2`;
+    } else if (kind === 'compras') {
+      const key = by === 'brand' ? `coalesce(d.brand, 'Sin marca')` : `'Empresa'`;
+      sql = `SELECT ${key} AS key, to_char(pl.approve_date, 'YYYY-MM') AS month, sum(pl.amount)::text AS amount FROM core.fact_purchase_line pl
+        LEFT JOIN core.dim_product d ON d.source_id = pl.source_id AND d.product_id = pl.product_id
+       WHERE pl.approve_date BETWEEN $1::date AND $2::date ${cs('pl')} GROUP BY 1, 2`;
+    } else if (kind === 'gastos_fijos') {
+      // Selling + administrative expenses of the ledger (601, 602): what a unit must cover.
+      sql = `SELECT 'Empresa' AS key, to_char(f.month, 'YYYY-MM') AS month, sum(f.balance)::text AS amount FROM core.fact_account_month f
+       WHERE f.month BETWEEN date_trunc('month', $1::date) AND $2::date AND (f.code LIKE '601%' OR f.code LIKE '602%') ${cs('f')} GROUP BY 1, 2`;
+    } else return [];
+    return (await c.query(sql, p)).rows.map(r => ({key: r.key, month: r.month, amount: Number(r.amount)}));
+  }
+
+  route('GET', /^\/api\/budget\/(ventas|compras|gastos_fijos|marketing)\/(\d{4})$/, async ({req, match, query}) => {
+    const ctx = await tenantContext(req);
+    const [kind, year] = [match[1], Number(match[2])];
+    if (year < 2000 || year > 2100) throw new HttpError(400, 'Año inválido');
+    const by = BUDGET_BY.includes(query.by) ? query.by : 'total';
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const rows = (await c.query(`SELECT unit_name, brand, to_char(month, 'YYYY-MM') AS month, amount::text AS amount FROM app.budgets
+          WHERE kind = $1 AND month >= make_date($2, 1, 1) AND month < make_date($2 + 1, 1, 1) ORDER BY month`, [kind, year])).rows;
+      const pub = (await c.query('SELECT business_date::text AS d FROM ops.published_versions ORDER BY version DESC LIMIT 1')).rows[0];
+      const cut = pub?.d || `${year}-12-31`;
+      const base = await budgetActuals(c, kind, by, `${year - 1}-01-01`, `${year - 1}-12-31` < cut ? `${year - 1}-12-31` : cut, ctx.companies);
+      const actual = await budgetActuals(c, kind, by, `${year}-01-01`, `${year}-12-31` < cut ? `${year}-12-31` : cut, ctx.companies);
+      const units = (await c.query('SELECT DISTINCT unit_name FROM app.business_unit_rules ORDER BY 1')).rows.map(r => r.unit_name);
+      const brands = (await c.query(`SELECT DISTINCT brand FROM core.dim_product WHERE brand IS NOT NULL ORDER BY 1 LIMIT 300`)).rows.map(r => r.brand);
+      return {kind, year, by, rows, base, actual, units, brands, cutoff: cut, can_edit: ROLE_RANK[ctx.membership.role] >= ROLE_RANK.admin};
+    });
+  });
+
+  route('PUT', /^\/api\/budget\/(ventas|compras|gastos_fijos|marketing)\/(\d{4})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const [kind, year] = [match[1], Number(match[2])];
+    const b = await readJson(req, 512 * 1024);
+    const by = BUDGET_BY.includes(b.by) ? b.by : 'total';
+    if (!Array.isArray(b.rows) || b.rows.length > 5000) throw new HttpError(400, 'Envía hasta 5000 filas');
+    const seen = new Set();
+    const rows = b.rows.map((r, i) => {
+      const month = monthOf(r.month), amount = amountOf(r.amount);
+      if (!month || Number(month.slice(0, 4)) !== year) throw new HttpError(400, `Fila ${i + 1}: el mes debe ser de ${year}`);
+      if (amount === null) throw new HttpError(400, `Fila ${i + 1}: monto inválido`);
+      const key = by === 'total' ? null : opt(typeof r.key === 'string' ? r.key : '', 120);
+      if (by !== 'total' && !key) throw new HttpError(400, `Fila ${i + 1}: falta la ${by === 'unit' ? 'unidad' : 'marca'}`);
+      const k = `${month}|${key || ''}`;
+      if (seen.has(k)) throw new HttpError(400, `Fila ${i + 1}: repetida`);
+      seen.add(k);
+      return {month, unit: by === 'unit' ? key : null, brand: by === 'brand' ? key : null, amount};
+    });
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      // Replaces only this year and this level (total, by unit or by brand) of the budget kind.
+      const level = by === 'unit' ? 'unit_name IS NOT NULL AND brand IS NULL' : by === 'brand' ? 'brand IS NOT NULL AND unit_name IS NULL' : 'unit_name IS NULL AND brand IS NULL';
+      await c.query(`DELETE FROM app.budgets WHERE kind = $1 AND month >= make_date($2, 1, 1) AND month < make_date($2 + 1, 1, 1) AND ${level}`, [kind, year]);
+      for (const r of rows) await c.query(`INSERT INTO app.budgets(tenant_id, kind, month, unit_name, brand, amount, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [ctx.tenantId, kind, r.month, r.unit, r.brand, r.amount, ctx.user.id]);
+      await audit(c, ctx, 'budget.year', `${kind}:${year}:${by}`, {rows: rows.length});
+      return {ok: true, rows: rows.length};
+    });
+  });
+
+  // Marketing app integration (Iris or any other): admins create a token; the app pushes campaigns.
+  route('GET', /^\/api\/integrations\/marketing$/, async ({req}) => {
+    const ctx = await tenantContext(req, 'admin');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id, readOnly: true}, async c => {
+      const tokens = (await c.query(`SELECT id, label, created_at, last_used_at FROM app.integration_tokens
+          WHERE tenant_id = $1 AND kind = 'marketing' AND revoked_at IS NULL ORDER BY id`, [ctx.tenantId])).rows;
+      const sources = (await c.query(`SELECT source, count(*) AS campaigns, max(updated_at) AS last FROM app.marketing_campaigns GROUP BY 1 ORDER BY 1`)).rows;
+      return {tokens, sources, endpoint: '/api/integrations/marketing/campaigns'};
+    });
+  });
+  route('POST', /^\/api\/integrations\/marketing\/tokens$/, async ({req}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    const b = await readJson(req, 2048);
+    const label = str(b.label, 80) || 'App de marketing';
+    const token = `omk_${newToken()}`;
+    await tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      await c.query(`INSERT INTO app.integration_tokens(tenant_id, kind, label, token_hash, created_by) VALUES ($1, 'marketing', $2, $3, $4)`,
+        [ctx.tenantId, label, sha256(token), ctx.user.id]);
+      await audit(c, ctx, 'integration.token', 'marketing', {label});
+    });
+    return {token, label}; // shown once; only its hash is stored
+  });
+  route('DELETE', /^\/api\/integrations\/marketing\/tokens\/(\d{1,12})$/, async ({req, match}) => {
+    requireCsrf(req);
+    const ctx = await tenantContext(req, 'admin');
+    return tx({tenantId: ctx.tenantId, userId: ctx.user.id}, async c => {
+      const n = (await c.query(`UPDATE app.integration_tokens SET revoked_at = now() WHERE id = $1 AND tenant_id = $2 AND revoked_at IS NULL`,
+        [match[1], ctx.tenantId])).rowCount;
+      if (!n) throw new HttpError(404, 'Token inexistente');
+      await audit(c, ctx, 'integration.revoke', match[1], {});
+      return {ok: true};
+    });
+  });
+  // Push endpoint for the marketing app: Authorization: Bearer omk_…; upsert by (source, external_id).
+  route('POST', /^\/api\/integrations\/marketing\/campaigns$/, async ({req}) => {
+    const auth = String(req.headers.authorization || '');
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+    if (!/^omk_[A-Za-z0-9_-]{40,60}$/.test(token)) throw new HttpError(401, 'Token de integración requerido');
+    const owner = await tx({}, async c => (await c.query(`UPDATE app.integration_tokens SET last_used_at = now()
+        WHERE token_hash = $1 AND kind = 'marketing' AND revoked_at IS NULL RETURNING tenant_id, created_by`, [sha256(token)])).rows[0]);
+    if (!owner) throw new HttpError(401, 'Token inválido o revocado');
+    const b = await readJson(req, 512 * 1024);
+    const source = (str(typeof b.source === 'string' ? b.source : '', 40) || 'app').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'app';
+    if (source === 'csv') throw new HttpError(400, 'source "csv" está reservado para la carga manual');
+    if (!Array.isArray(b.campaigns) || !b.campaigns.length || b.campaigns.length > 2000) throw new HttpError(400, 'Envía entre 1 y 2000 campañas');
+    const rows = b.campaigns.map((r, i) => {
+      const ext = str(r.id === undefined ? '' : String(r.id), 120), name = str(typeof r.name === 'string' ? r.name : '', 160);
+      const start = dateOf(r.start_date), end = dateOf(r.end_date || r.start_date), investment = amountOf(r.investment ?? 0);
+      const leads = r.leads === undefined || r.leads === null ? null : Number.isInteger(Number(r.leads)) && Number(r.leads) >= 0 ? Number(r.leads) : NaN;
+      if (!ext) throw new HttpError(400, `Campaña ${i + 1}: falta id`);
+      if (!name) throw new HttpError(400, `Campaña ${i + 1}: falta name`);
+      if (!start || !end || end < start) throw new HttpError(400, `Campaña ${i + 1}: fechas inválidas (AAAA-MM-DD)`);
+      if (investment === null) throw new HttpError(400, `Campaña ${i + 1}: investment inválido`);
+      if (Number.isNaN(leads)) throw new HttpError(400, `Campaña ${i + 1}: leads inválido`);
+      const status = String(r.status || 'ejecutada').toLowerCase();
+      return {ext, name, start, end, investment, leads, status: /plan|draft|borrador|scheduled/.test(status) ? 'planificada' : 'ejecutada',
+        brand: opt(typeof r.brand === 'string' ? r.brand : null, 120), unit: opt(typeof r.unit === 'string' ? r.unit : null, 120)};
+    });
+    return tx({tenantId: owner.tenant_id, userId: owner.created_by}, async c => {
+      for (const r of rows) await c.query(`INSERT INTO app.marketing_campaigns(tenant_id, source, external_id, name, status, start_date, end_date, brand, unit_name, investment, leads, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+          ON CONFLICT (tenant_id, source, external_id) WHERE external_id IS NOT NULL DO UPDATE SET name = EXCLUDED.name, status = EXCLUDED.status,
+            start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date, brand = EXCLUDED.brand, unit_name = EXCLUDED.unit_name,
+            investment = EXCLUDED.investment, leads = EXCLUDED.leads, updated_at = now()`,
+        [owner.tenant_id, source, r.ext, r.name, r.status, r.start, r.end, r.brand, r.unit, r.investment, r.leads]);
+      await c.query(`INSERT INTO ops.audit_log(tenant_id, user_id, action, target, details) VALUES ($1, $2, 'integration.push', $3, $4)`,
+        [owner.tenant_id, owner.created_by, source, JSON.stringify({campaigns: rows.length})]);
+      return {ok: true, source, campaigns: rows.length};
     });
   });
 

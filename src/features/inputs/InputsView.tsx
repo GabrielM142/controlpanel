@@ -3,11 +3,12 @@ import {CalendarRange,CheckCircle2,Download,Layers3,Loader2,Megaphone,Plus,Refre
 import {api} from '../../data/api';
 import {useLive} from '../live/LiveData';
 import {clearCache} from '../live/cache';
+import MarketingConnect from './MarketingConnect';
 
 // Company inputs Odoo does not hold: budgets, marketing campaigns and business-unit rules.
 // The reports read them on the next refresh; unit rules recalculate the history in the worker.
 type Budget={kind:string;month:string;unit_name:string|null;brand:string|null;amount:string};
-type Campaign={id:number;name:string;status:string;start_date:string;end_date:string;brand:string|null;unit_name:string|null;investment:string};
+type Campaign={id:number;name:string;status:string;start_date:string;end_date:string;brand:string|null;unit_name:string|null;investment:string;source?:string;leads?:number|null};
 type Rule={source_id:string;match_type:string;match_value:string;unit_name:string;channel:string;priority:number;match_name?:string|null};
 type Inputs={budgets:Budget[];campaigns:Campaign[];sources:{id:string;name:string;rebuild_requested_at:string|null;rebuilt_at:string|null}[];
  rules:Rule[];options:{source_id:string;match_type:string;match_value:string;name:string|null}[];brands:string[];units:string[];can_edit:boolean};
@@ -116,7 +117,7 @@ export default function InputsView(){
    <div className="panel-body">
     <div className="om-in-kinds" role="tablist" aria-label="Tipo de presupuesto">{KINDS.map(k=><button key={k.id} type="button" role="tab" aria-selected={kind===k.id} className={`om-in-kind${kind===k.id?' is-active':''}`} onClick={()=>setKind(k.id)}>
      <strong>{k.label}</strong><small>{(data.budgets.filter(b=>b.kind===k.id).length)||'Sin'} fila{data.budgets.filter(b=>b.kind===k.id).length===1?'':'s'} · {k.hint}</small></button>)}</div>
-    <p className="legend-note">Un archivo CSV con columnas <code>mes;unidad;marca;monto</code>. El mes va como AAAA-MM; la unidad y la marca son opcionales (vacías = total de la empresa). Cargar un archivo reemplaza todo el presupuesto de este tipo.</p>
+    <p className="legend-note">Para armarlo mes a mes desde el real del año anterior usa <a href="#presupuesto">Planificación → Presupuesto</a>. Aquí puedes subirlo completo en un archivo CSV con columnas <code>mes;unidad;marca;monto</code>. El mes va como AAAA-MM; la unidad y la marca son opcionales (vacías = total de la empresa). Cargar un archivo reemplaza todo el presupuesto de este tipo.</p>
     {edit&&<div className="om-ai-actions">
      <button type="button" className="button secondary" onClick={()=>download(`plantilla-presupuesto-${kind}.csv`,`mes;unidad;marca;monto\n2026-01;;;100000\n2026-01;Mayorista Hogar;;60000\n2026-01;;${data.brands[0]||'Marca'};15000\n`)}><Download size={14}/>Descargar plantilla</button>
      <label className="button primary om-in-file">{busy==='budget'?<Loader2 size={14} className="om-spin"/>:<Upload size={14}/>}Subir CSV<input type="file" accept=".csv,text/csv" onChange={e=>readFile(e,uploadBudget)} disabled={!!busy}/></label>
@@ -136,8 +137,9 @@ export default function InputsView(){
      <label className="button primary om-in-file">{busy==='campaigns'?<Loader2 size={14} className="om-spin"/>:<Upload size={14}/>}Subir CSV<input type="file" accept=".csv,text/csv" onChange={e=>readFile(e,uploadCampaigns)} disabled={!!busy}/></label>
     </div>}
     {data.campaigns.length>0?<div className="table-scroll"><table className="om-in-table"><thead><tr><th>Campaña</th><th>Estado</th><th>Fechas</th><th>Marca</th><th>Unidad</th><th className="num">Inversión</th></tr></thead>
-     <tbody>{data.campaigns.map(cp=><tr key={cp.id}><td>{cp.name}</td><td>{cp.status}</td><td>{cp.start_date} → {cp.end_date}</td><td>{cp.brand||'Todas'}</td><td>{cp.unit_name||'Todas'}</td><td className="num">{money(cp.investment)}</td></tr>)}</tbody></table></div>
+     <tbody>{data.campaigns.map(cp=><tr key={cp.id}><td>{cp.name}{cp.source&&cp.source!=='csv'?<small className="om-budget-hint">desde {cp.source}{cp.leads!=null?` · ${cp.leads} leads`:''}</small>:null}</td><td>{cp.status}</td><td>{cp.start_date} → {cp.end_date}</td><td>{cp.brand||'Todas'}</td><td>{cp.unit_name||'Todas'}</td><td className="num">{money(cp.investment)}</td></tr>)}</tbody></table></div>
      :<p className="block-missing">Sin campañas cargadas.</p>}
+    {edit&&tenantId&&<MarketingConnect tenantId={tenantId}/>}
    </div>
   </section>
  </div>;

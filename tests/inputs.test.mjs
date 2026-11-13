@@ -104,3 +104,48 @@ test('purchase budget by brand: attainment bars per budgeted brand', async () =>
   assert.equal(c['compras-16'].kind, 'bars');
   assert.equal(c['compras-16'].rows[0].n, brand);
 });
+
+test('budget builder: base from real sales, saves one year and level only', async () => {
+  const g = await call(api, 'GET', '/api/budget/ventas/2027?by=unit', {headers: H(ana, w.tenantA)});
+  assert.equal(g.status, 200);
+  assert.ok(g.body.base.length > 0, 'the 2026 sales are the base of the 2027 budget');
+  assert.ok(g.body.base.every(p => p.month.startsWith('2026-')));
+  assert.ok(g.body.units.includes('Retail JUJ'));
+  const bad = await call(api, 'PUT', '/api/budget/ventas/2027', {headers: H(ana, w.tenantA), body: {by: 'unit', rows: [{key: 'Retail JUJ', month: '2026-01', amount: 1}]}});
+  assert.equal(bad.status, 400, 'a month of another year is rejected');
+  const ok = await call(api, 'PUT', '/api/budget/ventas/2027', {headers: H(ana, w.tenantA), body: {by: 'unit', rows: [{key: 'Retail JUJ', month: '2027-03', amount: 99}]}});
+  assert.equal(ok.status, 200);
+  const all = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  const ventas = all.body.budgets.filter(b => b.kind === 'ventas');
+  assert.ok(ventas.some(b => b.month === '2027-03' && b.unit_name === 'Retail JUJ'));
+  assert.equal(ventas.filter(b => b.month.startsWith('2026-')).length, 24, 'the 2026 budget is untouched');
+  const viewer = await call(api, 'PUT', '/api/budget/ventas/2027', {headers: H(vera, w.tenantA), body: {by: 'total', rows: []}});
+  assert.equal(viewer.status, 403);
+});
+
+test('marketing app integration: token once, push upserts by id, revoke stops it', async () => {
+  const t = await call(api, 'POST', '/api/integrations/marketing/tokens', {headers: H(ana, w.tenantA), body: {label: 'Iris'}});
+  assert.equal(t.status, 200);
+  const token = t.body.token;
+  assert.match(token, /^omk_/);
+  const push = body => call(api, 'POST', '/api/integrations/marketing/campaigns', {headers: {authorization: `Bearer ${token}`}, body});
+  const c1 = {id: 'CMP-1', name: 'Iris A', start_date: '2026-01-01', end_date: '2026-12-31', investment: 7, leads: 30};
+  assert.equal((await push({source: 'iris', campaigns: [c1]})).status, 200);
+  assert.equal((await push({source: 'iris', campaigns: [{...c1, investment: 8}]})).status, 200);
+  const list = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  const iris = list.body.campaigns.filter(c => c.source === 'iris');
+  assert.equal(iris.length, 1, 'same id = same campaign');
+  assert.equal(Number(iris[0].investment), 8);
+  assert.equal(iris[0].leads, 30);
+  const csvReplace = await call(api, 'PUT', '/api/inputs/campaigns', {headers: H(ana, w.tenantA), body: {rows: []}});
+  assert.equal(csvReplace.status, 200);
+  const after = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  assert.equal(after.body.campaigns.filter(c => c.source === 'iris').length, 1, 'a CSV upload never deletes app campaigns');
+  const mk = await report('marketing');
+  assert.equal(mk['marketing-01'].raw, '8');
+  assert.equal((await call(api, 'POST', '/api/integrations/marketing/campaigns', {headers: {authorization: 'Bearer omk_' + 'x'.repeat(43)}, body: {campaigns: [c1]}})).status, 401);
+  const info = await call(api, 'GET', '/api/integrations/marketing', {headers: H(ana, w.tenantA)});
+  assert.doesNotMatch(JSON.stringify(info.body), new RegExp(token), 'the token is never returned again');
+  assert.equal((await call(api, 'DELETE', `/api/integrations/marketing/tokens/${info.body.tokens[0].id}`, {headers: H(ana, w.tenantA)})).status, 200);
+  assert.equal((await push({source: 'iris', campaigns: [c1]})).status, 401);
+});

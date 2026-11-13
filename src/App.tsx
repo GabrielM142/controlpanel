@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,useRef,useCallback,type ComponentType,type ReactNode} from 'react';
-import {CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
+import {Calculator,CalendarRange,Warehouse,Activity,ArrowDownToLine,Signature,Palette,Database,FileSpreadsheet,LogOut,Bell,BriefcaseBusiness,ChartNoAxesCombined,ChevronDown,ChevronRight,Clock3,Coins,Command,Gauge,GraduationCap,House,Layers3,LayoutDashboard,LifeBuoy,ListChecks,ListTodo,Maximize2,Menu,Minimize2,Minus,Moon,Package,Play,RefreshCw,Search,Share2,ShieldAlert,ShoppingBag,SlidersHorizontal,Sparkles,Store,StickyNote,Sun,Truck,Users,Volume2,Wand2,Wrench,X,Zap,type LucideIcon} from 'lucide-react';
 import reportData from './data/report.json';
 import type {Report,ReportPage} from './types';
 import {NavigateContext,ReportNodes,blockIds} from './components/Report';
@@ -7,6 +7,8 @@ import {LiveProvider,useLive,useReportData,versionKey,WidgetsContext} from './fe
 import WarehouseView from './features/inventory/WarehouseView';
 import AISettingsView from './features/omega/AISettingsView';
 import InputsView from './features/inputs/InputsView';
+import BudgetView from './features/budget/BudgetView';
+import ReportSetup from './features/inputs/ReportSetup';
 import {cachedGet} from './features/live/cache';
 import DataSourcesView from './features/live/DataSourcesView';
 import ThemeView from './features/theme/ThemeView';
@@ -53,6 +55,7 @@ const virtualPages:VirtualPage[]=[
  {id:'tickets',group:'Soporte',subgroup:'Helpdesk',label:'Tickets Vigentes',question:'¿Cómo va la cola de soporte y qué casos requieren acción inmediata?',component:TicketsView,icon:LifeBuoy},
  {id:'control',group:'Ajustes',label:'Umbrales y alertas',question:'Configura los umbrales de indicadores. Cada umbral dispara alertas en la campana superior y alimenta al copiloto.',component:ThresholdsView,icon:Gauge},
  {id:'tema',group:'Ajustes',label:'Tema de la empresa',question:'¿Cómo se ve OMEGA para tu empresa? Elige tu color de marca; los colores financieros no cambian.',component:ThemeView,icon:Palette},
+ {id:'presupuesto',group:'Planificación',label:'Presupuesto',question:'¿Cuánto planeas vender, comprar y gastar cada mes, y cómo vas contra eso?',component:BudgetView,icon:Calculator},
  {id:'insumos',group:'Ajustes',label:'Presupuestos y unidades',question:'¿Contra qué presupuesto, campañas y unidades de negocio se miden tus resultados?',component:InputsView,icon:CalendarRange},
  {id:'omega-ia',group:'Ajustes',label:'Omega IA',question:'¿Con qué inteligencia artificial responde Omega en tu empresa?',component:AISettingsView,icon:Sparkles},
  {id:'sources',group:'Ajustes',label:'Fuentes de datos',question:'Conexiones Odoo, lotes nocturnos recibidos, corte publicado y errores por fuente.',component:DataSourcesView,icon:Database},
@@ -69,7 +72,7 @@ const virtualPages:VirtualPage[]=[
 const virtualIds=new Set(virtualPages.map(p=>p.id));
 const virtualById=new Map(virtualPages.map(p=>[p.id,p]));
 
-const icons:Record<string,LucideIcon>={insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
+const icons:Record<string,LucideIcon>={presupuesto:Calculator,insumos:CalendarRange,'omega-ia':Sparkles,bodegas:Warehouse,nivel1:LayoutDashboard,comercial:ChartNoAxesCombined,financiero:Coins,compras:ShoppingBag,inventarios:Package,clientes:Users,logistica:Truck,marketing:Volume2,riesgos:ShieldAlert,mayoristahogar:House,mayoristaintorno:Layers3,retailjuj:Store,retailintorno:BriefcaseBusiness,tickets:LifeBuoy,trueque:Wand2,'trueque-list':ListChecks,tasks:ListTodo,notes:StickyNote,control:Gauge,sources:Database,decisiones:Signature,omega:Sparkles,tema:Palette,market:Store,'market-odoo':Package,'market-skills':Sparkles,'market-automations':Zap,'market-services':Wrench};
 
 // OMEGA navigation (REDISENO_OMEGA.md §4): display grouping only. Every report and auxiliary view keeps
 // its id, label and route; nothing is removed. Factory keeps its own block at the bottom.
@@ -92,6 +95,9 @@ const NAV:NavSection[]=[
  {label:'Unidades',subs:[
   {label:'Mayorista',ids:['mayoristahogar','mayoristaintorno']},
   {label:'Retail',ids:['retailjuj','retailintorno']},
+ ]},
+ {label:'Planificación',subs:[
+  {label:'Presupuesto',ids:['presupuesto']},
  ]},
  {label:'Gestión',subs:[
   {label:'Decisiones',ids:['decisiones']},
@@ -398,6 +404,7 @@ function AppShell(){
      {reportPage&&(reportCtx?<ReportAssistant key={reportPage.id} ctx={reportCtx} tenant={live.tenantId} onOpenChat={()=>setAiOpen(true)} onNavigate={navigate}/>:live.live&&<section className="om-card om-rassist" aria-busy="true"><span className="om-thinking"><span className="om-d1"/><span className="om-d2"/><span className="om-d3"/>Preparando a Omega con el último cierre…</span></section>)}
      {reportPage&&reportPage.id==='nivel1'&&<h2 className="section-label om-detail-label"><span>Detalle del reporte</span><i/></h2>}
      {virtualPage?(()=>{const C=virtualPage.component;return <C/>;})():<WidgetsContext.Provider value={widgetsValue}><ReportNodes nodes={reportPage!.nodes}/></WidgetsContext.Provider>}
+     {live.live&&reportPage&&!reportState.loading&&<ReportSetup pageId={reportPage.id} widgets={reportState.data?.widgets||null} onNavigate={navigate}/>}
      <div className="report-footer"><span>Análisis <i>/</i> {pageLabel}</span><span>{live.live?`${live.membership?.name||''} · Control Empresarial`:`${activeTenant.subtitle} · Control Empresarial`}</span></div>
     </div>
    </main>

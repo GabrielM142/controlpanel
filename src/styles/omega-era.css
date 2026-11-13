@@ -321,3 +321,40 @@
 .om-in-file:focus-within{outline:2px solid var(--brand);outline-offset:2px}
 @media (max-width:767px){.om-in-kinds{grid-template-columns:1fr 1fr}}
 @media (prefers-reduced-motion:reduce){.om-in-kind{transition:none}.om-in-kind:hover{transform:none}}
+
+/* Presupuesto (budget builder) */
+.om-budget{display:grid;gap:16px}
+.om-budget-bar{display:grid;gap:12px}
+.om-budget-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.om-budget-controls label{display:grid;gap:6px;font-size:13px;color:var(--text-2)}
+.om-budget-controls label>span{font-weight:600;color:var(--text)}
+.om-budget-controls select,.om-budget-controls input,.om-budget-add input{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+.om-budget-controls input{width:110px}
+.om-budget-base{display:flex;gap:10px;align-items:flex-end}
+.om-budget-total{font-family:var(--font-num);color:var(--text)}
+.om-budget-total small{color:var(--text-3);font-family:var(--font-ui)}
+.om-budget-grid td input{min-width:84px;text-align:right;font-family:var(--font-num)}
+.om-budget-grid tfoot td{border-top:1px solid var(--line)}
+.om-budget-hint{display:block;color:var(--text-3);font-size:11px;font-weight:400}
+.om-budget-add{margin-top:12px}
+.om-budget-ok{color:var(--fin-income)}
+.om-budget-low{color:var(--fin-loss)}
+
+/* Configura este reporte */
+.om-setup{margin-top:16px}
+.om-setup-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.om-setup-link{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);cursor:pointer;transition:border-color .2s,transform .2s}
+.om-setup-link span{display:grid;gap:3px;flex:1}
+.om-setup-link small{color:var(--text-3);font-size:12px}
+.om-setup-link:hover{border-color:var(--brand);transform:translateY(-1px)}
+.om-setup-link:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.om-setup-link{transition:none}.om-setup-link:hover{transform:none}}
+
+/* Marketing app connection */
+.om-mkt{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.om-mkt h3{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;color:var(--text)}
+.om-mkt-label{display:grid;gap:6px;font-size:13px;color:var(--text-2)}
+.om-mkt-label input{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+.om-mkt-token{font-family:var(--font-num);word-break:break-all}
+.om-mkt-doc summary{cursor:pointer;color:var(--text-2);font-size:13px}
+.om-mkt-doc pre{white-space:pre-wrap;word-break:break-word;font-family:var(--font-num);font-size:12px;color:var(--text-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
