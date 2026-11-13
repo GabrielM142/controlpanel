@@ -122,8 +122,8 @@ export default function InputsView(){
      <label className="button primary om-in-file">{busy==='budget'?<Loader2 size={14} className="om-spin"/>:<Upload size={14}/>}Subir CSV<input type="file" accept=".csv,text/csv" onChange={e=>readFile(e,uploadBudget)} disabled={!!busy}/></label>
     </div>}
     {budgets.length>0&&<div className="table-scroll"><table className="om-in-table"><thead><tr><th>Mes</th><th>Unidad</th><th>Marca</th><th className="num">Monto</th></tr></thead>
-     <tbody>{budgets.slice(0,60).map((b,i)=><tr key={i}><td>{b.month}</td><td>{b.unit_name||'Empresa'}</td><td>{b.brand||'—'}</td><td className="num">{money(b.amount)}</td></tr>)}</tbody></table>
-     {budgets.length>60&&<p className="legend-note">… y {budgets.length-60} filas más.</p>}</div>}
+     <tbody>{budgets.slice(0,12).map((b,i)=><tr key={i}><td>{b.month}</td><td>{b.unit_name||'Empresa'}</td><td>{b.brand||'—'}</td><td className="num">{money(b.amount)}</td></tr>)}</tbody></table>
+     {budgets.length>12&&<p className="legend-note">… y {budgets.length-12} filas más.</p>}</div>}
    </div>
   </section>
 

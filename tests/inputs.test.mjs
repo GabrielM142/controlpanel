@@ -92,3 +92,15 @@ test('unit rules from the panel are recalculated by the worker', async () => {
   const lg = await report('logistica');
   assert.equal(lg['logistica-08'].kind, 'bars');
 });
+
+test('purchase budget by brand: attainment bars per budgeted brand', async () => {
+  const inputs = await call(api, 'GET', '/api/inputs', {headers: H(ana, w.tenantA)});
+  const brand = inputs.body.brands[0];
+  assert.ok(brand, 'the fixture has product brands');
+  const rows = [...months.map(m => ({month: m, amount: 50})), ...months.map(m => ({month: m, brand, amount: 10}))];
+  assert.equal((await call(api, 'PUT', '/api/inputs/budgets/compras', {headers: H(ana, w.tenantA), body: {rows}})).status, 200);
+  const c = await report('compras');
+  assert.equal(c['compras-05'].kind, 'kpi', 'the total uses the plain rows, not total + brand');
+  assert.equal(c['compras-16'].kind, 'bars');
+  assert.equal(c['compras-16'].rows[0].n, brand);
+});
