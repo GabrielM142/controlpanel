@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {CheckCircle2,AlertTriangle,LifeBuoy,Sparkles} from 'lucide-react';
 import SwipeDeck from './SwipeDeck';
+import {useVoice} from './useVoice';
 import {marketCatalog} from '../market/data';
 import {activateSkill} from '../market/activate';
 import type {ReportPayload,Widget} from '../../data/api';
@@ -103,7 +104,7 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
 
  const closeAt=published?new Date(Object.values(published.sources)[0]?.observed_to||published.published_at):null;
  const stale=!!published?.business_date&&(Date.now()-new Date(`${published.business_date}T23:59:59`).getTime())>2*86400000;
- const [listening,setListening]=useState(false);
+ const voice=useVoice(text=>onAsk(text));
  const vp=useViewport();
  const [tab,setTab]=useState<'misiones'|'soporte'|'skills'>('misiones');
  const pulseTone=pulse===null?'goal':pulse>=80?'income':pulse>=60?'goal':'loss';
@@ -113,7 +114,8 @@ export default function CommandCenter({widgets,live,tenantName,userName,onNaviga
   <button type="button" className="mx-link" onClick={()=>onNavigate('decisiones')}>Ver toda la bandeja →</button>
  </>;
  const omegaPanel=<div className="mx-panel mx-omega">
-  <OmegaOrb listening={listening} label={listening?'Te escucho…':'Toca el micrófono o escribe tu pregunta'} onPress={()=>{setListening(false);onAsk('');}}/>
+  <OmegaOrb listening={voice.listening} label={voice.listening?(voice.interim||'Te escucho… habla con naturalidad'):voice.error||(voice.supported?'Toca el micrófono y pregunta en voz alta':'Toca para escribir tu pregunta')}
+   onPress={()=>voice.supported?voice.toggle():onAsk('')}/>
   <p className="mx-omega-msg">{greeting}{first?<> ¿Ejecuto <strong>{first.title}</strong>{first.amount?` (${first.amount.toLocaleString('es-EC',{style:'currency',currency:'USD',maximumFractionDigits:0})})`:''}?</>:' No hay decisiones pendientes.'}</p>
   <div className="mx-omega-actions">
    {first&&<button type="button" className="mx-btn-ai" onClick={()=>act(first.id,true)}>Sí, hazlo</button>}

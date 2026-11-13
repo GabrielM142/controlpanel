@@ -1,7 +1,7 @@
 import {Mic} from 'lucide-react';
 
-// Orbe de Omega con micrófono y onda de voz. La escucha real (Web Speech API) llega en M7;
-// sin soporte o sin permiso, el botón abre el chat de texto. Nunca graba sin que el usuario pulse.
+// Orbe de Omega con micrófono y onda de voz. La escucha (Web Speech API) vive en useVoice; sin
+// soporte, el botón abre el chat de texto. Nunca graba sin que el usuario pulse.
 export default function OmegaOrb({listening,onPress,label}:{listening:boolean;onPress:()=>void;label:string}){
  return <div className="mx-orb-row">
   <button type="button" className={`mx-orb${listening?' is-on':''}`} aria-pressed={listening} aria-label={listening?'Dejar de escuchar':'Hablar con Omega'} onClick={onPress}><Mic size={24} strokeWidth={1.8} aria-hidden="true"/></button>

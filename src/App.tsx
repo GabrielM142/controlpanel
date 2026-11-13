@@ -33,6 +33,7 @@ import Billboard from './features/billboard/Billboard';
 import {useTrackView} from './features/billboard/useViews';
 import {useMotivation} from './features/omega/useMotivation';
 import AchievementToasts from './features/omega/AchievementToast';
+import TvBar,{TV_PARAM,useTvRotation,useWide} from './features/omega/TvMode';
 import DecisionsView from './features/omega/DecisionsView';
 import AskOmegaView from './features/omega/AskOmegaView';
 import {DecisionsProvider,useDecisions} from './features/omega/useDecisions';
@@ -138,7 +139,7 @@ function AppShell(){
  },[live.live,live.tenantId]);
  // Fase M4: sin ruta en la URL, la gerencia (tema Mando) en escritorio entra por la Cartelera.
  const bootNoHash=useRef(!location.hash.slice(1));
- const [pageId,setPageId]=useState(()=>bootNoHash.current&&document.documentElement.dataset.skin==='mando'&&window.innerWidth>=1280?'cartelera':getPage());
+ const [pageId,setPageId]=useState(()=>bootNoHash.current&&!TV_PARAM&&document.documentElement.dataset.skin==='mando'&&window.innerWidth>=1280?'cartelera':getPage());
  const [filters,setFilters]=useState(Object.fromEntries(Object.entries(report.filters).map(([k,v])=>[k,v.sel])));
  const [notice,setNotice]=useState('');
  const [menuOpen,setMenuOpen]=useState(false);
@@ -156,7 +157,8 @@ function AppShell(){
  const [aiOpen,setAiOpen]=useState(false);
  const [alertsOpen,setAlertsOpen]=useState(false);
  const [paletteOpen,setPaletteOpen]=useState(false);
- const [presentation,setPresentation]=useState(false);
+ // Fase M7: ?modo=mando abre el Centro de mando en modo presentación (pantalla gigante / TV).
+ const [presentation,setPresentation]=useState(TV_PARAM);
 
  const isVirtual=virtualIds.has(pageId);
  const virtualPage=isVirtual?virtualById.get(pageId)!:null;
@@ -217,6 +219,9 @@ function AppShell(){
 
  const navigate=useCallback((id:string)=>{if(!allValidIds.has(id))return;location.hash=id;setPageId(id);setMenuOpen(false);const pt=portalOf(id);if(pt){rememberPortal(pt.id);ls.set('nova.nav',JSON.stringify([`portal:${pt.id}`]));}window.scrollTo({top:0,behavior:'instant'});},[]);
 
+ const wide=useWide();const tv=TV_PARAM||wide;
+ useEffect(()=>{document.documentElement.dataset.tv=tv?'on':'off';},[tv]);
+ const rot=useTvRotation(pageId,navigate,tv);
  useEffect(()=>{const handle=()=>{setPageId(getPage());setMenuOpen(false);};window.addEventListener('hashchange',handle);return()=>window.removeEventListener('hashchange',handle);},[]);
  useEffect(()=>{document.title=`${pageLabel} · OMEGA · ${activeTenant.name}`;},[pageLabel,activeTenant.name]);
  const liveVersion=versionKey(live.status);
@@ -430,6 +435,7 @@ function AppShell(){
   <AIDrawer open={aiOpen} onClose={()=>setAiOpen(false)} pageId={pageId} pageLabel={pageLabel} ctx={reportCtx} tenant={live.tenantId}/>
   <AlertsDrawer open={alertsOpen} onClose={()=>setAlertsOpen(false)} onNavigate={navigate}/>
   <AchievementToasts m={motivation}/>
+  {tv&&rot.inRotation&&<TvBar rot={rot} fullscreen={isFullscreen} onFullscreen={toggleFullscreen}/>}
   <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} items={paletteItems} onSelect={navigate}/>
   {(aiOpen||alertsOpen)&&<div className="drawer-scrim" onClick={()=>{setAiOpen(false);setAlertsOpen(false);}}/>}
   {notice&&<div className="toast" role="status"><Activity size={18}/><span>{notice}</span><button aria-label="Cerrar aviso" onClick={()=>setNotice('')}><X size={16}/></button></div>}

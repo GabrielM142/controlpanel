@@ -249,3 +249,23 @@ button.mx-tile { cursor: pointer; }
 .sw-done p { margin: 0; font: 500 14px/1.5 var(--font-ui); color: var(--text-2); }
 .sw-done-icon { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: var(--fin-income); background: color-mix(in srgb, var(--fin-income) 15%, transparent); }
 @media (prefers-reduced-motion: reduce) { .sw-card { transition: none; } }
+
+/* Fase M7 · Pantalla gigante / TV: barra de pantalla completa y rotación, y letra más grande. */
+.tv-bar { position: fixed; z-index: 70; left: calc(var(--dock-w, 96px) + 24px); bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px; border-radius: 16px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border: 1px solid var(--line); backdrop-filter: blur(12px); }
+:root[data-presentation="on"] .tv-bar { left: auto; right: 24px; top: 72px; bottom: auto; }
+.tv-btn { min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: 600 13px var(--font-ui); cursor: pointer; }
+.tv-btn:hover { border-color: var(--brand); }
+.tv-btn.is-on { border-color: var(--brand); color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.tv-btn.is-paused { border-color: color-mix(in srgb, var(--fin-goal) 55%, transparent); color: var(--fin-goal); }
+.tv-next { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--text-2); font: 600 13px var(--font-ui); }
+:root[data-tv="on"][data-presentation="on"] .mx-cmd-title { font-size: 26px; }
+:root[data-tv="on"][data-presentation="on"] .mx-omega-msg { font-size: 22px; }
+:root[data-tv="on"][data-presentation="on"] .mx-mission-title { font-size: 19px; }
+:root[data-tv="on"][data-presentation="on"] .mx-node-value { font-size: 30px; }
+:root[data-tv="on"][data-presentation="on"] .mx-cmd-clock { font-size: 40px; }
+:root[data-tv="on"][data-presentation="on"] .mx-ticker { font-size: 17px; }
+:root[data-tv="on"][data-presentation="on"] .portal-card { min-height: 240px; }
+:root[data-tv="on"][data-presentation="on"] .portal-card h3, :root[data-tv="on"][data-presentation="on"] .portal-card strong { font-size: 22px; }
+@media (max-width: 767px) { .tv-bar { display: none; } }
+@media print { .tv-bar { display: none; } }
